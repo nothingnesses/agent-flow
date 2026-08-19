@@ -1533,6 +1533,32 @@ waiver = []
 [step.provenance]
 commits = ["e8b2992", "5ca89bb"]
 
+[[step]]
+slug = "plan-order-and-umbrella-structure"
+title = "delete the `order` field so the `[[step]]` array position is the plan order, and make umbrella membership typed data with a contiguity rule (`Q-78`, pending review and a human decision)"
+status = "not-started"
+order = 104
+blocked_by = []
+folds = []
+increment = []
+waiver = []
+
+[step.provenance]
+decisions = ["Q-78"]
+
+[[step]]
+slug = "step-intent-encoding"
+title = "record each step's problem and approach as two required `[[step]]` fields, project them through `render`, `next` and `status --step`, and backfill all 101 steps from cited sources (`Q-78`, pending review and a human decision)"
+status = "not-started"
+order = 105
+blocked_by = []
+folds = []
+increment = []
+waiver = []
+
+[step.provenance]
+decisions = ["Q-78"]
+
 [[question]]
 id = "Q-1"
 status = "decided"
@@ -2133,7 +2159,7 @@ Folded into `user-prompts-pointer-and-drift-coverage`, whose sidecar carries it 
 
 [[question]]
 id = "Q-78"
-status = "exploring"
+status = "open"
 receipt = "Q-78"
 ask = """how a step records WHAT PROBLEM IT ADDRESSES and HOW IT ADDRESSES IT, and how a reader gets that answer out of the tool rather than out of a file. A DESIGN PASS IS OWED (human-directed, 2026-08-18); the item points at `docs/plans/step-intent-encoding.explorations/` for that pass, and no step exists yet. DO NOT DECIDE BEFORE THE PASS HAS RUN, and do not author an implementation step whose content depends on the outcome; that is the discipline `Q-55-entryroute` set and `Q-69` records for its own case.
 
@@ -2164,7 +2190,29 @@ WHAT THE PASS MUST SETTLE. None of these is pre-decided, and the list is what th
 
 THE TWO SUB-DECISIONS THIS QUEUE HOLDS NO ENTRY OF ITS OWN FOR, so this paragraph and item (g) are the queue's only pointers to them. `Q-78-statusdrift` (human, 2026-08-18) decided to correct the stale sidecar openings NOW, as their own step, over folding them into this design pass and over flipping the affected statuses to `not-started` instead. It follows the `Q-55-<suffix>` convention of a receipt without a registered `[[question]]`, so it is cited by receipt (`type:"decision"`, `q_id:"Q-78-statusdrift"`, in `docs/metrics/workflow.jsonl`, added by commit `e8b2992`). Its step is `sidecar-status-opening-drift`, which carries the enumeration and the acceptance criteria and does NOT depend on this pass's outcome: it corrects false statements and settles no rule. `Q-78-statusform` (human, 2026-08-18) then decided that step's FORM: DELETE the token rather than replace it and record the residual, over keeping the label with the protocol sentence recorded as an exclusion, over keeping it and routing the conflict to item (g), and over cutting the step's justification prose down to what the criteria need. It follows the same convention (`type:"decision"`, `q_id:"Q-78-statusform"`, in `docs/metrics/workflow.jsonl`, added by commit `5ca89bb`), and item (g) above records what this pass inherits from it.
 
-Do not build until decided. When the pass has run, the item moves to `open` and the options go to the human under the human-input contract."""
+Do not build until decided. When the pass has run, the item moves to `open` and the options go to the human under the human-input contract.
+
+THE PASS RAN ON 2026-08-19 AND ITS OUTCOME IS `docs/plans/step-intent-encoding.explorations/Q-78.md`. That directory did not exist until the pass created it, so this item carried a dangling pointer against the `pack/AGENTS.md` rule that an `exploring` item points at its exploration by path. The status therefore moves from `exploring` to `open`, which is the transition the paragraph above records. NOTHING BELOW IS DECIDED. The human directed (2026-08-19) that reviewers review the outcome before it enters the plan as the plan's answer, so a review round is owed on the exploration document and on the two steps this pass authored, BEFORE the options reach the human for a decision.
+
+THE PASS COVERED FOUR SUBJECTS AS ONE SCHEMA, and it found a mechanical reason for that grouping rather than a thematic one. Typed umbrella membership forces `render` to emit the group heading from data, which takes the heading away from the sidecar, which decides item (g) as a consequence rather than as a separate ruling. So item (g) is not independently decidable. The pass also found a tension the direction did not name: structured intent fields make a `[[step]]` block longer, and a plan order carried by array position makes each block's length the cost of a reprioritisation. The recommendation resolves it by bounding both new fields to a single line each, which raises the median block from 13 lines to 15.
+
+THE RECOMMENDATION, IN FOUR PARTS, EACH SUBJECT TO REVIEW. (1) THE ENCODING: two required single-line fields on `[[step]]`, `problem` and `approach`, one sentence each, with everything else the sidecar carries left in the sidecar. The reasoning cites Principle 5, Make illegal states unrepresentable, and Principle 8, Structured data first, project for humans. The pass states plainly what no form buys: the measured drift is a STALE claim rather than an ABSENT one, a schema field and a validated sidecar section both catch absence only, and neither catches staleness. What removes staleness is the removal of the second copy. (2) THE BACKFILL: all 101 steps owe intent, `complete` steps included, delivered as optional fields, then a cited backfill in reviewed batches, then a flip to required whose oracle is `validate`. (3) THE ORDER: delete `order` and let the `[[step]]` array position carry the plan order. (4) THE UMBRELLA: a `[[umbrella]]` array of tables with its own sidecar directory, an `umbrella` reference on `[[step]]`, a fail-closed resolution rule and a CONTIGUITY rule in `validate`, and a `render` that emits the group from data.
+
+WHAT THE PASS REJECTED FROM THE PROPOSAL PUT TO IT, recorded so the reviewers see the disagreement rather than a clean report. FIRST, "`render` groups by membership rather than by adjacency" is rejected as inconsistent with array-position authority in the same schema: a `render` that gathers scattered members means the array no longer determines the rendered sequence. Contiguity as a checked invariant satisfies both halves. SECOND, the citation-bound extraction constraint is adopted only in part. Naming the source commit for every extracted statement is adopted. The claim that the citation is mechanically checkable against that commit inside the tool is not, because `validate` is a pure function that never git-resolves a hash, which `src/plan/source.rs` states in its own provenance comment, so the resolve check belongs in a check command. The pass also holds that a citation check does not catch this project's measured failure mode, which the `workflow-enforcement-tier-endproperty-fold` waiver already records as a claim STATED MORE GENERALLY THAN WHAT WAS MEASURED. What the pass adopts instead is transcription before paraphrase, because the intent for most steps is already written in the 2312 lines of sidecar prose by the person who had the context, and git history supplies the citation for that text rather than a fresh derivation of it.
+
+THE UMBRELLA EVIDENCE IS STRONGER THAN THE PROPOSAL ASSUMED, AND IT IS A REPAIR RATHER THAN A PRECAUTION (Principle 6, Ground decisions in evidence). Four of the five umbrella sidecars assert adjacency in the words "the N steps below", and two of those four assertions are FALSE on the tree today, with no reorder involved. `convergence-accounting` claims eight steps below and its members render at positions 13, 14, 15, 16, 20, 23, 24 and 27. `file-safety-rules` claims four steps below and its members render at 17, 18, 19 and 22. The two clusters interleave with each other and with `gate-prompt-clarity` at 21, `no-wrap-convention` at 25 and `findings-files` at 26. `file-safety-rules` further states that `findings-files` is "above" it, and `findings-files` renders nine rows BELOW it. Two assertions hold, `mode-enum` at 5 to 8 and `pack-manifest` at 9 to 11, and `exploration-mode` asserts no adjacency at all. Reproduce every position with `awk '/^## Roadmap/{f=1} f&&/^\\| `/{n++; print n, $2}' docs/plans/agent-scaffold.md`.
+
+THE `order` DELETION CARRIES A BYTE-EXACT ORACLE, which is why it is separable from everything else. `render` sorts by `order` then slug and the Roadmap table emits no order column, so the deletion changes the rendered document not at all, PROVIDED the declaration sequence equals today's rendered sequence. It does, at every step except one: `rename-to-agent-flow` stands 84th in the file and renders 98th. So the migration moves that one block to declaration position 98, and then `render --check --strict` passes against the COMMITTED `docs/plans/agent-scaffold.md`, unchanged. `select_active_loop` is unaffected by construction, because `workflow-calibration` sits at order 35 and at position 35 alike.
+
+THREE THINGS GO TO THE HUMAN AND THE PASS DECIDES NONE OF THEM. (1) ARRAY POSITION OR AN EXPLICIT SLUG LIST. The clarification of 2026-08-19, a reorder of the SLUGS rather than of the step details, admits both readings, and the pass says so rather than claims the decision covers its recommendation. Under array position a reprioritisation moves a block of median 13 lines, or 15 once the intent fields land, against one line under a slug list. The pass recommends array position on Principle 5, because a slug list admits a duplicate entry, a missing entry and an entry naming no step, while an array admits none of the three, and on Principle 2, Minimal by default, because array position DELETES a field, a sort in `render` and three `min_by_key` calls in `next`, where a slug list adds a field, a permutation rule and a lookup. The supporting measurement: `steps_from_markdown` (`src/next.rs:560`) already derives the order from the table index, so one substrate treats position as order today. (2) THE REORDER OF 15 COMPLETED STEPS. A contiguity rule does not hold today for two clusters, so the steps at rendered positions 13 to 27 must move. All 15 are `complete` and `select_active_loop` skips terminal phases, so the reorder is inert for `next` and changes only the reading order of the projected document. It falsifies no chronology, because the plan order is already not the build order: `validation-constraints` is `not-started` at position 96, ahead of `ship-v0-0-2`, which is `complete` at 97. The human still owns it, because it changes the published document. (3) THE WIDENING OF `sidecar-status-opening-drift` TO THE 24 SIDECARS THAT KEEP AN ACCURATE STATUS LABEL, which item (g) above left open. `Q-78-statusform` set that step's scope, so the widening is the human's, and the pass recommends it on the ground the ledger's round 3 finding L1 already established, that the DUPLICATION is the defect whether or not the copy currently happens to be right.
+
+TWO STEPS ARE AUTHORED AND BOTH ARE `not-started` AND CONDITIONAL ON THE REVIEW AND THE DECISION. `plan-order-and-umbrella-structure` holds the `order` deletion and the typed umbrella. `step-intent-encoding` holds the two fields, the projections and the cited backfill. Neither blocks the other, and each sidecar states its increments, its acceptance criteria and the human decision it waits on. They are authored rather than deferred because the pass ran, so their content no longer depends on an unrun outcome, which is the condition the "do not author an implementation step whose content depends on the outcome" instruction above sets.
+
+NO DECISION RECEIPT IS OWED BY THIS PASS, AND THE JUDGEMENT IS RECORDED RATHER THAN LEFT IMPLICIT. The `Q-78-<suffix>` convention covers a HUMAN sub-decision that carries no registered `[[question]]`. This pass made no human decision, so a `type:"decision"` receipt with a `chosen` value would assert a settled choice that the human explicitly withheld. What is owed instead is one review round on this pass's output, recorded by the orchestrator, and then a receipt at the point the human decides. A LATENT W4 WEAKNESS BEARS ON THAT RECEIPT AND IS RECORDED AS EVIDENCE RATHER THAN AS A RULING: this item already carries `receipt = "Q-78"` for the ROUTE decision, and W4 joins a decided item to a receipt on the id, so a later flip to `decided` would be satisfied by a receipt that decided something else. The pass recommends `q_id:"Q-78-encoding"` for the eventual decision, so a reader can tell the two apart.
+
+THE ITEM CORRECTS ITSELF ON ONE COUNT. The paragraph above that opens "THE TWO SUB-DECISIONS THIS QUEUE HOLDS NO ENTRY OF ITS OWN FOR" is stale on the count. `docs/metrics/workflow.jsonl` now carries FIVE `Q-78-<suffix>` receipts, not two. The three it does not name are `Q-78-caveatclose`, whose `task` is `step-intent-fold` and which decided how a review loop on that fold closed, and `Q-78-nextwork` and `Q-78-releaseowner`, whose `task` is `ship-v0-0-4` and which decided the order of the next work and the owner of the release. All three are dated 2026-08-18 and none of them decides this question. That paragraph stays as written, because it remains this queue's only pointer to `Q-78-statusdrift` and `Q-78-statusform`, and this sentence supplies the count.
+
+DUTY (h) IS REPRODUCED AND STAYS SEPARATE. `next --source docs/plans/agent-scaffold.plan.toml` reports `workflow-calibration` as the active loop at `awaiting-first-review`, `rounds 0/5`, and offers a reviewer, exactly as recorded. This design does not fix it, does not depend on it, and does not make it harder, because after the `order` deletion `select_active_loop` returns the same step. It keeps its own step and its own human decision, and the pass declines to bundle it."""
 
 [[principle]]
 n = 1
