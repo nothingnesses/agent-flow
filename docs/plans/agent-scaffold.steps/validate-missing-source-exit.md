@@ -22,7 +22,11 @@ THE NARROWER ALTERNATIVE IS REJECTED, and it is recorded so a review round does 
 
 WHAT THIS COSTS AN EXISTING PROJECT, STATED RATHER THAN DISCOVERED. A scaffolded project whose `.agents/checks.toml` passes a path that has since moved flips from green to red on upgrade. That is the intended effect and not a regression: the green was false. The error names the path, so the fix is to correct the path or drop the flag. This is the one place the step knowingly trades against Principle 3, and it trades against it because the alternative is a check that reports success without running.
 
-THIS STEP BLOCKS NOTHING IN THE `Q-78` PASS. Every criterion in `plan-order-array-position`, `step-intent-encoding` and `ledger-order-citation-currency` pins the `<N> steps, <M> questions, valid` line on stdout as well as the exit code, precisely because of this defect, so none of them depends on the fix landing first. It is ordered ahead of them because every OTHER step in the plan still reads a bare exit 0 as proof, and each day the defect stands is another criterion written against a defective oracle (Principle 6, Ground decisions in evidence).
+THIS STEP BLOCKS NOTHING IN THE `Q-78` PASS, AND THE ENUMERATION BEHIND THAT CLAIM COVERS ALL FIVE OF THE PASS'S STEPS. Three of the five pin the `<N> steps, <M> questions, valid` line on stdout as well as the exit code, precisely because of this defect: `plan-order-array-position`, `step-intent-encoding` and `ledger-order-citation-currency`. The fourth is this step. THE FIFTH IS `sidecar-status-opening-drift`, AND ITS CRITERION 8 READS A BARE EXIT 0 ON ONE COMMAND, which is the exact pattern this step exists to remove, inside the pass this step sits in. AN EARLIER FORM OF THIS PARAGRAPH NAMED THREE STEPS AND CONCLUDED ABOUT FIVE, which is a claim stated more generally than what was measured, and that is the pass's own named failure mode.
+
+THE FIFTH STEP STILL DOES NOT DEPEND ON THE FIX, AND THE HUMAN ACCEPTED THE MISMATCH AS RESIDUAL RISK ON 2026-08-21, receipt `type:"decision"` `q_id:"Q-78-residuals"` in `docs/metrics/workflow.jsonl`. THE CONSEQUENCE THE HUMAN WEIGHED: that criterion requires a SECOND command, `validate --source <plan> --workflow`, to exit 0 as well. MEASURED in an empty directory outside the repository, that command exits 1 with `--workflow requested but no plan source resolved`. So an absent source fails the criterion on the `--workflow` arm and nothing wrong can ship.
+
+This step is ordered ahead of them because every OTHER step in the plan still reads a bare exit 0 as proof, and each day the defect stands is another criterion written against a defective oracle (Principle 6, Ground decisions in evidence).
 
 ### Increment 1, `validate-missing-source-exit-inc1`: the exit-code repair
 
@@ -68,6 +72,16 @@ Pass: stderr carries a line ending `no plan at docs/plans/nope.md`, stdout is em
 
 Pass: stderr carries a line ending `no metrics log at docs/metrics/nope.jsonl` and the exit status is 1, run from the repository root where the `--source` path DOES exist, so the failure is attributable to the metrics path alone.
 
+THEN THE USER TYPES THE DEFAULT PATH, AND THAT COMMAND IS GIVEN SEPARATELY BECAUSE IT IS WHAT TYPES `--metrics` AS EXPLICIT. Scaffold into an empty directory outside the repository, create no metrics log, and run:
+
+```
+./target/debug/agent-flow validate --source docs/plans/TEMPLATE.plan.toml --metrics docs/metrics/workflow.jsonl
+```
+
+Pass: stderr carries a line ending `no metrics log at docs/metrics/workflow.jsonl` and the exit status is 1. The path typed here is byte-identical to the DERIVED default, which criterion 5 runs in the same directory and requires to exit 0, so the two commands differ in one thing only: whether the user supplied the flag.
+
+WHY THIS COMMAND EXISTS, AND IT IS THE PREMISE HALF OF THIS STEP'S OWN GROUND. THE PREMISE: explicitness is whether the user SUPPLIED the flag, which the code reads as `args.metrics.is_some()` (`metrics: Option<PathBuf>`, `src/main.rs`). THE CONSEQUENCE: an absent explicit `--metrics` fails and an absent defaulted `--metrics` skips. An implementation that decides explicitness by COMPARING the resolved path against the derived default falsifies the premise while the consequence still holds for every path the other criteria supply. Criterion 4's first command names `docs/metrics/nope.jsonl`, which differs from the default, so it fails there. Criterion 5 supplies no flag at all, so it skips there. That implementation passes criteria 2, 3, 4 and 5 as they stood before this command, and it reports success on the command above, which is the state Principle 5 removes. MEASURED before the change, the command above and criterion 5's command both print `docs/plans/TEMPLATE.plan.toml: 1 steps, 0 questions, valid` and exit 0, so the pair detects the condition rather than merely staying silent.
+
 5. AN ABSENT DEFAULTED `--metrics` STILL SKIPS, WHICH IS THE HALF THAT KEEPS THE CHANGE SAFE. Scaffold into an empty directory outside the repository, do not create a metrics log, then:
 
 ```
@@ -81,7 +95,7 @@ Pass: stdout carries exactly `docs/plans/TEMPLATE.plan.toml: 1 steps, 0 question
 
 7. `--workflow` KEEPS ITS OWN BEHAVIOUR. `validate --source <absent> --workflow` still exits 1, and its stderr still carries `--workflow requested but no plan source resolved`. The new error joins that message rather than replacing it, so the diagnostic that already worked is not lost.
 
-8. EACH BRANCH IS PINNED IN THE SUITE. The integration tests gain one test per branch: an absent explicit `--source`, an absent explicit `--plan`, an absent explicit `--metrics`, and an absent DEFAULTED `--metrics` that still exits 0. Four tests, because four branches, and the fourth is the one that fails if the fix is written too wide. Verify with `grep -c 'fn .*missing_.*_path' tests/`, whose count the outcome records.
+8. EACH BRANCH IS PINNED IN THE SUITE. The integration tests gain one test per branch: an absent explicit `--source`, an absent explicit `--plan`, an absent explicit `--metrics` naming a path that is NOT the default, an absent explicit `--metrics` naming a path that IS byte-identical to the default, and an absent DEFAULTED `--metrics` that still exits 0. FIVE TESTS, because five branches. The fourth and the fifth are a pair over the same path string, and only the flag differs, so together they pin explicitness to `is_some()` rather than to a path comparison. The fifth is also the one that fails if the fix is written too wide. Verify with `grep -c 'fn .*missing_.*_path' tests/`, whose count the outcome records. A criterion that only runs by hand does not survive the increment, which is why the pair lives in the suite as well as in criteria 4 and 5.
 
 9. THE HELP TEXT STATES THE RULE. `./target/debug/agent-flow validate --help` describes, for each of the three flags, that a path the user supplies must exist. `grep -c -F -- 'must exist' <(./target/debug/agent-flow validate --help)` prints at least `3`.
 

@@ -28,7 +28,13 @@ RULE 3. THE TEMPLATE PAIR IS ONE ARTEFACT IN TWO FILES. `pack/pack.toml:39` copi
 
 RULE 4. THE PROSE FIX RESTATES BY SLUG AND NEVER RENUMBERS. A renumbered citation is still a positional citation and it drifts again on the next reorder. Principle 8, Structured data first, project for humans, decides it: the slug is the stable identifier and the position is a projection. Criterion 2 of increment 2 detects a renumbering.
 
-RULE 5. THE ONE LINE COLLISION IS WITH `sidecar-status-opening-drift`, AND NOT WITH THE SIBLING STEP. The opening line of `docs/plans/agent-scaffold.steps/reviewer-reproducible-evidence.md` carries a numbered citation of `code-value-audit-static`, which increment 2 restates by slug, and `sidecar-status-opening-drift` rewrites the leading token of that same line. The two edits touch different parts of one line. Whichever step runs second must leave the other's edit intact. AN EARLIER DRAFT NAMED THE SIBLING HERE AND THAT WAS FALSE, measured: `grep -rln 'reviewer-reproducible-evidence' docs/plans/agent-scaffold.steps/` returns four files and `step-intent-encoding.md` is not one of them.
+RULE 5. THERE ARE TWO LINE COLLISIONS WITH `sidecar-status-opening-drift`, AND NEITHER IS WITH THE SIBLING STEP. Both concern the same sentence, and the second is the one an earlier draft missed.
+
+THE FIRST COLLISION. The opening line of `docs/plans/agent-scaffold.steps/reviewer-reproducible-evidence.md` carries a numbered citation of `code-value-audit-static`, which increment 2 restates by slug, and the drift step's successor re-authors the leading token of that same line. The two edits touch different parts of one line. Whichever step runs second must leave the other's edit intact. That file sits on the drift step's HANDOVER list, so the drift step itself does not open it.
+
+THE SECOND COLLISION. `docs/plans/agent-scaffold.steps/sidecar-status-opening-drift.md` QUOTES that same opening line verbatim, numbered citation included, in the borderline-case bullet criterion 2 of increment 2 names. That quotation is itself a row in this increment's drift set, and it is the one row a correct implementation leaves alone. See criterion 2 for the decision and its receipt.
+
+AN EARLIER DRAFT NAMED THE SIBLING HERE AND THAT WAS FALSE, measured: `grep -rln 'reviewer-reproducible-evidence' docs/plans/agent-scaffold.steps/` returns four files and `step-intent-encoding.md` is not one of them.
 
 THE INCREMENTS ARE DECLARED IN THE PLAN TOML as `[[step.increment]]` entries with their risk classes, so a round record joins to them structurally rather than by a lexical prefix (Principle 8, Structured data first). The classes are stated at authoring time because the plan's convention is that the declared class IS the loop-open classification, which `validation-constraints` follows for its own unbuilt increments. EACH CLASS STATES ITS GROUND, in the shape `test-tmpdir-repo-assumption.md` uses, because a class sets the required clean-round count and a class asserted without a ground is the defect this pass polices elsewhere (Principle 6, Ground decisions in evidence).
 
@@ -178,7 +184,31 @@ THIS CRITERION IS THE ONE THAT CATCHES THE MEASURED DEFECT. Against an implement
 
 5. THE THREE ARMS ARE PINNED IN THE SUITE, NOT ONLY IN A SCRATCH DIRECTORY. `src/next.rs` gains three unit tests, named `the_in_progress_arm_takes_the_first_declared_step`, `the_ready_to_plan_arm_takes_the_first_declared_step` and `the_blocked_arm_takes_the_first_declared_step`. Each builds at least TWO candidate steps through `test_step`, named `zzz-first` and `aaa-second` as in criterion 4, and asserts the FIRST. A test with one candidate proves nothing, because first-match and last-match agree on a one-element slice, and every `select_active_loop` test in the file today has exactly one candidate per arm.
 
-TWO COMMANDS, BECAUSE THE NAME COUNT ALONE IS NOT AN ORACLE. `grep -c 'fn the_.*_arm_takes_the_first_declared_step' src/next.rs` prints `3`, and `grep -c 'zzz-first' src/next.rs` prints `3` or more. MEASURED, three correctly named no-op stub functions satisfy the first command on their own, so the second is what ties the names to the two-candidate shape the criterion requires.
+THE GROUND SPLITS INTO A PREMISE AND A CONSEQUENCE, AND THE CRITERION RUNS AGAINST BOTH HALVES. THE PREMISE: each of the three tests builds at least two candidates, names them `zzz-first` and `aaa-second`, and asserts the FIRST. THE CONSEQUENCE: three functions with those names exist in `src/next.rs` and the file names both candidates. A grep set can only reach the consequence, so a RED measurement carries the premise.
+
+THREE COMMANDS, BECAUSE THE NAME COUNT ALONE IS NOT AN ORACLE. Each is given once.
+
+```
+grep -c 'fn the_.*_arm_takes_the_first_declared_step' src/next.rs
+```
+
+```
+grep -c 'zzz-first' src/next.rs
+```
+
+```
+grep -c 'aaa-second' src/next.rs
+```
+
+Pass: the first prints `3`, and the second and third each print `3` or more. MEASURED, three correctly named no-op stub functions satisfy the first command on their own, which is why the other two exist.
+
+THEN THE RED MEASUREMENT, WHICH IS PART OF THE CRITERION AND NOT A NOTE. Flip all three arms of `select_active_loop` from a first-match `find` to a last-match `rev().find`, run `cargo test --bin agent-flow arm_takes_the_first_declared_step`, and record the output in the outcome. Pass: ALL THREE named tests FAIL under the flip. Restore the arms and show the three green again. This is the shape criterion 3 already uses for the block move.
+
+WHY THE RED MEASUREMENT IS THE HALF THAT CARRIES THE PREMISE, MEASURED ON TWO CONSTRUCTIONS THAT WERE BUILT, COMPILED AND RUN.
+
+- THREE CORRECTLY NAMED ONE-CANDIDATE TESTS, each holding `zzz-first` alone. The first two commands print `3` and `6`, so both PASS. The third prints `0` and exits 1, so it FAILS. Under the flip the three tests print `test result: ok. 3 passed; 0 failed`, so the RED measurement also FAILS. By the criterion's own sentence that suite proves nothing, and it is exactly the state the paragraph above says the file is in today.
+- THREE TWO-CANDIDATE TESTS THAT NAME BOTH SLUGS AND ASSERT ONLY `!step.is_empty()`. All three commands print `3`, so the whole grep set PASSES. Under the flip the three tests print `test result: ok. 3 passed; 0 failed`, so the RED measurement FAILS. This is the construction the third grep alone cannot reach.
+- THE CONTROL, the implementation this criterion specifies. All three commands print `3` or more, and under the flip the run prints `test result: FAILED. 0 passed; 3 failed`, with `left: "aaa-second"` against `right: "zzz-first"` on each.
 
 6. THE RENDER GOLDEN INVERTS THE PAIR IN BOTH PLACES. In `src/plan/testdata/render-fixture.md`, the `zeta` Roadmap row precedes the `epsilon` row, AND the `zeta` Step Details body precedes the `epsilon` body. Both halves are checked, because the Roadmap and the Step Details take their order from the same slice and a regression that fixes one and not the other is not reachable, so a criterion that reads one half reads half the guard.
 
@@ -246,13 +276,26 @@ awk -F'\t' '{n=$3; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' pre.txt | sort -u
 awk '/^slug = /{s=$3} /^order = /{sub(/order = /,""); print $0"\t"s}' docs/plans/agent-scaffold.plan.toml | tr -d '"' | sort -n > order-to-slug.tsv
 ```
 
-A ROW IS A PATH, A LINE NUMBER AND A CITATION, and the line number is load-carrying, because criterion 2 reads the line back at that number. An earlier form of this command dropped the line number, so three citations on one line collapsed into one row and the worklist was short by the surplus. Capture the line count of every file the worklist names as well, so criterion 2 can prove those line numbers still resolve:
+A ROW IS A PATH, A LINE NUMBER AND A CITATION, and the line number is load-carrying, because criterion 2 reads the line back at that number. An earlier form of this command dropped the line number, so three citations on one line collapsed into one row and the worklist was short by the surplus.
+
+THE WORKLIST COUNTS LINES AND NOT SITES, AND THAT IS AN ACCEPTED RESIDUAL RATHER THAN A REPAIR. `sort -u` still collapses the SAME citation repeated on one line, which the line number cannot separate. The sibling step drops `sort -u` for exactly this case (`ledger-order-citation-currency.md`, criterion 1). Reproduce the surplus and record it in the outcome, so a line that needs several edits and shows up once is not a surprise:
+
+```
+raw=$(grep -rnoE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.steps/ docs/plans/agent-scaffold.success-criteria.md docs/plans/agent-scaffold.documentation-protocol.md docs/plans/agent-scaffold._status-narrative.md | awk -F: '{print $1"\t"$2"\t"$3}' | awk -F'\t' '{n=$3; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' | wc -l)
+printf 'raw_sites=%d worklist_rows=%d surplus=%d\n' "$raw" "$(wc -l < drift.txt)" "$((raw - $(wc -l < drift.txt)))"
+```
+
+The human accepted this on 2026-08-21 as residual risk, receipt `type:"decision"` `q_id:"Q-78-residuals"` in `docs/metrics/workflow.jsonl`. THE CONSEQUENCE THE HUMAN WEIGHED: nothing wrong can ship, because P1 computes `actual` over the WHOLE line, so a line with one of several occurrences removed still reports `NUMBER SURVIVES`. MEASURED by construction, removing one of two repeated occurrences from a line leaves P1 printing that line as `NUMBER SURVIVES`, and only removing both moves it to `restated`. The cost accepted is a worklist that understates the work by the surplus the command above prints.
+
+Capture the line count of every file the worklist names as well, so criterion 2 can prove those line numbers still resolve:
 
 ```
 cut -f1 pre.txt | sort -u | while IFS= read -r f; do printf '%s\t%s\n' "$(wc -l < "$f")" "$f"; done > lines-pre.txt
 ```
 
-The outcome records `wc -l` of `pre.txt`, `exempt.txt` and `drift.txt`, and the resolution table's own `wc -l`. MEASURED on the tree this file was spliced into, the three hold 49, 21 and 28 rows. THOSE FIGURES ARE DATED AND THE OUTCOME MUST NOT COPY THEM. They move as the plan grows and as any sidecar is edited, which is why the criterion pins the commands.
+The outcome records `wc -l` of `pre.txt`, `exempt.txt` and `drift.txt`, and the resolution table's own `wc -l`. NO ROW COUNT IS WRITTEN INTO THIS CRITERION, AND THE REASON IS MEASURED RATHER THAN CAUTIONARY. This search set includes `docs/plans/agent-scaffold.steps/`, which holds this sidecar and its four siblings, so every edit to a `Q-78` sidecar moves the figures this criterion would state. An earlier form stated three counts as a measurement on "the tree this file was spliced into", and the very fix pass that edited these criteria moved all three of them. A specification whose search set contains itself cannot state a snapshot that survives its own edit. The relation that holds is `pre` equals `exempt` plus `drift` plus the rows reading 84, and criterion 2's pass condition is stated against `wc -l < drift.txt` rather than against any number.
+
+NO CONCRETE VALUE-AND-SLUG PAIR IS WRITTEN INTO THIS SIDECAR AS AN EXAMPLE, WHICH IS A RULE AND NOT A PREFERENCE. A concrete pair here is itself a numbered citation inside this increment's own search set, so writing one adds a row to the worklist that the increment then owes. This is the rule `ledger-order-citation-currency.md` states for itself, adopted here for the same reason.
 
 2. EVERY DRIFTING CITATION IS RESTATED BY THE SLUG ITS `order` VALUE RESOLVES TO, AND THE NUMBER GOES. Run this under bash from the repository root. It uses no process substitution, so it needs no `bash -c` wrapper, but it does need bash rather than nu.
 
@@ -280,7 +323,17 @@ done < "$DRIFT"
 printf 'rows=%d restated=%d wrong_slug=%d number_survives=%d\n' "$rows" "$restated" "$wrong" "$residual"
 ```
 
-Pass: `rows` equals `wc -l < drift.txt`, `wrong_slug=0`, and `restated` plus the count of `NUMBER SURVIVES` rows equals `rows`. Every `NUMBER SURVIVES` row is then enumerated in the outcome as a verbatim quotation of another file's text whose restatement would falsify the quotation, and a row left without that is the increment not finished. MEASURED on the tree this file was spliced into no such row exists, so a correct implementation prints `number_survives=0`. The oracle is the printed line and not an exit status.
+Pass: `rows` equals `wc -l < drift.txt`, `wrong_slug=0`, and `restated` plus the count of `NUMBER SURVIVES` rows equals `rows`. Every `NUMBER SURVIVES` row is then enumerated in the outcome as a verbatim quotation of another file's text whose restatement would falsify the quotation, and a row left without that is the increment not finished. The oracle is the printed line and not an exit status.
+
+EXACTLY ONE SUCH ROW EXISTS TODAY AND IT IS NAMED, so a correct implementation prints `number_survives=1` rather than `0`. THE ROW is the borderline-case bullet in `docs/plans/agent-scaffold.steps/sidecar-status-opening-drift.md` that quotes the opening line of `docs/plans/agent-scaffold.steps/reviewer-reproducible-evidence.md`. Find it with:
+
+```
+grep -n 'opens "Next (built first' docs/plans/agent-scaffold.steps/sidecar-status-opening-drift.md
+```
+
+NO LINE NUMBER IS WRITTEN HERE, because that file sits inside this increment's own search set and every edit to it moves the number. The quotation carries the numbered citation, and the sentence after it states in its own words that the number is a citation by `order` value, so a restatement strands that sentence as well as falsifying the quotation.
+
+THE HUMAN DECIDED THIS ON 2026-08-21, over a restatement by slug, receipt `type:"decision"` `q_id:"Q-78-quotationrow"` in `docs/metrics/workflow.jsonl`. THE REASONING ACCEPTED, cited by name: Principle 8, Structured data first, project for humans. A restatement makes the quotation stop matching the text it quotes, and `render` publishes both files. `reviewer-reproducible-evidence` also sits on the drift step's HANDOVER list, so its opening gets re-authored by the successor step in any case. AN EARLIER FORM OF THIS PARAGRAPH SAID NO SUCH ROW EXISTS and directed a correct implementation to print `number_survives=0`. That sentence was false on every tree this file has sat on, and its guidance clause pointed the implementer at the destructive route.
 
 Then prove the line numbers still resolved, and that the edit disturbed no exempt citation and created no new drifting one:
 
@@ -292,15 +345,15 @@ printf 'post=%d exempt_lost=%d\n' "$(wc -l < post.txt)" "$(comm -13 post.txt exe
 
 Pass: the `diff` prints nothing and exits 0, `exempt_lost=0`, and `post` equals `wc -l < exempt.txt` plus the enumerated `NUMBER SURVIVES` rows. A tree with the sidecar directory missing gives `post=0` and `exempt_lost` equal to the whole exemption list, so an absent input cannot pass.
 
-MEASURED, five trees against P1, each built on a copy of the sidecar tree:
+MEASURED, five trees against P1, each built on a copy of the sidecar tree. EVERY ROW BELOW IS A RELATION AND NOT A ROW COUNT. Write `R` for `wc -l < drift.txt` and `E` for the count of enumerated quotation rows, which is one today. AN EARLIER FORM KEYED ALL FIVE TREES TO A LITERAL ROW COUNT, and the fix pass that edited these criteria moved that count while it edited them, because this increment's search set holds this sidecar and its four siblings.
 
-- The untouched tree prints `rows=28 restated=0 wrong_slug=0 number_survives=28`.
-- A correct restatement prints `rows=28 restated=28 wrong_slug=0 number_survives=0`.
-- An implementation that DELETES every drifting citation, replacing it with the bare words `that step`, prints `rows=28 restated=16 wrong_slug=12 number_survives=0`.
-- An implementation that RENUMBERS every drifting citation prints `rows=28 restated=0 wrong_slug=0 number_survives=28`.
-- An implementation that restates every one by a REAL BUT WRONG slug prints `rows=28 restated=16 wrong_slug=12 number_survives=0`.
+- The untouched tree prints `rows=R restated=0 wrong_slug=0 number_survives=R`.
+- A CORRECT IMPLEMENTATION prints `rows=R restated=R-E wrong_slug=0 number_survives=E`.
+- An implementation that DELETES every drifting citation, replacing it with the bare words `that step`, prints `number_survives=0` and `wrong_slug` GREATER THAN ZERO. A deleted number leaves the line carrying no `order` citation, so it clears the first test, and every line that did not already name the step then carries no slug.
+- An implementation that RENUMBERS every drifting citation prints `restated=0 wrong_slug=0 number_survives=R`, which is the untouched tree's own line. That is why the pass condition reads `restated` rather than a before-and-after diff.
+- An implementation that restates every one by a REAL BUT WRONG slug prints `number_survives=0` and `wrong_slug` GREATER THAN ZERO.
 
-THE DELETION IS WHY THIS CRITERION READS THE LINE BACK. An earlier form counted rows before and after and required the drifting rows to be gone, and the deletion satisfied every clause of it while destroying 19 cross-references across 12 sidecars, all of which `render` ships into every reader's copy of the plan. THE WRONG-SLUG CASE IS WHY THE RESOLUTION TABLE EXISTS: it is the "or worse, to the wrong step" half of this increment's own risk ground, and nothing that reads only the shape of the line can reach it.
+THE DELETION IS WHY THIS CRITERION READS THE LINE BACK. An earlier form counted rows before and after and required the drifting rows to be gone, and the deletion satisfied every clause of it while it destroyed cross-references across the sidecar tree, all of which `render` ships into every reader's copy of the plan. NO COUNT OF DESTROYED REFERENCES IS WRITTEN HERE, for the reason criterion 1 records. THE WRONG-SLUG CASE IS WHY THE RESOLUTION TABLE EXISTS: it is the "or worse, to the wrong step" half of this increment's own risk ground, and nothing that reads only the shape of the line can reach it.
 
 3. THE BARE-WORD WORKLIST IS DISPOSED OF ROW BY ROW. The two searches above find no citation that names `order` without a number, and three such sentences become false. Run:
 
@@ -324,7 +377,7 @@ This is NOT a pass-or-fail oracle and its empty output is not the target, becaus
 grep -noE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.ledger.md | awk -F: '{n=$NF; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' | wc -l
 ```
 
-MEASURED, that prints `96`. THAT FIGURE IS DATED AND THE OUTCOME MUST NOT COPY IT. The specification measured 96 against a 101-step tree. The same command against the tree this sidecar was spliced into prints 116, and the count rises with every appended review round, so the outcome records what the command prints on the day. THE SPLIT IS DECIDED, so the specification's alternative branch is spent: `ledger-order-citation-currency` owns the ledger and it does not return to this increment. Do not run the increment with the ledger half in.
+NO COUNT IS WRITTEN HERE AND THE OUTCOME RECORDS WHAT THE COMMAND PRINTS ON THE DAY. The count rises with every appended review round, and the ledger paragraph that motivated the split states the figure the human weighed, dated. THE SPLIT IS DECIDED, so the specification's alternative branch is spent: `ledger-order-citation-currency` owns the ledger and it does not return to this increment. Do not run the increment with the ledger half in.
 
 7. THE SUITE, THE VALIDATORS AND ASCII. As increment 1 criteria 9 and 10. None of the three reads sidecar prose, so they are the no-regression check rather than the oracle. Criterion 2 is the oracle.
 
