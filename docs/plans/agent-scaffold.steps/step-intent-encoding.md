@@ -87,7 +87,24 @@ END { if (instep && s != "" && !p) print "missing problem: " s }
 ```
 
 Empty output is the oracle and it carries no literal count. It walks each `[[step]]` block separately and names the offending slug, so a step declaring `problem` twice cannot mask a step declaring none, which a pair of counts would permit. MEASURED before the backfill it prints one row per step, so it detects the condition rather than merely staying silent. `cargo run -- validate --source docs/plans/agent-scaffold.plan.toml` after increment 3's flip is the eventual oracle; this criterion is the one this increment carries for its own product.
-3. THE MIGRATION RECORD COVERS EVERY STEP AND EVERY FIELD, AND ITS CITATIONS RESOLVE. The set of `slug` plus `field` pairs in `docs/plans/step-intent-encoding.backfill-sources.tsv` equals the set of `[[step]].slug` values crossed with `{problem, approach}`, checked by a command with no literal count in it. The `[[check]]` command from rule 3 exits 0 over every row, and its `transcribed` rows additionally prove that the cited object contains the sentence. THE OUTCOME REPORTS THE `transcribed` AND `paraphrased` COUNTS PER BATCH, so a run that marks everything `paraphrased` and fires the stronger check zero times is visible in the record rather than silently compliant.
+3. THE MIGRATION RECORD COVERS EVERY STEP AND EVERY FIELD, IN BOTH DIRECTIONS. Two commands, each printing nothing and neither carrying a literal count. The first reports a step the record misses:
+
+```
+awk '
+FILENAME ~ /backfill-sources/ { if (FNR > 1) { split($0, r, "\t"); have[r[1] SUBSEP r[2]] = 1 } next }
+/^\[\[(step|question)\]\]/ { instep = ($0 ~ /step/); next }
+/^slug = / && instep { slug = $3; gsub(/"/, "", slug); if (!((slug SUBSEP "problem") in have)) print "missing:", slug, "problem"; if (!((slug SUBSEP "approach") in have)) print "missing:", slug, "approach" }
+' docs/plans/step-intent-encoding.backfill-sources.tsv docs/plans/agent-scaffold.plan.toml
+```
+
+The second reports a record row that names no step:
+
+```
+awk '{ split($0, r, "\t"); if (FNR > 1 && r[1] != "") print r[1] }' docs/plans/step-intent-encoding.backfill-sources.tsv | sort -u |
+while read -r slug; do grep -q "^slug = \"$slug\"\$" docs/plans/agent-scaffold.plan.toml || echo "unknown slug: $slug"; done
+```
+
+Both were run against a three-row fixture before this criterion was written, and each reported exactly the seeded defect, so each detects its condition rather than merely staying silent. THE CITATIONS ALSO RESOLVE: the `[[check]]` command from rule 3 exits 0 over every row, and its `transcribed` rows additionally prove that the cited object contains the sentence. THE OUTCOME REPORTS THE `transcribed` AND `paraphrased` COUNTS PER BATCH, so a run that marks everything `paraphrased` and fires the stronger check zero times is visible in the record rather than silently compliant.
 4. The batch boundaries are recorded in the ledger before the first batch runs, no batch exceeds 20 steps, and each batch carries its own review round.
 5. Each statement is one sentence and states its claim in the direction the source states it. A reviewer checks this by reading the source, and no check can prove it. This criterion is a reading, which is why criterion 4 bounds how much of it any one round has to carry.
 6. `cargo run -- render --check --strict docs/plans/agent-scaffold.plan.toml` passes, and the sidecar text that a transcribed sentence came from is MOVED rather than duplicated.
