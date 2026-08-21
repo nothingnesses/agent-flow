@@ -1,0 +1,138 @@
+### `ledger-order-citation-currency`: resolve the ledger's numbered step citations by slug, so they survive the `order` deletion (`Q-78-ledgersplit`, decided 2026-08-21)
+
+THIS STEP MUST NOT BUILD UNTIL THE `Q-78` REVIEW LOOP CONVERGES, and it is BLOCKED BY `plan-order-array-position`. The direction is decided: the human chose on 2026-08-21 to give the ledger's citations their own step, over keeping them inside `plan-order-array-position` increment 2 and over leaving them alone, receipt `type:"decision"` `q_id:"Q-78-ledgersplit"` in `docs/metrics/workflow.jsonl`.
+
+THE PROBLEM. `docs/plans/agent-scaffold.ledger.md` cites steps by their `order` value, and `plan-order-array-position` deletes that field, so every such citation loses the thing it names.
+
+THE APPROACH. Resolve each citation to the slug it always meant, additively, so the historical text survives and a reader can follow the citation without the deleted field.
+
+WHY THIS IS NOT `plan-order-array-position` INCREMENT 2. That increment's oracle is an enumerated diff against the rendered plan: it edits sidecars, regenerates `docs/plans/agent-scaffold.md`, and checks that the projection's diff equals the sum of the sidecar diffs. `render` never inlines the ledger, because the ledger is not a sidecar and does not appear in `[meta.sidecars]`. So that oracle cannot reach a single ledger row, and an increment that carried the ledger would claim a coverage it cannot deliver. This step therefore carries its own oracle, built for an artefact `render` does not touch (Principle 6, Ground decisions in evidence).
+
+THE POPULATION, MEASURED. Run:
+
+```
+grep -noE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.ledger.md | wc -l
+grep -noE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.ledger.md | awk -F: '{n=$NF; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' | wc -l
+```
+
+MEASURED on the tree this step was authored against, the two print `135` and `116`. Both numbers rise with every appended review round, so the outcome records what the commands print on the day and no criterion below states either figure as a pass condition.
+
+THE DRIFT ARITHMETIC IS THE SIBLING STEP'S. The `order` values 84 and 91 are absent from the range, so a citation at or below 83 reads correctly as an array position and needs no edit, a citation from 85 to 90 drifts by one, and a citation at or above 92 drifts by two. MEASURED, 12 of the 135 sit at or below 83.
+
+TWO CITED VALUES NAME NO STEP AT ALL, and they are named so the implementer does not hunt for them. 84 and 91 are the absent values, and the ledger cites both. MEASURED, 7 hits read `84` and 5 read `91`. Each is either a citation of a RENDERED POSITION rather than an `order` value, or a false positive of the search, or a mistake in the original entry. Criterion 4 disposes of each one by hand and forbids a guess.
+
+THE RESOLUTION IS PROVABLE, WHICH IS WHAT MAKES THIS SAFE. The ledger spans 2026-07-09 to today and the plan grew throughout, so a reader might expect a citation's referent to depend on its date. It does not. The plan grew by APPENDING, and an `order` value, once assigned, kept its slug. MEASURED at four dated commits against today, every order-to-slug row at or above 85 that existed then agrees with today:
+
+```
+today=$(awk '/^slug = /{s=$3} /^order = /{sub(/order = /,""); if ($0+0>=85) print $0"\t"s}' docs/plans/agent-scaffold.plan.toml | sort -n)
+for d in 2026-07-29 2026-08-05 2026-08-12 2026-08-19; do
+  c=$(git log --until="$d" --format=%H -1)
+  git show "$c:docs/plans/agent-scaffold.plan.toml" | awk '/^slug = /{s=$3} /^order = /{sub(/order = /,""); if ($0+0>=85) print $0"\t"s}' | sort -n > then.txt
+  printf '%s then=%d agreeing=%d\n' "$d" "$(wc -l < then.txt)" "$(comm -12 <(sort then.txt) <(echo "$today" | sort) | wc -l)"
+done
+```
+
+MEASURED, the four dates print `then=8 agreeing=8`, `then=11 agreeing=11`, `then=12 agreeing=12` and `then=18 agreeing=18`. So the mapping is append-only and a resolution taken from today's plan is the resolution the entry meant when it was written. Without that measurement the whole step would be a guess, which is why it is stated before the criteria rather than inside one.
+
+### The form: ANNOTATE, and do not rewrite
+
+EACH CITATION KEEPS ITS NUMBER AND GAINS THE SLUG, in the form `step 92 (\`prompt-drift-guard\`)`. The number stays and the slug is added after it.
+
+WHY ADDITIVE RATHER THAN SUBSTITUTIVE. The ledger is the project's evidence base: every convergence count, every round total and every "do not re-raise without new evidence" ruling reads it, and escalation records quote its narrative. An additive edit leaves every historical string intact, so an external quotation still matches by substring, and a substitutive edit does not. `AGENTS.md` also treats the ledger as a record rather than a projection, so nothing can re-derive it once its text is changed. Principle 6, Ground decisions in evidence, decides it: the evidence must survive the correction that makes it readable.
+
+THE TWO REJECTED ALTERNATIVES, RECORDED SO A REVIEW ROUND DOES NOT RE-RAISE THEM.
+
+- RESTATE BY SLUG AND DELETE THE NUMBER, which is what `plan-order-array-position` RULE 4 prescribes for the sidecars. It is right there, because a sidecar is a live claim and the rendered plan re-derives it. It is wrong here, because the ledger holds frozen round narratives and deleting the number rewrites quoted evidence. The two artefacts differ in kind, and this is the ground for treating them differently.
+- LEAVE THE CITATIONS AND ADD ONE DATED CONVENTION NOTE at the head of the ledger. Cheapest by far, and the human rejected it on 2026-08-21. It also fails the reader it is meant to serve: a note at line 1 does not help someone who lands on line 341 from a search.
+
+THIS FORM IS A PLANNER JUDGEMENT AND NOT A HUMAN DECISION. The human decided that the ledger becomes its own step. The annotate-versus-restate choice was left to be decided on its own evidence, and the measurement above is that evidence. A reviewer who disagrees must argue against the measurement rather than against the preference.
+
+### Increment 1, `ledger-order-citation-currency-inc1`: annotate every drifting citation
+
+RISK CLASS `risky` (two consecutive clean review rounds). THE GROUND: the increment edits 116 sites in the artefact that every convergence count, every round total and every re-raise ruling in this project reads, and `next` echoes part of the same file verbatim to an agent as an instruction rather than as a report. A wrong slug on a round narrative misattributes a finding to the wrong step, and no validator reads the ledger, so nothing but this increment's own oracle catches it. The edit is additive and one revert undoes it, and the file ships to no scaffolded project, which argues the other way. The volume and the evidence-base role decide it, and the classification matches `plan-order-array-position` increment 2, which is `risky` for a smaller sweep of the same kind.
+
+WHAT IT DOES. For every citation at or above 85, append the resolved slug in parentheses after the number. Change nothing else in the file. Do not reflow, do not reword the surrounding sentence and do not correct any other claim, however tempting, because a second kind of edit in this diff makes the oracle below unreadable.
+
+THE RESOLUTION TABLE IS BUILT FROM A NAMED COMMIT, NOT FROM THE WORKING TREE, so the increment is reproducible after `plan-order-array-position` deletes the field (Principle 7, Reproducible). Record the commit in the outcome and build the table with:
+
+```
+git show <pre-deletion-commit>:docs/plans/agent-scaffold.plan.toml | awk '/^slug = /{s=$3} /^order = /{sub(/order = /,""); print $0"\t"s}' | sort -n > order-to-slug.tsv
+```
+
+ACCEPTANCE, EACH EXECUTABLE.
+
+1. THE WORKLIST IS CAPTURED BEFORE THE EDIT. Write the drifting set to a scratch file OUTSIDE the repository:
+
+```
+grep -noE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.ledger.md | awk -F: '{n=$NF; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' | sort -u > pre-ledger.txt
+```
+
+The outcome records `wc -l` of that file and the resolution table's own `wc -l`. MEASURED before the edit, the drifting set holds 116 rows. That number moves with every appended round, which is why the criterion pins the command.
+
+2. EVERY DRIFTING CITATION IS ANNOTATED, AND EVERY SLUG NAMES A REAL STEP. Run this under bash, from the repository root:
+
+```
+#!/usr/bin/env bash
+# L1: annotation coverage, and slug resolution against the pre-deletion table.
+LEDGER="$1"; TABLE="$2"; PLAN="$3"
+drifting=0; annotated=0; bare=0; unknown=0; wrong=0
+while IFS= read -r hit; do
+  n=${hit##* }
+  [ "$n" -ge 85 ] || continue
+  drifting=$((drifting+1))
+done < <(grep -oE '\b(order|step) [0-9]+\b' "$LEDGER")
+while IFS= read -r hit; do
+  n=$(printf '%s' "$hit" | sed -E 's/^(order|step) ([0-9]+) .*/\2/')
+  [ "$n" -ge 85 ] || continue
+  annotated=$((annotated+1))
+  slug=$(printf '%s' "$hit" | sed -E 's/.*\(`([a-z0-9-]+)`\)$/\1/')
+  grep -q "^slug = \"$slug\"\$" "$PLAN" || { echo "UNKNOWN SLUG: $hit"; unknown=$((unknown+1)); }
+  want=$(awk -F'\t' -v n="$n" '$1==n {print $2}' "$TABLE" | tr -d '"')
+  if [ -n "$want" ] && [ "$want" != "$slug" ]; then
+    echo "WRONG SLUG: $hit wants $want"; wrong=$((wrong+1))
+  fi
+done < <(grep -oE '\b(order|step) [0-9]+ \(`[a-z0-9-]+`\)' "$LEDGER")
+bare=$((drifting - annotated))
+printf 'drifting=%d annotated=%d bare=%d unknown_slug=%d wrong_slug=%d\n' \
+  "$drifting" "$annotated" "$bare" "$unknown" "$wrong"
+```
+
+Pass: the printed line reads `unknown_slug=0 wrong_slug=0`, AND `bare` equals the count of rows criterion 4 disposes of as non-citations. The oracle is the printed line and not the exit status, which is 0 in every case. An absent ledger prints `drifting=0 annotated=0 bare=0`, which fails against criterion 1's recorded worklist size, so an absent input cannot pass.
+
+MEASURED BEFORE THE EDIT the script prints `drifting=116 annotated=1 bare=115 unknown_slug=0 wrong_slug=0`, so it detects the condition rather than merely staying silent. The single pre-existing annotation is real and is left as it is.
+
+3. RED THEN GREEN ON ONE ANNOTATION. Take one annotated citation, strip its parenthesised slug, run criterion 2's script and record that `bare` rises by one and `annotated` falls by one. Restore it and show the pair back at their passing values. The red output lands as evidence in the outcome.
+
+4. THE TWO ABSENT VALUES ARE DISPOSED OF ROW BY ROW, AND NO ROW IS GUESSED. The `order` values 84 and 91 name no step, so no annotation is possible for a hit on either. List them with:
+
+```
+grep -noE '\b(order|step) (84|91)\b' docs/plans/agent-scaffold.ledger.md
+```
+
+MEASURED, that prints 12 rows. THE OBLIGATION: the outcome records, for every row it prints, which of three things the row is, and no row may be left without one. Either the row cites a RENDERED POSITION rather than an `order` value, in which case it is annotated with the slug at that position and the outcome says so; or the row is a false positive of the search, in which case the outcome quotes enough of the sentence to show it; or the row is an error in the original entry, in which case it is annotated `(no such step)` and left otherwise untouched. A row disposed of by a guess at the intended step is this criterion failed.
+
+5. NOTHING BUT ANNOTATIONS CHANGED. The diff of the ledger adds text and removes none:
+
+```
+git diff --numstat -- docs/plans/agent-scaffold.ledger.md
+```
+
+Pass: the deleted-line count and the added-line count are EQUAL, because the file does not hard-wrap prose and every edited line is rewritten in place. Then confirm no wording changed outside the annotations:
+
+```
+git diff -U0 -- docs/plans/agent-scaffold.ledger.md | grep -E '^[+-]' | grep -v '^[+-][+-]' | wc -l
+```
+
+The outcome records that number and the reviewer reads the diff. A hunk that changes a sentence rather than adding a parenthesis is this criterion failed.
+
+6. THE CHANGED PATH SET. `git diff --name-only` lists exactly `docs/plans/agent-scaffold.ledger.md`. No file under `src/`, `tests/`, `pack/` or `docs/plans/agent-scaffold.steps/` appears. `docs/plans/agent-scaffold.plan.toml` does not appear, because no `status` flips in this increment. `docs/plans/agent-scaffold.md` does not appear, and its absence is the point: `render` never inlines the ledger, which is why this step exists.
+
+7. `next` STILL READS ITS RESUME BLOCK. `./target/debug/agent-flow next --source docs/plans/agent-scaffold.plan.toml` exits 0 and prints a `RESUME STATE (verbatim from the ledger)` section. The section's text changes where an annotation lands inside it, which is expected, and the outcome records the diff of that section. This criterion exists because `next` hands that text to an agent as an instruction, so a truncation there is a real defect that no other criterion here reaches.
+
+8. THE SUITE, THE VALIDATORS AND ASCII. `cargo test` passes. `cargo clippy --all-targets -- -D warnings` exits 0. `./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --metrics docs/metrics/workflow.jsonl` prints its `<N> steps, <M> questions, valid` line on stdout and exits 0. `./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --workflow` prints `workflow invariants hold` and exits 0. `LC_ALL=C grep -cP '[^\t\x20-\x7e]' docs/plans/agent-scaffold.ledger.md` prints `0`. The `valid` line is pinned as well as the exit code, because `validate` exits 0 on a source that is not there until `validate-missing-source-exit` lands.
+
+### NOT IN SCOPE, NAMED SO IT IS NOT DRAWN IN
+
+- THE SIDECAR AND FRONT-SIDECAR CITATIONS. `plan-order-array-position` increment 2 owns them, and it restates them by slug rather than annotating them, for the reason recorded above.
+- EVERY OTHER STALE CLAIM IN THE LEDGER. The file holds superseded transient blocks by design, each marked as frozen history. This increment corrects citations and corrects nothing else.
+- THE LEDGER'S EVENTUAL DELETION. `AGENTS.md` says a ledger is deleted when its task closes. This plan's ledger outlived several tasks, which is its own question and not this step's.
