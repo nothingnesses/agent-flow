@@ -1,4 +1,4 @@
-### `plan-order-array-position`: delete the `order` field so the `[[step]]` array position is the plan order (`Q-78-arrayorder`, decided 2026-08-21)
+### `plan-order-array-position`: delete the `order` field so the `[[step]]` array position is the plan order (`Q-78-arrayorder`, decided 2026-08-21, pending the review)
 
 THIS STEP MUST NOT BUILD UNTIL THE `Q-78` REVIEW LOOP CONVERGES. The direction is decided: the human chose array position over an explicit slug list on 2026-08-21, receipt `type:"decision"` `q_id:"Q-78-arrayorder"` in `docs/metrics/workflow.jsonl`. What is not finished is the review the human directed on 2026-08-19, which runs on the design pass and on this sidecar before either enters the plan as the plan's answer. The design pass is `docs/plans/step-intent-encoding.explorations/Q-78.md`, which carries the reasoning, the rejected alternatives and the measurement appendix. This sidecar states what the step builds, in what order, and what each increment proves. It states no count of the plan's steps, because such a count expires and the plan's own standing cure, recorded in the ledger against orchestrator defect (12), is to carry the selecting command instead.
 
@@ -28,7 +28,7 @@ RULE 3. THE TEMPLATE PAIR IS ONE ARTEFACT IN TWO FILES. `pack/pack.toml:39` copi
 
 RULE 4. THE PROSE FIX RESTATES BY SLUG AND NEVER RENUMBERS. A renumbered citation is still a positional citation and it drifts again on the next reorder. Principle 8, Structured data first, project for humans, decides it: the slug is the stable identifier and the position is a projection. Criterion 2 of increment 2 detects a renumbering.
 
-RULE 5. THE STEP DETAILS SIDECAR OF THIS STEP AND OF ITS SIBLING BOTH CITE `reviewer-reproducible-evidence`. That sidecar's opening carries `step 86`, which is a citation by `order` value, and `sidecar-status-opening-drift` edits the same line for its leading token. The two edits touch different parts of one line. Whichever step runs second must leave the other's edit intact.
+RULE 5. THE ONE LINE COLLISION IS WITH `sidecar-status-opening-drift`, AND NOT WITH THE SIBLING STEP. The opening line of `docs/plans/agent-scaffold.steps/reviewer-reproducible-evidence.md` carries a numbered citation of `code-value-audit-static`, which increment 2 restates by slug, and `sidecar-status-opening-drift` rewrites the leading token of that same line. The two edits touch different parts of one line. Whichever step runs second must leave the other's edit intact. AN EARLIER DRAFT NAMED THE SIBLING HERE AND THAT WAS FALSE, measured: `grep -rln 'reviewer-reproducible-evidence' docs/plans/agent-scaffold.steps/` returns four files and `step-intent-encoding.md` is not one of them.
 
 THE INCREMENTS ARE DECLARED IN THE PLAN TOML as `[[step.increment]]` entries with their risk classes, so a round record joins to them structurally rather than by a lexical prefix (Principle 8, Structured data first). The classes are stated at authoring time because the plan's convention is that the declared class IS the loop-open classification, which `validation-constraints` follows for its own unbuilt increments. EACH CLASS STATES ITS GROUND, in the shape `test-tmpdir-repo-assumption.md` uses, because a class sets the required clean-round count and a class asserted without a ground is the defect this pass polices elsewhere (Principle 6, Ground decisions in evidence).
 
@@ -83,7 +83,23 @@ THE SUPPORTING MEASUREMENT. `steps_from_markdown` (`src/next.rs:560`) already de
 
 ACCEPTANCE, EACH EXECUTABLE.
 
-1. THE FIELD IS GONE, EVERYWHERE. Run the declaration-site command above. It prints nothing and exits 1. `grep -c '^order = ' docs/plans/agent-scaffold.plan.toml` prints `0` and exits 1. `grep -rn '\.order' src/ --include='*.rs'` prints nothing and exits 1. Note that `grep -c` exits 1 on a zero count, so none of the three can join an `&&` chain. MEASURED BEFORE THE CHANGE, the three print 12 rows, `105` and 5 rows, so each detects the condition rather than merely staying silent. The middle figure is the plan's step count on the day and it rises as the plan grows, so the outcome records what the command prints rather than this number.
+1. THE FIELD IS GONE FROM THE SCHEMA, SO A PLAN WRITTEN BEFORE THE DELETION FAILS TO PARSE. THIS IS THE EXECUTABLE FORM OF THE INCREMENT'S OWN RISK GROUND, and it is the only command in the increment that separates a deletion from a retention. Write this one-step plan to a scratch directory OUTSIDE the repository:
+
+```
+[meta]
+title = "A plan written before the deletion"
+primary = "toml"
+
+[[step]]
+slug = "a"
+title = "A step"
+status = "not-started"
+order = 5
+```
+
+Then run `./target/debug/agent-flow validate --source old.plan.toml`. Pass: stderr carries ``unknown field `order` ``, stdout carries no `valid` line at all, and the exit status is 1. MEASURED BEFORE THE CHANGE, the same file prints `old.plan.toml: 1 steps, 0 questions, valid` on stdout and exits 0, and a plan carrying an unknown field on today's schema prints ``unknown field `bogus`, expected one of `slug`, `title`, `status`, `order`, `blocked_by`, `folds`, `provenance`, `increment`, `waiver` `` with exit 1, so the message shape is measured rather than predicted. WHY THIS COMMAND EXISTS: an implementation that keeps `order: u64` on `Step` under `#[serde(default)]`, and deletes every read, every site, the sort and the three `min_by_key` calls, passes every other criterion in this increment, and the risk ground above is false of it. That implementation was built and every other criterion was run against it.
+
+Then the field is gone from every SITE. Run the declaration-site command above. Pass: it prints nothing ON STDOUT. Its exit status is NOT part of the pass condition, because a `for` loop over an empty command substitution exits 0. `grep -c '^order = ' docs/plans/agent-scaffold.plan.toml` prints `0` and exits 1, and `grep -rn '\.order' src/ --include='*.rs'` prints nothing and exits 1; for those two the exit status does hold. `grep -c 'slug, status, order' src/plan/render.rs` prints `0` and exits 1, which is the stale Roadmap doc comment this increment corrects. Note that `grep -c` exits 1 on a zero count, so none of them can join an `&&` chain. MEASURED BEFORE THE CHANGE, the four print 12 rows, `105`, 5 rows and `1`, so each detects the condition rather than merely staying silent. The `105` is the plan's step count on the day and it rises as the plan grows, so the outcome records what the command prints rather than this number.
 
 2. THE BYTE-EXACT ORACLE. `./target/debug/agent-flow render --check docs/plans/agent-scaffold.plan.toml --strict` prints exactly `docs/plans/agent-scaffold.plan.toml: up to date` on stdout, prints nothing on stderr and exits 0. `docs/plans/agent-scaffold.md` is NOT hand-edited and NOT re-rendered, and `git diff --name-only` over the increment does not list it. That second half is the criterion, because a re-render of a changed projection also prints `up to date`.
 
@@ -95,7 +111,7 @@ error: docs/plans/agent-scaffold.md differs from a fresh render (a hand-edit, or
 
 on stderr with exit 1 and nothing on stdout. The line number and the two quoted cells move as the plan grows. What the outcome records is that the message names `rename-to-agent-flow` as the expected row.
 
-4. ALL THREE SELECTION ARMS TAKE THE FIRST DECLARED STEP. Build these three plans in a scratch directory OUTSIDE the repository. Each declares `zzz-first` before `aaa-second`, so declaration order and slug order disagree and a slug sort cannot pass by accident.
+4. ALL THREE SELECTION ARMS TAKE THE FIRST DECLARED STEP. Build these three plans in a scratch directory OUTSIDE the repository. Each declares `zzz-first` before `aaa-second`, and gives `zzz-first` the title `Zulu, declared first` against `Alpha, declared second`. So declaration order disagrees with slug order AND with title order, and neither a slug sort nor a title sort can pass by accident. THE TITLES CARRY THAT SECOND HALF, which is why they read as they do: an earlier draft titled them `Declared first, sorts last` and `Declared second, sorts first`, and `printf 'Declared first, sorts last\nDeclared second, sorts first\n' | sort` returns them in declaration order, so the fixture cannot separate a title sort from a correct implementation and rule 1 claimed a coverage the fixture did not have.
 
 `arm1.plan.toml`, which exercises the in-progress arm:
 
@@ -106,12 +122,12 @@ primary = "toml"
 
 [[step]]
 slug = "zzz-first"
-title = "Declared first, sorts last"
+title = "Zulu, declared first"
 status = "in-progress"
 
 [[step]]
 slug = "aaa-second"
-title = "Declared second, sorts first"
+title = "Alpha, declared second"
 status = "in-progress"
 ```
 
@@ -131,13 +147,13 @@ status = "deferred"
 
 [[step]]
 slug = "zzz-first"
-title = "Declared first, sorts last"
+title = "Zulu, declared first"
 status = "not-started"
 blocked_by = ["mmm-blocker"]
 
 [[step]]
 slug = "aaa-second"
-title = "Declared second, sorts first"
+title = "Alpha, declared second"
 status = "not-started"
 blocked_by = ["mmm-blocker"]
 ```
@@ -160,15 +176,19 @@ The three commands are given once each rather than as one command with a substit
 
 THIS CRITERION IS THE ONE THAT CATCHES THE MEASURED DEFECT. Against an implementation whose arms 2 and 3 take the LAST match, `cargo test` reports 0 failures, `cargo clippy --all-targets -- -D warnings` exits 0, `render --check --strict` exits 0 and `next` against the live plan prints `workflow-calibration`, which is the correct answer. Arms 2 and 3 then print `"step": "aaa-second"` here. The full measurement is WRONG IMPLEMENTATION A-2 in the specification rebuild.
 
-5. THE THREE ARMS ARE PINNED IN THE SUITE, NOT ONLY IN A SCRATCH DIRECTORY. `src/next.rs` gains three unit tests, named `the_in_progress_arm_takes_the_first_declared_step`, `the_ready_to_plan_arm_takes_the_first_declared_step` and `the_blocked_arm_takes_the_first_declared_step`. Each builds at least TWO candidate steps through `test_step` and asserts the FIRST. A test with one candidate proves nothing, because first-match and last-match agree on a one-element slice, and every `select_active_loop` test in the file today has exactly one candidate per arm. Verify the count with `grep -c 'fn the_.*_arm_takes_the_first_declared_step' src/next.rs`, which prints `3`.
+5. THE THREE ARMS ARE PINNED IN THE SUITE, NOT ONLY IN A SCRATCH DIRECTORY. `src/next.rs` gains three unit tests, named `the_in_progress_arm_takes_the_first_declared_step`, `the_ready_to_plan_arm_takes_the_first_declared_step` and `the_blocked_arm_takes_the_first_declared_step`. Each builds at least TWO candidate steps through `test_step`, named `zzz-first` and `aaa-second` as in criterion 4, and asserts the FIRST. A test with one candidate proves nothing, because first-match and last-match agree on a one-element slice, and every `select_active_loop` test in the file today has exactly one candidate per arm.
+
+TWO COMMANDS, BECAUSE THE NAME COUNT ALONE IS NOT AN ORACLE. `grep -c 'fn the_.*_arm_takes_the_first_declared_step' src/next.rs` prints `3`, and `grep -c 'zzz-first' src/next.rs` prints `3` or more. MEASURED, three correctly named no-op stub functions satisfy the first command on their own, so the second is what ties the names to the two-candidate shape the criterion requires.
 
 6. THE RENDER GOLDEN INVERTS THE PAIR IN BOTH PLACES. In `src/plan/testdata/render-fixture.md`, the `zeta` Roadmap row precedes the `epsilon` row, AND the `zeta` Step Details body precedes the `epsilon` body. Both halves are checked, because the Roadmap and the Step Details take their order from the same slice and a regression that fixes one and not the other is not reachable, so a criterion that reads one half reads half the guard.
 
 ```
-awk '/^\| `zeta`/{z=NR} /^\| `epsilon`/{e=NR} /^### `zeta`/{zd=NR} /^### `epsilon`/{ed=NR} END{printf "roadmap zeta<epsilon=%d details zeta<epsilon=%d\n", (z<e), (zd<ed)}' src/plan/testdata/render-fixture.md
+awk '/^\| `zeta`/{z=NR} /^\| `epsilon`/{e=NR} /^### `zeta`/{zd=NR} /^### `epsilon`/{ed=NR} END{printf "zeta=%d epsilon=%d roadmap zeta<epsilon=%d details zeta<epsilon=%d\n", (z>0 && zd>0), (e>0 && ed>0), (z>0 && e>0 && z<e), (zd>0 && ed>0 && zd<ed)}' src/plan/testdata/render-fixture.md
 ```
 
-Pass: stdout is exactly `roadmap zeta<epsilon=1 details zeta<epsilon=1`. MEASURED BEFORE THE CHANGE it prints `roadmap zeta<epsilon=0 details zeta<epsilon=0`. An absent file prints `roadmap zeta<epsilon=1 details zeta<epsilon=1` from two zero comparisons, so pair this criterion with `test -s src/plan/testdata/render-fixture.md`, which must exit 0.
+Pass: stdout is exactly `zeta=1 epsilon=1 roadmap zeta<epsilon=1 details zeta<epsilon=1`. All four fields are the criterion, because the first two assert that the pair is still IN the fixture and the last two assert its order.
+
+MEASURED BEFORE THE CHANGE it prints `zeta=1 epsilon=1 roadmap zeta<epsilon=0 details zeta<epsilon=0`. MEASURED on a fixture with every `zeta` line deleted it prints `zeta=0 epsilon=1 roadmap zeta<epsilon=0 details zeta<epsilon=0`. MEASURED on an empty file it prints all zeros. AN EARLIER FORM OF THIS COMMAND OMITTED THE FIRST TWO FIELDS, and on the deleted-pair fixture it printed `roadmap zeta<epsilon=1 details zeta<epsilon=1`, which is byte-identical to what a correct regeneration prints, so a fixture that had stopped exercising the tie-break passed. That form also stated that an absent file prints two ones; measured, `awk` on an absent file writes a fatal error to stderr and prints nothing, and an empty file prints two zeros, so the `test -s` pairing addressed a case that cannot arise and is dropped.
 
 7. THE TEMPLATE PAIR STAYS BYTE-IDENTICAL. `cmp pack/plan-template.plan.toml docs/plans/TEMPLATE.plan.toml` prints nothing and exits 0. MEASURED, an implementation that updates the pack source and leaves the committed copy stale gives `cargo test` 0 failures, `render --check --strict` exit 0 and `validate` exit 0, and this `cmp` prints `pack/plan-template.plan.toml docs/plans/TEMPLATE.plan.toml differ: byte 1511, line 37` with exit 1.
 
@@ -211,28 +231,76 @@ The drift lives in both spellings. Do not search one.
 
 ACCEPTANCE, EACH EXECUTABLE.
 
-1. THE WORKLIST AND THE EXEMPTION LIST ARE CAPTURED BEFORE THE EDIT. Run these two commands against the pre-increment tree and write both outputs to a scratch file OUTSIDE the repository, or to a file the increment deletes before it commits.
+1. THE WORKLIST, THE EXEMPTION LIST AND THE RESOLUTION TABLE ARE CAPTURED BEFORE THE EDIT. Run these against the pre-increment tree and write every output to a scratch directory OUTSIDE the repository, or to files the increment deletes before it commits.
 
 ```
-grep -rnoE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.steps/ docs/plans/agent-scaffold.success-criteria.md docs/plans/agent-scaffold.documentation-protocol.md docs/plans/agent-scaffold._status-narrative.md | awk -F: '{print $1"\t"$3}' | sort -u > pre.txt
+grep -rnoE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.steps/ docs/plans/agent-scaffold.success-criteria.md docs/plans/agent-scaffold.documentation-protocol.md docs/plans/agent-scaffold._status-narrative.md | awk -F: '{print $1"\t"$2"\t"$3}' | sort -u > pre.txt
 ```
 
 ```
-awk -F'\t' '{n=$2; gsub(/[^0-9]/,"",n); if (n+0 <= 83) print}' pre.txt | sort -u > exempt.txt
+awk -F'\t' '{n=$3; gsub(/[^0-9]/,"",n); if (n+0 <= 83) print}' pre.txt | sort -u > exempt.txt
+awk -F'\t' '{n=$3; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' pre.txt | sort -u > drift.txt
 ```
 
-The outcome records `wc -l` of both. MEASURED on the tree this file was written against, `pre.txt` holds 34 rows and `exempt.txt` holds 17. Those two numbers move as the plan grows and as the two withheld sidecars return, which is why the criterion pins the commands and not the numbers.
-
-2. EVERY DRIFTING CITATION IS RESTATED BY SLUG, AND NONE IS RENUMBERED. After the edit, run:
-
 ```
-grep -rnoE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.steps/ docs/plans/agent-scaffold.success-criteria.md docs/plans/agent-scaffold.documentation-protocol.md docs/plans/agent-scaffold._status-narrative.md | awk -F: '{print $1"\t"$3}' | sort -u > post.txt
-printf 'pre=%d exempt=%d post=%d unexplained=%d\n' "$(wc -l < pre.txt)" "$(wc -l < exempt.txt)" "$(wc -l < post.txt)" "$(comm -13 exempt.txt post.txt | wc -l)"
+awk '/^slug = /{s=$3} /^order = /{sub(/order = /,""); print $0"\t"s}' docs/plans/agent-scaffold.plan.toml | tr -d '"' | sort -n > order-to-slug.tsv
 ```
 
-Pass: the printed line ends `unexplained=0`, AND `post` equals `exempt`, AND `pre` is greater than `exempt`. The oracle is the printed line and not an exit status. A tree with the sidecar directory missing prints `post=0`, which fails `post == exempt`, so an absent input cannot pass.
+A ROW IS A PATH, A LINE NUMBER AND A CITATION, and the line number is load-carrying, because criterion 2 reads the line back at that number. An earlier form of this command dropped the line number, so three citations on one line collapsed into one row and the worklist was short by the surplus. Capture the line count of every file the worklist names as well, so criterion 2 can prove those line numbers still resolve:
 
-MEASURED, an implementation that RENUMBERS every citation at or above 85 rather than restating it by slug prints `unexplained=17`, and `comm -13 exempt.txt post.txt` lists all 17. A correct restatement prints `pre=34 exempt=17 post=17 unexplained=0`.
+```
+cut -f1 pre.txt | sort -u | while IFS= read -r f; do printf '%s\t%s\n' "$(wc -l < "$f")" "$f"; done > lines-pre.txt
+```
+
+The outcome records `wc -l` of `pre.txt`, `exempt.txt` and `drift.txt`, and the resolution table's own `wc -l`. MEASURED on the tree this file was spliced into, the three hold 49, 21 and 28 rows. THOSE FIGURES ARE DATED AND THE OUTCOME MUST NOT COPY THEM. They move as the plan grows and as any sidecar is edited, which is why the criterion pins the commands.
+
+2. EVERY DRIFTING CITATION IS RESTATED BY THE SLUG ITS `order` VALUE RESOLVES TO, AND THE NUMBER GOES. Run this under bash from the repository root. It uses no process substitution, so it needs no `bash -c` wrapper, but it does need bash rather than nu.
+
+```
+#!/usr/bin/env bash
+# P1: the number goes, the right slug arrives, and the exempt citations on the same line survive.
+PRE="$1"; DRIFT="$2"; TABLE="$3"
+rows=0; restated=0; wrong=0; residual=0
+while IFS=$'\t' read -r path lineno cit; do
+  rows=$((rows+1))
+  n=${cit##* }
+  want=$(awk -F'\t' -v n="$n" '$1==n {print $2}' "$TABLE")
+  line=$(sed -n "${lineno}p" "$path")
+  expect=$(awk -F'\t' -v p="$path" -v l="$lineno" '$1==p && $2==l {n=$3; gsub(/[^0-9]/,"",n); if (n+0 <= 83) print $3}' "$PRE" | sort)
+  actual=$(printf '%s' "$line" | grep -oE '\b(order|step) [0-9]+\b' | sort)
+  if [ "$expect" != "$actual" ]; then
+    echo "NUMBER SURVIVES $path:$lineno (was $cit)"; residual=$((residual+1)); continue
+  fi
+  if printf '%s' "$line" | grep -qF -- "\`$want\`"; then
+    restated=$((restated+1))
+  else
+    echo "WRONG SLUG $path:$lineno (was $cit) wants \`$want\`"; wrong=$((wrong+1))
+  fi
+done < "$DRIFT"
+printf 'rows=%d restated=%d wrong_slug=%d number_survives=%d\n' "$rows" "$restated" "$wrong" "$residual"
+```
+
+Pass: `rows` equals `wc -l < drift.txt`, `wrong_slug=0`, and `restated` plus the count of `NUMBER SURVIVES` rows equals `rows`. Every `NUMBER SURVIVES` row is then enumerated in the outcome as a verbatim quotation of another file's text whose restatement would falsify the quotation, and a row left without that is the increment not finished. MEASURED on the tree this file was spliced into no such row exists, so a correct implementation prints `number_survives=0`. The oracle is the printed line and not an exit status.
+
+Then prove the line numbers still resolved, and that the edit disturbed no exempt citation and created no new drifting one:
+
+```
+cut -f1 pre.txt | sort -u | while IFS= read -r f; do printf '%s\t%s\n' "$(wc -l < "$f")" "$f"; done | diff - lines-pre.txt
+grep -rnoE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.steps/ docs/plans/agent-scaffold.success-criteria.md docs/plans/agent-scaffold.documentation-protocol.md docs/plans/agent-scaffold._status-narrative.md | awk -F: '{print $1"\t"$2"\t"$3}' | sort -u > post.txt
+printf 'post=%d exempt_lost=%d\n' "$(wc -l < post.txt)" "$(comm -13 post.txt exempt.txt | wc -l)"
+```
+
+Pass: the `diff` prints nothing and exits 0, `exempt_lost=0`, and `post` equals `wc -l < exempt.txt` plus the enumerated `NUMBER SURVIVES` rows. A tree with the sidecar directory missing gives `post=0` and `exempt_lost` equal to the whole exemption list, so an absent input cannot pass.
+
+MEASURED, five trees against P1, each built on a copy of the sidecar tree:
+
+- The untouched tree prints `rows=28 restated=0 wrong_slug=0 number_survives=28`.
+- A correct restatement prints `rows=28 restated=28 wrong_slug=0 number_survives=0`.
+- An implementation that DELETES every drifting citation, replacing it with the bare words `that step`, prints `rows=28 restated=16 wrong_slug=12 number_survives=0`.
+- An implementation that RENUMBERS every drifting citation prints `rows=28 restated=0 wrong_slug=0 number_survives=28`.
+- An implementation that restates every one by a REAL BUT WRONG slug prints `rows=28 restated=16 wrong_slug=12 number_survives=0`.
+
+THE DELETION IS WHY THIS CRITERION READS THE LINE BACK. An earlier form counted rows before and after and required the drifting rows to be gone, and the deletion satisfied every clause of it while destroying 19 cross-references across 12 sidecars, all of which `render` ships into every reader's copy of the plan. THE WRONG-SLUG CASE IS WHY THE RESOLUTION TABLE EXISTS: it is the "or worse, to the wrong step" half of this increment's own risk ground, and nothing that reads only the shape of the line can reach it.
 
 3. THE BARE-WORD WORKLIST IS DISPOSED OF ROW BY ROW. The two searches above find no citation that names `order` without a number, and three such sentences become false. Run:
 
@@ -263,6 +331,7 @@ MEASURED, that prints `96`. THAT FIGURE IS DATED AND THE OUTCOME MUST NOT COPY I
 ### NOT IN SCOPE, NAMED SO IT IS NOT DRAWN IN
 
 - THE LEDGER'S `order` CITATIONS. `ledger-order-citation-currency` owns them, decided by the human on 2026-08-21 with receipt `q_id:"Q-78-ledgersplit"`. The ground is that `render` never inlines `docs/plans/agent-scaffold.ledger.md`, so increment 2's enumerated-diff oracle cannot reach them.
+- `structured-skeleton.md:7`, THE ONE STEP SIDECAR THAT NAMES `order` AS A SCHEMA FIELD RATHER THAN CITING A STEP BY IT. Find it with `grep -rl '`order`' docs/plans/agent-scaffold.steps/`, which returns five files, four of them the `Q-78` sidecars. The fifth is `structured-skeleton.md`, whose increment 1 bullet records the schema that increment DELIVERED and names its merge commit `27bd647`. THE GROUND FOR EXCLUDING IT IS THAT IT IS FROZEN HISTORY, the same ground the ledger's own frozen blocks carry: the increment did ship `order`, a reader can resolve that schema at the named commit, and correcting the sentence would rewrite an outcome record to describe a state it never delivered. It is named here so its absence is a choice, because it escapes all three of increment 2's instruments: criterion 2's regex needs a number after the word and there is none, criterion 3's search runs over the five front sidecars only, and criterion 5's changed-path set would reject a fix that reached it.
 - TYPED UMBRELLA MEMBERSHIP. It left this step on 2026-08-21 and `Q-79` owns it. Nothing here waits on it, and nothing here is made harder by it.
 - THE GENERATED STEP HEADING. `render` could own the `### <slug>: <title>` heading and every sidecar could lose its own. The design pass declines to schedule it, because it rewrites every sidecar and collides with the backfill in `step-intent-encoding`.
 - THE SIDECAR STATUS OPENINGS. `sidecar-status-opening-drift` carries them, widened by the human on 2026-08-21 to every sidecar that opens with a status token.

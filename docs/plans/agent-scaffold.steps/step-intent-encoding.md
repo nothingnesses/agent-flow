@@ -30,7 +30,7 @@ RULE 1, THE ENCODING. Two fields on `[[step]]`. `problem` states in one sentence
 
 RULE 2, THE BOUND IS ENCODED AND NOT LEFT AS A CONVENTION. `deny_unknown_fields` constrains keys and not values, so nothing today stops a ten-line `"""` block. `validate` therefore rejects a newline in either field, as a pure function over the deserialised string. That catches all three ways a newline arrives: a `"""` block, a `'''` block, and a `\n` escape inside a basic string. Principle 5, Make illegal states unrepresentable, decides it.
 
-RULE 3, AN EMPTY VALUE IS ABSENCE SPELLED DIFFERENTLY, AND `validate` REJECTS IT. A required `String` accepts `""`, so a whole-plan backfill of empty strings survives the flip and satisfies any per-field presence check. `validate` therefore rejects a value that is empty after a trim. This is arithmetic over data the tool already loads and it asserts nothing about truth, so it sits on the admissible side of the line the design draws. MEASURED: with this rule, an empty backfill over the whole plan prints 202 problems and exits 1.
+RULE 3, AN EMPTY VALUE IS ABSENCE SPELLED DIFFERENTLY, AND `validate` REJECTS IT. A required `String` accepts `""`, so a whole-plan backfill of empty strings survives the flip and satisfies any per-field presence check. `validate` therefore rejects a value that is empty after a trim. This is arithmetic over data the tool already loads and it asserts nothing about truth, so it sits on the admissible side of the line the design draws. MEASURED: with this rule, an empty backfill over the whole plan prints TWO PROBLEMS PER STEP and exits 1, which is `2 x $(grep -c '^\[\[step\]\]' docs/plans/agent-scaffold.plan.toml)` lines, 210 on the tree this sidecar was spliced into. The count is stated as the rule times the command rather than as a figure, because the figure expires the next time the plan gains a step.
 
 RULE 4, TRANSCRIBE BEFORE YOU PARAPHRASE. The problem and the approach for most steps are already written down, in the sidecar prose, by the person who had the context. The first source for each step is its own sidecar, and git history supplies the citation for that text rather than a fresh derivation of it.
 
@@ -43,6 +43,8 @@ THE CITED PATH IS THE PATH AT THAT COMMIT, NOT TODAY'S PATH. This is measured. T
 RULE 6, THE SOURCE IS THE EARLIEST COMMIT THAT HOLDS THE SENTENCE. Any commit that contains a sentence satisfies a naive citation check, and the latest such commit is usually the tip, which proves nothing. `git log --oneline --reverse -S'<sentence>' -- .` returns the earliest across renames. MEASURED, the earliest commit for two live sidecar sentences is `5e7ee58` (2026-07-14) and `c44d8d1` (2026-07-28), and at `5e7ee58` the only file that holds the sentence is `docs/plans/agent-scaffold.md`, because the sidecar tree did not exist until `0fadd90` on 2026-07-19.
 
 RULE 7, THE PARAPHRASE ROUTE IS AN OPT-OUT, SO IT IS BOUNDED AND MEASURED. A faithful paraphrase is trimmed or joined, so a substring test fails on correct work, and the substring test is therefore not applied to a `paraphrased` field. Each batch reports its transcribed and paraphrased counts, so an implementation that marks every field `paraphrased` is visible rather than silently compliant.
+
+WHAT A `paraphrased` ROW'S `source` COLUMN PROVES, STATED SO IT IS NOT READ AS MORE. On such a row R2 runs the resolution check and the relevance check and nothing else, so the column proves that the blob exists and that its path belongs to this step. It does not tie the recorded sentence to that blob in any way, and no command can. The bound is the count in criterion 5 and the reading in criterion 8, and criterion 8's side-by-side worklist covers the paraphrased rows' sources for exactly that reason.
 
 RULE 8, THE SENTENCE MOVES OUT OF THE SIDECAR. After a step is backfilled, its sidecar must not contain its own `problem` or `approach` string verbatim. This is a pure string comparison inside one plan, it needs no git resolution, and it catches the transcribe-then-forget-to-delete case. It is the guard duty (g) owes.
 
@@ -134,7 +136,13 @@ ACCEPTANCE, EACH EXECUTABLE.
 
 1. THE SCHEMA CARRIES BOTH FIELDS AND THEY ARE OPTIONAL. `./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --metrics docs/metrics/workflow.jsonl` prints a `docs/plans/agent-scaffold.plan.toml: <N> steps, 80 questions, valid` line and exits 0, against a plan where no step carries either field. `grep -c 'problem: Option<String>' src/plan/source.rs` prints `1`.
 
-2. THE SINGLE-LINE RULE FIRES ON ALL THREE WAYS A NEWLINE ARRIVES. Build three one-step plans in a scratch directory outside the repository, one with a `"""` block value, one with a `'''` block value, and one with a `\n` escape inside a basic string. Run `./target/debug/agent-flow validate --source <file>` on each. Each prints, on stderr, a line that ends `step \`a\` field \`problem\` must be a single line`, and exits 1. MEASURED on the `"""` form and the `\n` form, the stderr line is exactly `<file>: step \`a\` field \`problem\` must be a single line`, with nothing on stdout.
+2. THE SINGLE-LINE RULE FIRES ON ALL THREE WAYS A NEWLINE ARRIVES. Build three one-step plans in a scratch directory outside the repository, one with a `"""` block value, one with a `'''` block value, and one with a `\n` escape inside a basic string. Run `./target/debug/agent-flow validate --source <file>` on each. Each exits 1 and prints, on stderr, a line that ends with this string, and nothing on stdout:
+
+```
+step `a` field `problem` must be a single line
+```
+
+MEASURED on the `"""` form and the `\n` form, the whole stderr line is that string with `<file>: ` in front of it. The string is given inside a fenced block rather than inline, because an inline form needs a backslash before each backtick, CommonMark keeps the backslash as a literal character, and `render` inlines this sidecar verbatim, so a reviewer comparing real output against the printed string sees a mismatch that the implementation did not cause.
 
 3. THE EMPTY-VALUE RULE FIRES PER FIELD. A one-step plan with `problem = ""` and `approach = ""` gives two stderr lines and exit 1:
 
@@ -143,7 +151,7 @@ ACCEPTANCE, EACH EXECUTABLE.
 <file>: step `a` field `approach` is empty
 ```
 
-MEASURED at whole-plan scale, `problem = ""` and `approach = ""` across every step of the live plan gives exactly 202 stderr lines for 101 steps and exit 1. This is the criterion that closes the measured trap where an empty backfill survives the required-field flip.
+MEASURED at whole-plan scale, `problem = ""` and `approach = ""` across every step of the live plan gives exit 1 and exactly `2 x $(grep -c '^\[\[step\]\]' docs/plans/agent-scaffold.plan.toml)` stderr lines, which is 210 on the tree this sidecar was spliced into and was 202 when the rule was first measured against a 101-step tree. The outcome records both the step count and the line count, so the pair reproduces on the day rather than expiring. This is the criterion that closes the measured trap where an empty backfill survives the required-field flip.
 
 4. THE RENDER FORMAT IS PINNED IN THE GOLDEN. `src/plan/testdata/render-fixture.plan.toml` gains both fields on `alpha`, both on `gamma`, and BOTH on `eta` with only one of them filled, and the golden is regenerated. Then:
 
@@ -158,20 +166,32 @@ THIS CRITERION IS THE ONE THAT CATCHES THE `title` TRAP. MEASURED against an imp
 5. THE LEADING-HEADING RULE IS PINNED BY A SIDECAR WITH PROSE ABOVE ITS HEADING. `src/plan/testdata/render-fixture.steps/gamma.md` takes a lead-in sentence above its own `###` heading, the `core-assets` shape. Then:
 
 ```
-grep -A3 -F -- 'A lead-in sentence above the step' src/plan/testdata/render-fixture.md
+grep -A5 -F -- 'A lead-in sentence above the step' src/plan/testdata/render-fixture.md
 ```
 
-Pass: the four printed lines are the lead-in sentence, a blank line, the `### \`gamma\`: The third step` heading, and a blank line, AND the two lines after those carry `- problem:` and `- approach:`. The failing implementation to look for emits the intent after line 1, which puts it above the heading.
+Pass: SIX printed lines, in this order: the lead-in sentence, a blank line, the `gamma` heading line, a blank line, a `- problem:` line, a `- approach:` line. THE LAST TWO ARE THE CRITERION, because they are what proves the intent went BELOW the heading, and `-A3` stops before them. The failing implementation to look for emits the intent after line 1, which puts it above the heading. This command also pins the rendered PAIR ORDER, which nothing else in the increment does; criterion 7 pins the order in the context map and the two surfaces are separate.
 
-6. THE PARTIAL CASE IS PINNED. `eta` carries `problem` and no `approach` in the fixture. `grep -A2 -F -- '### \`eta\`: The deferred step' src/plan/testdata/render-fixture.md` prints the heading, a blank line and a `- problem:` line, and no `- approach:` line follows it.
+6. THE PARTIAL CASE IS PINNED. `eta` carries `problem` and no `approach` in the fixture. Run:
 
-7. `next` CARRIES BOTH SLOTS. Build a one-step in-progress plan with both fields in a scratch directory, then:
+```
+grep -A3 -F -- '### `eta`: The deferred step' src/plan/testdata/render-fixture.md
+```
+
+Pass: FOUR printed lines, the heading, a blank line, a `- problem:` line and a BLANK line. THE FOURTH LINE IS THE CRITERION. MEASURED with `-A3` against an implementation that emits `- approach: (not recorded)` for `eta`, the fourth line is that `- approach:` line instead; measured with `-A2` against the same pair, the two outputs are byte-identical, so the negative half of this criterion is untestable at `-A2`.
+
+7. `next` CARRIES BOTH SLOTS, ON BOTH SURFACES. Build a one-step in-progress plan with both fields in a scratch directory, then run both of these. They are two commands because `next`'s human form is what an agent reads as an instruction, which is the increment's own risk ground, and the JSON form is what a tool reads.
 
 ```
 ./target/debug/agent-flow next --source intent.plan.toml --json | grep -oE '"(problem|approach)": "[^"]*"'
 ```
 
-Pass: two lines on stdout, `"approach": "<value>"` then `"problem": "<value>"`, in that order, exit 0. MEASURED, the human-readable form prints the six context slots in the order `approach`, `isolation_tier`, `ledger`, `problem`, `review_findings`, `triage_findings`.
+Pass: two lines on stdout, `"approach": "<value>"` then `"problem": "<value>"`, in that order, exit 0.
+
+```
+./target/debug/agent-flow next --source intent.plan.toml | grep -cE '^    (problem|approach): '
+```
+
+Pass: stdout is exactly `2`. MEASURED BEFORE THE CHANGE, against the live plan, that command prints `0` and exits 1, while the same command widened to all six slot names prints `4`. An implementation that adds both fields to `StepInfo` and to the JSON while leaving `build_context` untouched satisfies the JSON command and fails this one, and nothing else in the increment reaches the human surface.
 
 8. `status --step` ANSWERS FOUR WAYS, AND EACH IS RUN. Four commands, given once each.
 
@@ -198,6 +218,14 @@ Pass: stdout is exactly the three lines `step: a`, `problem: (not recorded)`, `a
 ```
 
 Pass: stderr carries `error: the argument '--step <STEP>' cannot be used with '--resume'` and the exit status is 2.
+
+AND NO EIGHTH SUBCOMMAND WAS ADDED, which is the executable form of the Principle 2 ruling above rather than a promise in prose:
+
+```
+./target/debug/agent-flow --help | sed -n '/^Commands:/,/^$/p' | grep -cE '^  [a-z]+ '
+```
+
+Pass: stdout is exactly `8`, the seven subcommands plus `help`. MEASURED BEFORE THE CHANGE it prints `8` as well, so this is a bar rather than a detector, the same shape increment 3 criterion 10 uses; an implementation that answers the read query with a new subcommand as well as the flag prints `9`.
 
 9. THE LIVE PROJECTION IS UNCHANGED. `./target/debug/agent-flow render --check docs/plans/agent-scaffold.plan.toml --strict` prints `docs/plans/agent-scaffold.plan.toml: up to date` and exits 0, and `git diff --name-only` over the increment does NOT list `docs/plans/agent-scaffold.md` or `docs/plans/agent-scaffold.plan.toml`. Both halves are the criterion.
 
@@ -242,13 +270,25 @@ and one row per field, in the same four columns. Batch a creates the file with i
 
 ACCEPTANCE, EACH EXECUTABLE. The three check scripts below are stated once here and run once per batch. Save each to a scratch file OUTSIDE the repository. Run them under bash. Each uses process substitution, so it cannot run in nu.
 
-1. THE BATCH IS EXACTLY ITS DECLARED SLUG LIST. `git diff --name-only` over the increment lists exactly: `docs/plans/agent-scaffold.plan.toml`, `docs/plans/step-intent-encoding.migration.tsv`, `docs/plans/agent-scaffold.md`, and one file under `docs/plans/agent-scaffold.steps/` for each step in the batch that had a sentence to move. No step outside the batch gains a field, which is checked by comparing the pre and post outputs of:
+1. THE BATCH IS EXACTLY ITS DECLARED SLUG LIST. `git diff --name-only` over the increment lists exactly: `docs/plans/agent-scaffold.plan.toml`, `docs/plans/step-intent-encoding.migration.tsv`, `docs/plans/agent-scaffold.md`, and one file under `docs/plans/agent-scaffold.steps/` for each step in the batch that had a sentence to move.
+
+THE COUNT AND THE IDENTITY ARE TWO SEPARATE CHECKS AND BOTH RUN. The count, over both fields, from the pre-increment tree and again after:
 
 ```
-grep -c '^problem = ' docs/plans/agent-scaffold.plan.toml
+printf 'problem=%d approach=%d\n' "$(grep -c '^problem = ' docs/plans/agent-scaffold.plan.toml)" "$(grep -c '^approach = ' docs/plans/agent-scaffold.plan.toml)"
 ```
 
-Pass: the post count minus the pre count equals the batch size. The outcome records both counts.
+Pass: each post count minus its pre count equals the batch size, and the two counts are equal to each other. The outcome records both pairs. Both fields are counted because a batch that fills `problem` and forgets `approach` satisfies a single-field check.
+
+The identity, which is what makes the criterion's own heading true. Capture the filled slug set before and after and compare it against the batch's declared slug list from increment 1 criterion 10:
+
+```
+sed -n 's/^slug = "\(.*\)"$/\1/p' docs/plans/agent-scaffold.plan.toml | awk -v s="$S" -v b="$B" '{if (int((NR-1)/s)+1 == b) print}' | sort > declared.txt
+awk '/^slug = /{s=$0} /^problem = /{print s}' docs/plans/agent-scaffold.plan.toml | sed -n 's/^slug = "\(.*\)"$/\1/p' | sort > filled-post.txt
+printf 'declared=%d gained=%d outside=%d missing=%d\n' "$(wc -l < declared.txt)" "$(comm -13 filled-pre.txt filled-post.txt | wc -l)" "$(comm -13 declared.txt <(comm -13 filled-pre.txt filled-post.txt) | wc -l)" "$(comm -23 declared.txt <(comm -13 filled-pre.txt filled-post.txt) | wc -l)"
+```
+
+where `B` is the batch number, `S` the batch size, and `filled-pre.txt` is the same `filled-post.txt` command run against the pre-increment tree. Pass: `gained` equals `declared`, `outside=0` and `missing=0`. This uses process substitution, so it runs under bash and not under nu. MEASURED, a count-only check passes on a batch that fills the right NUMBER of steps from the wrong part of the plan, and `outside` is what reports that.
 
 2. THE SIZING SAMPLE RUNS FIRST, IN BATCH a ONLY, AND IT REPORTS THE TWO FIELDS SEPARATELY. Before any field is filled, take the first ten steps of batch a, read each sidecar, and record in the outcome, for `problem` and for `approach` separately, how many of the ten yield a transcribable sentence and how many need a paraphrase. The design's own claim that most steps already state their intent is UNMEASURED, and this sample is the measurement. It is an acceptance criterion rather than a paragraph, because a named remedy that no criterion enforces is a remedy an implementer can skip. The recorded pair is what later batches are read against under criterion 8. One known case is named so the sample is not read as a formality: `file-dropper.md`, the shortest sidecar in the plan, states an approach and states no problem at all.
 
@@ -256,14 +296,16 @@ Pass: the post count minus the pre count equals the batch size. The outcome reco
 
 ```
 #!/usr/bin/env bash
-# R1: the migration record's shape, and its coverage of the filled fields.
+# R1: the migration record's shape, its per-field distinctness, and its coverage of the filled fields.
 REC="$1"; PLAN="$2"; AF="$3"
 rows=0; bad=0
+keys=$(mktemp)
 if [ "$(head -1 "$REC" 2>/dev/null)" != "$(printf 'slug\tfield\tmark\tsource')" ]; then
   echo "BAD HEADER"; bad=$((bad+1))
 fi
 while IFS=$'\t' read -r slug field mark source; do
   rows=$((rows+1))
+  printf '%s\t%s\n' "$slug" "$field" >> "$keys"
   case "$field" in problem|approach) ;; *) echo "BAD FIELD row $rows: $field"; bad=$((bad+1));; esac
   case "$mark" in transcribed|paraphrased) ;; *) echo "BAD MARK row $rows: $mark"; bad=$((bad+1));; esac
   case "$source" in
@@ -275,29 +317,47 @@ while IFS=$'\t' read -r slug field mark source; do
     echo "NO SUCH FILLED FIELD row $rows: $slug $field"; bad=$((bad+1))
   fi
 done < <(tail -n +2 "$REC")
+sort "$keys" | uniq -d | sed 's/^/DUPLICATE KEY: /'
+dupes=$(sort "$keys" | uniq -d | wc -l)
+rm -f "$keys"
 filled=$(grep -c '^\(problem\|approach\) = ' "$PLAN")
-printf 'rows=%d filled=%d bad=%d\n' "$rows" "$filled" "$bad"
+printf 'rows=%d filled=%d dupes=%d bad=%d\n' "$rows" "$filled" "$dupes" "$bad"
 ```
 
-Pass: the printed line reads `rows=<n> filled=<n> bad=0`, with the two counts EQUAL and `bad` zero. The oracle is the printed line and not the exit status, which is 0 in every case. MEASURED against four defective records:
+Pass, all four clauses: `rows` is GREATER THAN ZERO, `rows` equals `filled`, `dupes=0`, and `bad=0`. The oracle is the printed line and not the exit status, which is 0 in every case.
 
-- The record ABSENT prints `BAD HEADER` and `rows=0 filled=4 bad=1`. This closes the measured trap where the record's absence satisfied the stated pass condition.
-- A record with only `slug` and `field` columns prints `BAD HEADER` and eight `BAD` rows, `rows=4 filled=4 bad=9`.
-- A `transcribed` row that cites a bare commit prints `BAD SOURCE row 1: 5e7ee58` and `bad=2`.
-- A filled field with no row prints `rows=2 filled=4 bad=0`, which fails on `rows != filled` rather than on `bad`. Both halves of the pass condition are therefore load-carrying and both are stated.
+`dupes` IS WHAT MAKES `rows == filled` A COVERAGE CHECK. Without it the equality counts rows rather than keying them, so a copy-paste satisfies it. MEASURED against a two-step plan with all four fields filled: a record naming `alpha problem` twice, `alpha approach` once and `beta problem` once prints `rows=4 filled=4 bad=0` under the earlier form and a FULL PASS, while `beta approach` has no named source at all; a record whose four rows all name `alpha problem` does the same. With `dupes` both print `dupes=1` and fail.
+
+`rows > 0` IS THE ABSENT-INPUT CLAUSE. An empty record with a correct header prints `rows=0 filled=0 dupes=0 bad=0`, which satisfies `rows == filled` literally.
+
+MEASURED against four defective records:
+
+- The record ABSENT prints `BAD HEADER` and `rows=0 filled=4 dupes=0 bad=1`. This closes the measured trap where the record's absence satisfied the stated pass condition.
+- A record with only `slug` and `field` columns prints `BAD HEADER` and eight `BAD` rows, `rows=4 filled=4 dupes=0 bad=9`.
+- A `transcribed` row that cites a bare commit prints `BAD SOURCE row 1: 5e7ee58` and `bad=1`. One row failing one check gives one, and an earlier draft stated `bad=2`.
+- A filled field with no row prints `rows=2 filled=4 dupes=0 bad=0`, which fails on `rows != filled` rather than on `bad`. Every clause of the pass condition is therefore load-carrying and every one is stated.
 
 4. EVERY SOURCE RESOLVES, EVERY TRANSCRIBED SENTENCE IS AT ITS SOURCE, AND THAT SOURCE IS THE EARLIEST COMMIT THAT HOLDS IT. Run:
 
 ```
 #!/usr/bin/env bash
-# R2: source resolution, the transcribed substring test, and the earliest-commit rule.
+# R2: source resolution, source relevance, the transcribed substring test, and the earliest-commit rule.
 REC="$1"; PLAN="$2"; AF="$3"
 rows=0; tr=0; pa=0; bad=0
+if [ "$(head -1 "$REC" 2>/dev/null)" != "$(printf 'slug\tfield\tmark\tsource')" ]; then
+  echo "BAD HEADER"; bad=$((bad+1))
+fi
 while IFS=$'\t' read -r slug field mark source; do
   rows=$((rows+1))
   if ! git show "$source" > /dev/null 2>&1; then
     echo "UNRESOLVED SOURCE row $rows: $slug $field $source"; bad=$((bad+1)); continue
   fi
+  path=${source#*:}
+  case "$path" in
+    docs/plans/agent-scaffold.md) ;;
+    docs/plans/agent-scaffold.steps/"$slug".md) ;;
+    *) echo "SOURCE NOT THIS STEP row $rows: $slug $field $path"; bad=$((bad+1)); continue;;
+  esac
   value=$("$AF" status --source "$PLAN" --step "$slug" | sed -n "s/^$field: //p")
   case "$mark" in
     paraphrased) pa=$((pa+1)) ;;
@@ -317,7 +377,11 @@ done < <(tail -n +2 "$REC")
 printf 'rows=%d transcribed=%d paraphrased=%d bad=%d\n' "$rows" "$tr" "$pa" "$bad"
 ```
 
-Pass: the printed line ends `bad=0` and its `rows` equals criterion 3's `rows`. The full commit hashes are compared through `git rev-parse`, because the abbreviated `%h` width varies with repository size. MEASURED against three defective citations:
+Pass: the printed line ends `bad=0`, its `rows` equals criterion 3's `rows`, and `rows` is GREATER THAN ZERO. The `rows > 0` clause is here for the same reason it is in criterion 3: this loop over an empty record prints `rows=0 transcribed=0 paraphrased=0 bad=0`, which reads as a clean run. The header check is here so that a record with the wrong columns is reported by R2 as well as by R1, rather than being read as four unnamed fields. The full commit hashes are compared through `git rev-parse`, because the abbreviated `%h` width varies with repository size.
+
+THE SOURCE-RELEVANCE ARM IS WHAT MAKES RULE 5's ADMISSIBLE SET EXECUTABLE. Rule 4 makes the step's own sidecar the first source and rule 5's path-at-that-commit paragraph makes `docs/plans/agent-scaffold.md` the source for the older steps, so the admissible set is already written down. Without this arm an intent value transcribed from `README.md`, cited to the earliest commit holding that sentence, satisfies every other mechanical check in this block: R1 checks shape and coverage, the substring test passes because the sentence really is there, the earliest-commit test passes because the commit really is the earliest, and R3 looks in the step's own sidecar, which an unrelated source does not reach. A row that genuinely needs another path is reported as `SOURCE NOT THIS STEP` and becomes a visible exception the outcome disposes of under criterion 8.
+
+MEASURED against three defective citations:
 
 - A commit that DOES hold the sentence but is not the earliest prints `NOT THE EARLIEST row 1: ledger-template problem cited 0fadd90fc1703cc1df1c03b1486ca3bf2d39b1bf, earliest 5e7ee58aa0954ee77492227a7ac9a7c4d7bb5f0e`.
 - A commit and path that do not hold the sentence print `SENTENCE NOT AT SOURCE`.
@@ -341,30 +405,54 @@ for slug in $(sed -n 's/^slug = "\(.*\)"$/\1/p' "$PLAN"); do
     if [ -f "$STEPS/$slug.md" ] && grep -qF -- "$value" "$STEPS/$slug.md"; then
       echo "SIDECAR REPEATS $slug $field"; dup=$((dup+1))
     fi
-    case "$value" in
-      "Not started"*|"In progress"*|Complete*|Skipped*|Next[.\;,:\ ]*|Optional*|Deferred*)
-        echo "STATUS TOKEN $slug $field: $(printf '%s' "$value" | cut -c1-40)"; token=$((token+1));;
-    esac
+    if printf '%s' "$value" | grep -qE '^(Not started|In progress|Complete|Skipped|Next|Optional|Deferred)([.;,:]|$| \(| (and|by|but|or|nor|for|so|yet|until|unless|pending|while|after|before|because|since|though|although|then|with|without|on|in|at|to|from|as|per)\b)'; then
+      echo "STATUS TOKEN $slug $field: $(printf '%s' "$value" | cut -c1-40)"; token=$((token+1))
+    fi
   done
 done
 printf 'checked=%d duplicated=%d status_token=%d\n' "$checked" "$dup" "$token"
 ```
 
-Pass: the printed line reads `checked=<2m> duplicated=0 status_token=0`, where `m` is the number of steps filled so far across all batches. MEASURED, a transcribed sentence left in its sidecar prints `SIDECAR REPEATS checks-runner-worktree-name-collision approach` and `duplicated=1`, and a value that opens `Next. Decided (...` prints `STATUS TOKEN ledger-template problem: Next. Decided (\`Q-2\`, human). Make the r` and `status_token=1`. A correct batch prints `checked=4 duplicated=0 status_token=0` on the same fixture.
+Pass: the printed line reads `checked=<2m> duplicated=0 status_token=0`, where `m` is the number of steps filled so far across all batches, AND `checked` is greater than zero. The last clause is the absent-input guard: the loop over a plan with no filled field prints `checked=0 duplicated=0 status_token=0`, which reads as a clean run.
 
-7. THE PROJECTION IS REGENERATED AND THE DIFF IS THE BATCH. `./target/debug/agent-flow render docs/plans/agent-scaffold.plan.toml` then `render --check --strict`, which prints `docs/plans/agent-scaffold.plan.toml: up to date` and exits 0. Then:
+EVERY ARM IS ANCHORED ON A SENTENCE BOUNDARY, AND THE ANCHOR IS THE SAME ONE `sidecar-status-opening-drift` USES. A status word is a LABEL when the token is followed by punctuation, by an opening parenthesis, by end of value, or by a conjunction or preposition. It is an ORDINARY ADJECTIVE when a noun follows it, and an adjective is not what rule 9 forbids. MEASURED, an earlier form of this test matched `Complete`, `Skipped`, `Optional` and `Deferred` unanchored, so the sentence "Deferred cleanup from the `Q-44` audit (`architecture-audit`), raised there and scheduled here." fired it, and that sentence is the faithful opening of six sidecars in this plan and a legitimate problem statement. The anchored form does not fire on it. Nine sidecars in this plan open that way and every one is declared `deferred`.
 
-```
-grep -c '^- problem: ' docs/plans/agent-scaffold.md
-```
+MEASURED, a transcribed sentence left in its sidecar prints `SIDECAR REPEATS checks-runner-worktree-name-collision approach` and `duplicated=1`, and a value that opens `Next. Decided (` prints a `STATUS TOKEN ledger-template problem` row whose value is truncated at 40 characters, and `status_token=1`. A correct batch prints `checked=4 duplicated=0 status_token=0` on the same fixture.
 
-Pass: stdout equals the running total of filled steps, and the outcome records it. The same command with `approach` in place of `problem` is run separately and its count must match. The two commands are given as two commands because a reader who substitutes once checks one field, and a batch that fills `problem` and forgets `approach` passes a single-field check.
+7. THE PROJECTION IS REGENERATED AND IT RECONCILES AGAINST THE SOURCE. `./target/debug/agent-flow render docs/plans/agent-scaffold.plan.toml` then `render --check --strict`, which prints `docs/plans/agent-scaffold.plan.toml: up to date` and exits 0. Then run R4:
 
 ```
-grep -c '^- approach: ' docs/plans/agent-scaffold.md
+#!/usr/bin/env bash
+# R4: the projection is total, counted in the source and reconciled against the projection.
+TOML=docs/plans/agent-scaffold.plan.toml
+MD=docs/plans/agent-scaffold.md
+quoted () {
+  cat docs/plans/agent-scaffold.steps/*.md \
+      docs/plans/agent-scaffold._status-narrative.md \
+      docs/plans/agent-scaffold.motivations.md \
+      docs/plans/agent-scaffold.principles-note.md \
+      docs/plans/agent-scaffold.documentation-protocol.md \
+      docs/plans/agent-scaffold.repo-layout.md \
+      docs/plans/agent-scaffold.queue-intro.md \
+      docs/plans/agent-scaffold.roadmap-intro.md \
+      docs/plans/agent-scaffold.success-criteria.md | grep -c "^- $1: "
+}
+printf 'steps=%d source=%d/%d quoted=%d/%d projected=%d/%d\n' \
+  "$(grep -c '^\[\[step\]\]' "$TOML")" \
+  "$(grep -c '^problem = ' "$TOML")" "$(grep -c '^approach = ' "$TOML")" \
+  "$(quoted problem)" "$(quoted approach)" \
+  "$(grep -c '^- problem: ' "$MD")" "$(grep -c '^- approach: ' "$MD")"
 ```
 
-8. EVERY PARAPHRASED FIELD IS DISPOSED OF IN THE OUTCOME. This is NOT a pass-or-fail oracle and it is a bounded worklist. For every row this batch marks `paraphrased`, the outcome quotes the source sentence and the recorded sentence side by side. A row left without that pair is the batch not finished. The criterion exists because no command can test a paraphrase, criterion 4 deliberately exempts it, and a batch that marks every field `paraphrased` otherwise satisfies every mechanical check in this block. Read the count against the sizing sample recorded in batch a.
+Pass, for a batch: `projected` minus `quoted` equals `source`, for BOTH fields, and both halves of `source` are equal to each other and to the running total of filled steps. The outcome records the whole printed line.
+
+WHY THE COUNT IS TAKEN IN THE SOURCE AND ONLY RECONCILED IN THE PROJECTION. `render` inlines every sidecar verbatim, so a sidecar that QUOTES a `- problem: ` line contributes one to the projection and nothing to the source. This sidecar quotes exactly such a pair, in the fenced block under `render` in increment 1. MEASURED on the untouched tree, before any batch runs, R4 prints `steps=105 source=0/0 quoted=1/1 projected=1/1`, so a criterion that compares the projection against the step count directly cannot be satisfied by a correct implementation at any point in the migration. The reconciliation holds at every point, which is why increment 3 criterion 8 runs the same script. Principle 8, Structured data first, project for humans, is the ground: the TOML is the source and the `.md` is the projection, so the totality claim is a claim about the source.
+
+The eight named sidecars are the front and tail sidecars from `[meta.sidecars]`. The 80 question sidecars are not listed because every one of them is 0 bytes, which `find docs/plans/agent-scaffold.questions -type f -size +0` shows by printing nothing.
+
+8. EVERY PARAPHRASED FIELD, AND EVERY EXCEPTIONAL SOURCE, IS DISPOSED OF IN THE OUTCOME. This is NOT a pass-or-fail oracle and it is a bounded worklist. For every row this batch marks `paraphrased`, the outcome names the row's `source` and quotes the source sentence and the recorded sentence side by side. For every row R2 reports as `SOURCE NOT THIS STEP`, the outcome quotes the sentence and states why no admissible path holds it. A row left without its pair, or a reported row left without its reason, is the batch not finished.
+
+The criterion exists because no command can test a paraphrase, criterion 4 deliberately exempts it, and a batch that marks every field `paraphrased` otherwise satisfies every mechanical check in this block. On a `paraphrased` row the `source` column proves only that the blob exists and that its path belongs to this step, which rule 7 records, so the side-by-side is the only thing that reads it. Read the count against the sizing sample recorded in batch a.
 
 9. THE CHANGED PATH SET AND THE UNCHANGED REST. `git diff --name-only` matches criterion 1. No file under `src/`, `tests/` or `pack/` appears. `docs/metrics/workflow.jsonl` does not appear.
 
@@ -419,7 +507,7 @@ MEASURED, that returns 12 files and 69 sites:
 1	tests/validate_workflow_toml_source_needs_no_plan.rs
 ```
 
-THE ANCHOR IS THE `slug` LINE AND NOT THE `status` LINE. A `status` line also belongs to every `[[question]]` and to some waivers, so a substitution anchored on `status` over-patches. MEASURED, a `status`-anchored substitution patches 92 sites rather than 69 and produces 33 test failures from `deny_unknown_fields`.
+THE ANCHOR IS THE `slug` LINE AND NOT THE `status` LINE. A `status` line also belongs to every `[[question]]` and to some waivers, so a substitution anchored on `status` over-patches. MEASURED on the tree this sidecar was spliced into, the `status` anchor reaches 99 sites against the `slug` anchor's 69, and a substitution across all of them produces test failures from `deny_unknown_fields`. Re-run the two anchors rather than copying the pair, because both move as the plan and the suite grow.
 
 WHY THE MIGRATION RUNS THIS WAY. The alternative, land the fields as required and backfill every step in the same commit, has no optional window at all, which Principle 5 prefers. It is rejected because one review loop would then carry every step in the plan against a cap of five rounds, which is the reason the backfill splits into six batch increments in the first place. The window in which absence is legal is six batches long, and this increment closes it, so the end state makes absence unrepresentable and no `[meta]` exemption field is needed. An exemption boundary of the `[meta].w4_baseline` kind is right for a rule that will always have exempt members and wrong for a migration that finishes.
 
@@ -427,7 +515,13 @@ WHAT THIS COSTS A SCAFFOLDED PROJECT, STATED HERE AND WEIGHED BY THE HUMAN. Afte
 
 ACCEPTANCE, EACH EXECUTABLE.
 
-1. THE FIELDS ARE REQUIRED. `grep -c 'pub(crate) problem: String,' src/plan/source.rs` prints `1`, and `grep -c 'problem: Option<String>' src/plan/source.rs` prints `0` and exits 1. A `[[step]]` that omits either field fails to parse, which is checked directly: run `validate --source` against a one-step plan with no `problem`, and it prints, on stderr, a line that carries `missing field \`problem\``, and exits 1.
+1. THE FIELDS ARE REQUIRED. `grep -c 'pub(crate) problem: String,' src/plan/source.rs` prints `1`, and `grep -c 'problem: Option<String>' src/plan/source.rs` prints `0` and exits 1. A `[[step]]` that omits either field fails to parse, which is checked directly: run `validate --source` against a one-step plan with no `problem`, and it exits 1 and prints on stderr a line carrying this string:
+
+```
+missing field `problem`
+```
+
+The string is in a fenced block rather than inline for the reason increment 1 criterion 2 records. THIS IS THE EXECUTABLE FORM OF THIS INCREMENT'S OWN RISK GROUND, that every previously valid scaffolded plan fails to parse until its author edits it, and it is what separates a required field from a field made `String` under `#[serde(default)]`, which would instead report the value as empty.
 
 2. THE 69 DECLARATION SITES ALL CARRY BOTH FIELDS. `cargo test` passes and `cargo build` reports no error. MEASURED, a flip that leaves the sites unpatched still BUILDS with 0 errors and gives 54 test failures, so the suite is a real oracle here. The path set in criterion 9 is what proves the enumeration was complete rather than lucky.
 
@@ -461,25 +555,19 @@ Pass: stdout is exactly `1`, exit 0. This is the pack-side form of increment 1 c
 
 5. THE TEMPLATE PAIR STAYS BYTE-IDENTICAL. `cmp pack/plan-template.plan.toml docs/plans/TEMPLATE.plan.toml` prints nothing and exits 0. See `plan-order-array-position` rule 3 for the measurement that shows nothing else detects this.
 
-6. THE PACK PROSE RULE SHIPS AND ITS RENDERED COPY MATCHES. `grep -c -F -- 'must not repeat a \`[[step]]\` field' pack/plan-template.documentation-protocol.md` prints `1`, and the same command against `docs/plans/TEMPLATE.documentation-protocol.md` prints `1`. Two commands, given once each, because the pack source and its committed copy are two files and only the pair check proves both.
+6. THE PACK PROSE RULE SHIPS AND ITS RENDERED COPY MATCHES. Run this, and then the same command against `docs/plans/TEMPLATE.documentation-protocol.md`. Two commands, given once each, because the pack source and its committed copy are two files and only the pair check proves both. Each prints `1`.
+
+```
+grep -c -F -- 'must not repeat a `[[step]]` field' pack/plan-template.documentation-protocol.md
+```
 
 7. THE MIGRATION RECORD IS GONE. `test -e docs/plans/step-intent-encoding.migration.tsv` exits 1, and `git diff --name-status` over the increment lists `D	docs/plans/step-intent-encoding.migration.tsv`. Both halves are the criterion: the `test` alone passes on a tree where the file never existed.
 
-8. THE LIVE PROJECTION IS COMPLETE, ONE PAIR PER STEP.
+8. THE LIVE PROJECTION IS COMPLETE, ONE PAIR PER STEP. Run R4, the script the batch block states in full under its criterion 7.
 
-```
-grep -c '^- problem: ' docs/plans/agent-scaffold.md
-```
+Pass, all three clauses: `source` equals `steps` for both fields; `projected` minus `quoted` equals `source` for both fields; and the two halves of each pair are equal to each other. The first clause is the required flip landing on every step. The second is the projection being total rather than partial, and it is what catches a field that exists everywhere and renders nowhere. The third is the two fields moving together.
 
-```
-grep -c '^- approach: ' docs/plans/agent-scaffold.md
-```
-
-```
-grep -c '^\[\[step\]\]' docs/plans/agent-scaffold.plan.toml
-```
-
-Pass: all three print the SAME number. MEASURED at 101 steps, all three print `101`. This is the criterion that proves the projection is total rather than partial, and it is the one that catches a field that exists everywhere and renders nowhere.
+MEASURED on the untouched tree, before any of this is built, R4 prints `steps=105 source=0/0 quoted=1/1 projected=1/1`. A CRITERION THAT COMPARED THE PROJECTION AGAINST THE STEP COUNT DIRECTLY COULD NOT BE SATISFIED BY A CORRECT IMPLEMENTATION, because this sidecar's own fenced block under `render` in increment 1 carries a `- problem: ` line and a `- approach: ` line, and `render` inlines the sidecar verbatim into the document being counted. An earlier draft of this criterion did exactly that and stated `MEASURED at 101 steps, all three print 101`; the two projection counts print `1` today and cannot print a step count at any point in the migration, so nothing was measured. The step count itself moves and the outcome records what R4 prints on the day.
 
 9. THE CHANGED PATH SET. `git diff --name-only` lists the 12 declaration-site files, plus `docs/plans/agent-scaffold.md`, plus `pack/plan-template.documentation-protocol.md` and `docs/plans/TEMPLATE.documentation-protocol.md`, plus the deleted `docs/plans/step-intent-encoding.migration.tsv`. `docs/plans/agent-scaffold.plan.toml` appears only if a `[[step.increment]]` declaration changes, and its diff must touch no `problem` or `approach` value, because the batches own those.
 
