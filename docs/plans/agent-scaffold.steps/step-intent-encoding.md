@@ -98,7 +98,9 @@ followed by one blank line and then the rest of the body. Each value passes thro
 - THE LEADING HEADING LINE IS THE FIRST LINE WHOSE FIRST CHARACTER IS `#`, not the first line of the file. One sidecar, `core-assets`, carries a lead-in sentence and a bullet list above its own heading, which sits at line 9.
 - A BODY WITH NO HEADING LINE takes the two lines first, then a blank line, then the body.
 - A STEP THAT CARRIES ONLY ONE FIELD emits only that line.
-- A STEP THAT CARRIES AT LEAST ONE FIELD CONTRIBUTES AN ENTRY EVEN WHEN ITS BODY IS EMPTY. A step with neither field and an empty body contributes nothing, which is today's behaviour unchanged.
+- A STEP THAT CARRIES AT LEAST ONE FIELD CONTRIBUTES AN ENTRY EVEN WHEN ITS BODY IS EMPTY. A step with neither field and an empty body contributes nothing, which is today's behaviour unchanged. THAT SECOND CASE CEASES TO EXIST AT INCREMENT 3, where no step can carry neither field, so from that increment on the sentence describes a state nobody can build.
+
+THIS SUB-RULE COLLIDES WITH A NAMED EXISTING TEST, AND THE COLLISION FIRES AT INCREMENT 3 RATHER THAN HERE. `empty_details_sections_emit_no_bare_heading` in `src/plan/render.rs`, marked `N1` in its own comment, asserts that `## Step Details` is ABSENT for a plan whose one step has an empty body. MEASURED, that test's inline `[[step]]` fixture is one of the declaration sites increment 3 criterion 2 requires to carry both fields: `grep -nE '(\\n|^)slug = ' src/plan/render.rs` prints three sites and the `N1` fixture is the first of them. At increment 1 the fixture carries neither field, so this sub-rule's second sentence holds and the test passes unchanged. At increment 3 the fixture carries both, so this sub-rule makes the section appear and the assertion inverts. INCREMENT 3 CRITERION 2 NAMES THE TEST AND STATES THE DIRECTION. Do not delete the test, in the shape `plan-order-array-position` increment 1 uses for `ordering_is_numeric_for_questions_and_slug_tiebroken_for_equal_order_steps`.
 
 REPRODUCE THE ONE SIDECAR THAT FORCES THE LEADING-HEADING RULE, so the sub-rule above is checked rather than trusted:
 
@@ -280,6 +282,8 @@ printf 'problem=%d approach=%d\n' "$(grep -c '^problem = ' docs/plans/agent-scaf
 
 Pass: each post count minus its pre count equals the batch size, and the two counts are equal to each other. The outcome records both pairs. Both fields are counted because a batch that fills `problem` and forgets `approach` satisfies a single-field check.
 
+THE BATCH-SIZE HALF OF THAT CLAUSE READS FALSE FOR THE LAST BATCH, AND THAT IS AN ACCEPTED RESIDUAL RATHER THAN A REPAIR. Increment 1 criterion 10 defines batch i as declaration positions `(i-1)*S+1` to `min(i*S, N)`, so the last batch covers `N - (K-1)*S`, which is FEWER than `S` whenever `S` does not divide `N`. Read literally, a correct last batch fails the count clause and the implementer must stop and ask, or override the clause without a record. The human accepted this on 2026-08-21 as residual risk, receipt `type:"decision"` `q_id:"Q-78-residuals"` in `docs/metrics/workflow.jsonl`. THE CONSEQUENCE THE HUMAN WEIGHED: nothing wrong can ship, because the IDENTITY check below is a separate check against the batch's declared slug list, and it binds correctly at the last batch's real size. The cost accepted is one avoidable escalation, or one unrecorded override, at the last batch.
+
 The identity, which is what makes the criterion's own heading true. Capture the filled slug set before and after and compare it against the batch's declared slug list from increment 1 criterion 10:
 
 ```
@@ -417,6 +421,30 @@ Pass: the printed line reads `checked=<2m> duplicated=0 status_token=0`, where `
 
 EVERY ARM IS ANCHORED ON A SENTENCE BOUNDARY, AND THE ANCHOR IS THE SAME ONE `sidecar-status-opening-drift` USES. A status word is a LABEL when the token is followed by punctuation, by an opening parenthesis, by end of value, or by a conjunction or preposition. It is an ORDINARY ADJECTIVE when a noun follows it, and an adjective is not what rule 9 forbids. MEASURED, an earlier form of this test matched `Complete`, `Skipped`, `Optional` and `Deferred` unanchored, so the sentence "Deferred cleanup from the `Q-44` audit (`architecture-audit`), raised there and scheduled here." fired it, and that sentence is the faithful opening of six sidecars in this plan and a legitimate problem statement. The anchored form does not fire on it. Nine sidecars in this plan open that way and every one is declared `deferred`.
 
+THE CONNECTIVE LIST IS A CLOSED LIST, SO R3 PRINTS ITS COMPLEMENT RATHER THAN ASSUMES IT EMPTY. Run this alongside R3, from the repository root under bash, and record its output in the outcome:
+
+```
+#!/usr/bin/env bash
+# R3b: the values a relaxed status test reaches and the anchored arm of R3 does not.
+PLAN="$1"; AF="$2"
+for slug in $(sed -n 's/^slug = "\(.*\)"$/\1/p' "$PLAN"); do
+  for field in problem approach; do
+    value=$("$AF" status --source "$PLAN" --step "$slug" | sed -n "s/^$field: //p")
+    [ -z "$value" ] && continue
+    [ "$value" = "(not recorded)" ] && continue
+    printf '%s' "$value" | grep -qE '^(Not started|In progress|Complete|Skipped|Next|Optional|Deferred)([.;,: ]|$)' || continue
+    printf '%s' "$value" | grep -qE '^(Not started|In progress|Complete|Skipped|Next|Optional|Deferred)([.;,:]|$| \(| (and|by|but|or|nor|for|so|yet|until|unless|pending|while|after|before|because|since|though|although|then|with|without|on|in|at|to|from|as|per)\b)' && continue
+    printf '%s\t%s\t%s\n' "$slug" "$field" "$(printf '%s' "$value" | cut -c1-40)"
+  done
+done
+```
+
+THIS IS NOT A PASS-OR-FAIL ORACLE AND ITS EMPTY OUTPUT IS NOT THE TARGET. It is a bounded worklist, in the same shape and for the same reason as the drift step's complement command. THE OBLIGATION: the outcome disposes of every row it prints, either as an adjectival opening that rule 9 does not forbid, or as a connective the list must gain, and a row left with neither is the batch not finished.
+
+WHY THIS COMPLEMENT MATTERS MORE FOR R3 THAN FOR THE DRIFT SELECTOR. The drift selector reads openings that already exist, so its vocabulary is fixed in advance and measurable. R3 reads sentences a batch has just authored, so its vocabulary is not. MEASURED against R3's own regex, four openings carry a label and do not fire: "Complete once the batch lands", "Deferred whilst the design settles", "Next up, the schema flip" and "Optional under the current scope". The connectives `once`, `whilst`, `up` and `under` are absent from the list. MEASURED, R3b prints all four, prints nothing for "Complete, and the record is written", which R3 already catches, and prints nothing for a value that opens with no status word at all.
+
+THE HUMAN DECLINED TO ACCEPT THIS AS RESIDUAL RISK ON 2026-08-21, receipt `type:"decision"` `q_id:"Q-78-residuals"` in `docs/metrics/workflow.jsonl`, on the ground that its acceptance could ship a real defect. An evading value re-creates in the structured field exactly the duplication `sidecar-status-opening-drift` deletes from the prose, and the only other guard is criterion 8's reading, which is the weakest guard this pass uses.
+
 MEASURED, a transcribed sentence left in its sidecar prints `SIDECAR REPEATS checks-runner-worktree-name-collision approach` and `duplicated=1`, and a value that opens `Next. Decided (` prints a `STATUS TOKEN ledger-template problem` row whose value is truncated at 40 characters, and `status_token=1`. A correct batch prints `checked=4 duplicated=0 status_token=0` on the same fixture.
 
 7. THE PROJECTION IS REGENERATED AND IT RECONCILES AGAINST THE SOURCE. `./target/debug/agent-flow render docs/plans/agent-scaffold.plan.toml` then `render --check --strict`, which prints `docs/plans/agent-scaffold.plan.toml: up to date` and exits 0. Then run R4:
@@ -460,7 +488,17 @@ The criterion exists because no command can test a paraphrase, criterion 4 delib
 
 ### Increment 3, `step-intent-encoding-inc3`: the required flip, the pack, and the record deletion
 
-RISK CLASS `risky` (two consecutive clean review rounds). THE GROUND: the increment makes both fields required, so every previously valid scaffolded plan fails to parse until its author edits it. That is squarely Principle 3, Safe on existing projects, and it is hard to roll back once a downstream author has edited. It also changes `pack/plan-template.plan.toml`, `pack/plan-template.documentation-protocol.md` and their committed copies under `docs/plans/`, which every scaffolded project inherits.
+RISK CLASS `risky` (two consecutive clean review rounds). THE GROUND IS STATED AS A PREMISE AND A CONSEQUENCE, AND EACH HALF NAMES THE COMMAND THAT REFUSES IT. Stating it as one conjunction is what let a wrong implementation through two review rounds, because the consequence held for a second reason and the criterion tested only the consequence.
+
+THE PREMISE. The increment makes BOTH fields required. `problem` and `approach` each become a bare `String` with no `serde` default, so a `[[step]]` that omits EITHER one fails to deserialise.
+
+THE CONSEQUENCE. Every previously valid scaffolded plan fails to parse until its author edits it. That is squarely Principle 3, Safe on existing projects, and it is hard to roll back once a downstream author has edited.
+
+THE TWO HALVES COME APART, AND THE SEPARATION WAS BUILT, COMPILED AND RUN. A pre-increment plan carries neither field, so it fails to parse whenever EITHER field is required. The consequence therefore survives an implementation that requires `problem` and leaves `approach` optional, while the premise is false of it. MEASURED on that build: the schema greps for `problem` both pass, the parse check on a plan with no `problem` prints ``missing field `problem` `` and exits 1, and a plan carrying `problem` and no `approach` prints `1 steps, 0 questions, valid` and exits 0. THE MIRROR CONSTRUCTION also comes apart the other way: both fields declared `String` under `#[serde(default)]` keeps the premise's wording and falsifies the consequence, because MEASURED on that build a plan with neither field prints `1 steps, 0 questions, valid` and exits 0 rather than failing to parse. Criterion 1 below runs against both halves and refuses both constructions.
+
+THE INCREMENT ALSO CHANGES `pack/plan-template.plan.toml`, `pack/plan-template.documentation-protocol.md` and their committed copies under `docs/plans/`, which every scaffolded project inherits.
+
+THE BATCH BLOCK ONE INCREMENT EARLIER ALREADY CLOSED THE IDENTICAL HOLE, in its own words at criterion 1: "Both fields are counted because a batch that fills `problem` and forgets `approach` satisfies a single-field check." Its ground is stated symmetrically and has no surviving half to hide behind, which is why the same author saw the hazard there and missed it here.
 
 THE HUMAN DECISION THIS INCREMENT WAITED ON IS TAKEN (2026-08-21, receipt `q_id:"Q-78-requiredfields"`). `problem` AND `approach` ARE REQUIRED, IN THE SHIPPED PACK AS WELL AS HERE, over an optional field with a validation warning. The human rejected a third option, required here and optional in the pack. The human weighed the cost this increment states below, and accepted the residual that a placeholder satisfies a required field forever. So this increment builds what it already specifies, and it waits only on the review the whole step waits on.
 
@@ -515,15 +553,47 @@ WHAT THIS COSTS A SCAFFOLDED PROJECT, STATED HERE AND WEIGHED BY THE HUMAN. Afte
 
 ACCEPTANCE, EACH EXECUTABLE.
 
-1. THE FIELDS ARE REQUIRED. `grep -c 'pub(crate) problem: String,' src/plan/source.rs` prints `1`, and `grep -c 'problem: Option<String>' src/plan/source.rs` prints `0` and exits 1. A `[[step]]` that omits either field fails to parse, which is checked directly: run `validate --source` against a one-step plan with no `problem`, and it exits 1 and prints on stderr a line carrying this string:
+1. BOTH FIELDS ARE REQUIRED, AND EACH IS CHECKED ON ITS OWN. THIS IS THE EXECUTABLE FORM OF THIS INCREMENT'S OWN RISK GROUND, and it runs against the PREMISE and the CONSEQUENCE separately, because the consequence holds for a second reason. FOUR GREPS AND TWO PARSE CHECKS, EACH GIVEN ONCE, in the shape this sidecar already uses at increment 1 criterion 8 and that `validate-missing-source-exit` criterion 3 states as a rule: a reader who substitutes once proves one field.
+
+THE FOUR GREPS. The first two print `1` and exit 0. The second two print `0` and exit 1, so neither can join an `&&` chain.
+
+```
+grep -c 'pub(crate) problem: String,' src/plan/source.rs
+```
+
+```
+grep -c 'pub(crate) approach: String,' src/plan/source.rs
+```
+
+```
+grep -c 'problem: Option<String>' src/plan/source.rs
+```
+
+```
+grep -c 'approach: Option<String>' src/plan/source.rs
+```
+
+THE TWO PARSE CHECKS. Write two one-step plans to a scratch directory OUTSIDE the repository. The first carries `approach` and no `problem`. The second carries `problem` and no `approach`. Run `validate --source` on each. Each exits 1 and prints on stderr a line carrying its own string:
 
 ```
 missing field `problem`
 ```
 
-The string is in a fenced block rather than inline for the reason increment 1 criterion 2 records. THIS IS THE EXECUTABLE FORM OF THIS INCREMENT'S OWN RISK GROUND, that every previously valid scaffolded plan fails to parse until its author edits it, and it is what separates a required field from a field made `String` under `#[serde(default)]`, which would instead report the value as empty.
+```
+missing field `approach`
+```
+
+The strings are in fenced blocks rather than inline for the reason increment 1 criterion 2 records.
+
+WHY EVERY ONE OF THE SIX IS LOAD-CARRYING, MEASURED AGAINST TWO CONSTRUCTIONS THAT WERE BUILT WITH THE PROJECT TOOLCHAIN AND RUN.
+
+- THE ASYMMETRIC BUILD, `problem: String` required and `approach: Option<String>` optional, which falsifies the premise while the consequence still holds. The `problem` grep prints `1`, the `problem: Option<String>` grep prints `0` and the no-`problem` plan prints ``missing field `problem` `` and exits 1, so the three commands an earlier form of this criterion stated all PASS. The `approach` grep prints `0` against a required `1`, the `approach: Option<String>` grep prints `1` against a required `0`, and the no-`approach` plan prints `1 steps, 0 questions, valid` and exits 0. Three of the six REFUSE it. That build satisfied every other criterion in this increment, and it ships a plan carrying one field and not the other.
+- THE DEFAULTED BUILD, both fields `String` under `#[serde(default)]`, which keeps the premise's wording and falsifies the consequence. All four greps PASS. Both parse checks print `1 steps, 0 questions, valid` and exit 0 rather than the `missing field` line, so both REFUSE it.
+- THE CONTROL, both fields a bare `String`. All four greps pass, and both parse checks print their own `missing field` line and exit 1.
 
 2. THE 69 DECLARATION SITES ALL CARRY BOTH FIELDS. `cargo test` passes and `cargo build` reports no error. MEASURED, a flip that leaves the sites unpatched still BUILDS with 0 errors and gives 54 test failures, so the suite is a real oracle here. The path set in criterion 9 is what proves the enumeration was complete rather than lucky.
+
+ONE NAMED TEST CHANGES DIRECTION HERE, AND THE DIRECTION IS STATED SO THE IMPLEMENTER DOES NOT CHOOSE IT. `empty_details_sections_emit_no_bare_heading` in `src/plan/render.rs`, marked `N1`, asserts that `## Step Details` is ABSENT for a step with an empty body. Its inline `[[step]]` fixture is one of the sites this criterion requires to carry both fields, so after the patch the step carries intent and increment 1's render sub-rule makes the section appear. ITS STEP-DETAILS ASSERTION RE-POINTS: the section is PRESENT and carries the two projected lines, and the test takes a name that matches. Its Question-Details assertion and its non-vacuous half stay. DO NOT DELETE THE TEST. Without this instruction the implementer meets `cargo test` by editing a named regression test with no stated direction, which is the shape `plan-order-array-position` increment 1 already rules on for its own tie-break test.
 
 3. A FRESH SCAFFOLD VALIDATES AND RENDERS. In an empty directory outside the repository:
 
@@ -551,7 +621,11 @@ Pass: stdout is exactly `docs/plans/TEMPLATE.plan.toml: up to date`, exit 0. MEA
 grep -c -F -- '- problem: <the problem this step addresses>' docs/plans/TEMPLATE.md
 ```
 
-Pass: stdout is exactly `1`, exit 0. This is the pack-side form of increment 1 criterion 4, and it is stated because a required field that renders nowhere in the shipped template is the same defect one layer out.
+```
+grep -c -F -- '- approach: <how this step addresses it>' docs/plans/TEMPLATE.md
+```
+
+Pass: each prints exactly `1` on stdout and exits 0. Two commands, given once each, because a template that ships one placeholder and renders the other nowhere satisfies a single-field check. This is the pack-side form of increment 1 criterion 4, and it is stated because a required field that renders nowhere in the shipped template is the same defect one layer out.
 
 5. THE TEMPLATE PAIR STAYS BYTE-IDENTICAL. `cmp pack/plan-template.plan.toml docs/plans/TEMPLATE.plan.toml` prints nothing and exits 0. See `plan-order-array-position` rule 3 for the measurement that shows nothing else detects this.
 
@@ -583,7 +657,7 @@ RESIDUAL 1, INTENT-PROSE STALENESS. Nothing closes the case where the recorded i
 
 RESIDUAL 2, MEANINGLESSNESS UNDER A REQUIRED FIELD. A required `String` needs a value, so `pack/plan-template.plan.toml` ships placeholder text and every scaffolded plan validates on day one with that text in place. The required field makes ABSENCE unrepresentable and leaves MEANINGLESSNESS fully representable and indistinguishable from real intent. `title` carries the same property today. A `validate` rule that rejects the shipped placeholder strings is REJECTED, because it collides head-on with increment 3's own criterion that a fresh scaffold validates, which is correct under Principle 3, Safe on existing projects, and Principle 4, Idempotent. Placeholder detection belongs in `audit`, which is advisory, and it is a separate step.
 
-RESIDUAL 3, THE CITATION PROVES PROVENANCE AND NOT DERIVATION. Rule 4 makes the current sidecar the primary source and the batch block's criterion 6 requires the sentence to be MOVED, so the commit that satisfies the transcribed check is the commit that held the text before the move, by construction. No criterion distinguishes that from a retroactive extraction, and the design cannot change to make one unless it abandons rule 4. The human's 2026-08-19 requirement is answered in substance, because the recorded sentence IS the one the person with the context wrote, and the citation names the earliest commit that holds it. It is not answered as a mechanical proof. If the human wants genuine retroactive extraction tested, that is a different design and it must be put as one.
+RESIDUAL 3, THE CITATION PROVES A DATE AND NOT A DERIVATION. Rule 4 makes the current sidecar the primary source and the batch block's criterion 6 requires the sentence to be MOVED, so the commit that satisfies the transcribed check is the commit that held the text before the move, by construction. WHAT RULE 6 DOES PROVE, AND AN EARLIER FORM OF THIS RESIDUAL DENIED IT. The earliest-commit arm of R2 dates the sentence: a value invented during the backfill has the backfill's own commit as its earliest, so a citation to an older commit proves the sentence predates the extraction. The human decided rule 6 on 2026-08-21 (`q_id:"Q-78-earliestcommit"`) on exactly that measurement, and the ledger records the pickaxe result that made it. So the assertion that NO criterion can distinguish provenance from the extraction's own commit is false, and it must not be restated. WHAT REMAINS OPEN is narrower: rule 6 proves the sentence is old, and it does not prove that the recorded field was DERIVED from that text rather than written afresh and matched to it. The human's 2026-08-19 requirement is answered in substance, because the recorded sentence IS the one the person with the context wrote. It is not answered as a mechanical proof of derivation. If the human wants genuine retroactive extraction tested, that is a different design and it must be put as one.
 
 ### NOT IN SCOPE, NAMED SO IT IS NOT DRAWN IN
 
