@@ -2699,8 +2699,31 @@ CRITERION 1 IS NECESSARY AND NOT SUFFICIENT, WHICH IS MEASURED. On the three-fil
 2. THE WORKLIST IS CAPTURED BEFORE THE EDIT, AND THE SPLIT IS DECIDED BY A COMMAND RATHER THAN BY A READING. THE THREE CAPTURE FILES ARE NAMED HERE, because criterion 1's pass condition reads two of them by name. Write them to a scratch directory OUTSIDE the repository.
 
 - `anchored.txt` is criterion 1's anchored selector run against the pre-increment tree. That is the SELECTED SET, and the outcome records it VERBATIM.
-- `handover.txt` is criterion 12's command run over a throwaway copy of `docs/plans/agent-scaffold.steps/` in which every selected file's opening line has lost its leading token. The slugs it flags are the HANDOVER LIST, which this step does not touch and the successor step owns.
+- `handover.txt` is what the command below prints. The slugs it prints are the HANDOVER LIST, which this step does not touch and the successor step owns.
 - `worklist.txt` is `comm -23 <(cut -f1 anchored.txt | sort) <(cut -f1 handover.txt | sort)`. That is THIS STEP'S WORKLIST, and it is the worklist for criteria 4, 10, 11 and 12.
+
+THE HANDOVER CAPTURE IS WRITTEN OUT AS A COMMAND OF ITS OWN AND IS NOT A SUBSTITUTION INTO CRITERION 12, AND THE REASON IS CIRCULARITY RATHER THAN STYLE. Criterion 12's command hard-codes the LIVE path root `docs/plans/agent-scaffold.steps/$slug.md`, so pointing it at a throwaway copy needs a substitution this sidecar would otherwise never write out, and its `$WORKLIST` is THIS STEP'S WORKLIST, which the bullet above defines as `anchored` minus `handover`, so its input set is defined in terms of the very file this capture produces. MEASURED, criterion 12's command run VERBATIM against the live tree prints ZERO rows, because every selected opening still begins with an uppercase status token, and an implementer who copies the command rather than reading the prose gets an EMPTY `handover.txt`. From there the worklist becomes the whole selected set and the criteria jointly endorse doing the successor step's work inside this step, which falsifies this increment's premise half and the human decisions `Q-78-driftsplit` and `Q-78-drifthandover`. The command below breaks the circle by naming its own path root and taking the SELECTED SET as its input. Run it under bash, from the repository root, with `COPY` a path in the same scratch directory that does not yet exist:
+
+```
+#!/usr/bin/env bash
+# H1: the handover list. Strip the leading token from every SELECTED file's opening line
+# in a throwaway copy, then apply criterion 12's test to that copy.
+COPY="$1"
+cp -r docs/plans/agent-scaffold.steps "$COPY"
+for slug in $(cut -f1 anchored.txt); do
+  n=$(grep -nvE '^#|^[[:space:]]*$' "$COPY/$slug.md" | head -1 | cut -d: -f1)
+  sed -i "${n}s/^\(Not started\|In progress\|Complete\|Skipped\|Next\|Optional\|Deferred\)[.;,:]\{0,1\}[[:space:]]*//" "$COPY/$slug.md"
+done
+for slug in $(cut -f1 anchored.txt); do
+  line=$(sed -e '/^#/d' -e '/^[[:space:]]*$/d' "$COPY/$slug.md" | head -1)
+  case "$line" in
+    [A-Z]*|'`'*) ;;
+    *) printf '%s\t%s\n' "$slug" "$(printf '%s' "$line" | cut -c1-46)" ;;
+  esac
+done
+```
+
+THE STRIP REMOVES THE TOKEN AND ITS DELIMITER, NOT THE TOKEN ALONE, which is what makes the capture agree with the measurement under WHAT THE FIX IS: deleting "Deferred. " from `checks-runner-worktree-name-collision` leaves "This is a defect fix in `src/`, ...", while deleting "Deferred" alone would leave a leading full stop and flag a file that strips cleanly. The second loop is criterion 12's body verbatim, with the copy as its path root and the selected set as its input, so the two criteria apply one test and not two. NO ROW COUNT IS WRITTEN HERE, for the reason the paragraph below records.
 
 Criterion 1's pass condition is then re-run against `anchored.txt` taken from the POST-increment tree, against the same `handover.txt` this criterion captured.
 
@@ -2711,6 +2734,8 @@ NO FIGURE IS WRITTEN INTO THIS CRITERION. The three counts move as sidecars are 
 4. THE CHANGED PATH SET IS THIS STEP'S WORKLIST PLUS THE PROJECTION. `git diff --name-only` over the step's change lists exactly the sidecars on THIS STEP'S WORKLIST from criterion 2, under `docs/plans/agent-scaffold.steps/`, plus the regenerated `docs/plans/agent-scaffold.md`. NO FILE ON THE HANDOVER LIST APPEARS, and its absence is the point: the successor step owns those files and edits each of them once. No file under `src/`, `pack/` or `tests/` appears, `docs/plans/agent-scaffold.plan.toml` does not appear (no `status` is flipped, and the step's own entry is authored by a planning pass rather than by the implementation), and `docs/metrics/workflow.jsonl` does not appear. No count of paths is stated, because the worklist is the count.
 
 5. THE CHANGE IS CONFINED TO THE OPENING LINE, WITH ONE NAMED EXCEPTION, AND ADDS NO PARAGRAPH. For each file on the worklist, `git diff --numstat` reports at most 2 added and 2 removed lines, since each opening is one line in an unwrapped file and the fix rewrites that line in place rather than splitting it. The exception is `docs/plans/agent-scaffold.steps/workflow-calibration.md`, which carries item `B` as well and so reports at most 4 and 4.
+
+AN ACCEPTED RESIDUAL SITS IN THAT BOUND, RECORDED HERE RATHER THAN REPAIRED. The bound is one line-pair per file LOOSER than its own justification: a one-line in-place rewrite is one added and one removed, not two and two, and the named exception is given 4 and 4 for two edits, so the doubling is consistent rather than a slip. The human accepted it on 2026-08-22 as residual risk, receipt `type:"decision"` `q_id:"Q-78-round4"` in `docs/metrics/workflow.jsonl`. WHAT A WRONG IMPLEMENTATION COULD THEN SHIP: one silent, unrelated paragraph rewrite in each file on the worklist, in text `render` publishes into every reader's copy of the plan, that no criterion of this step reads. Criteria 1, 10, 11 and 12 all read the first non-blank non-heading line only, criterion 4 checks path names, and criterion 7 re-renders whatever is there. WHAT BOUNDS IT: the whole-diff read a reviewer does at merge, and the NOT IN SCOPE bullet that excludes ANY SIDECAR TEXT BELOW THE OPENING LINE with one named exception, which a reviewer reads. THE COST ACCEPTED is that this bound stops being the guard the criterion says it is, on both halves of its own header: the extra pair admits an edit outside the opening line, and it admits an added line that is not balanced by a removed one. The repair, one character in each of the two numbers, stays available.
 
 6. ITEM `B` MAKES NO FALSE CLAIM. In `workflow-calibration.md`, every `.md` or `.tsv` filename the audit-records paragraph names exists in `docs/plans/workflow-calibration.explorations/`, and the paragraph either names all 12 entries of that directory or makes no exhaustive claim about its contents (no "the directory currently holds X, Y and Z" form).
 
@@ -2737,7 +2762,7 @@ done
 
 MEASURED before the fix, it prints one row per worklist file, because each still carries its own leading token. THE OBLIGATION: the outcome records, for every row this prints after the fix, either the correction made or the reason that match is legitimate prose. A row left with neither is the step not finished. The scan is a FLOOR and not a census: `planner-folds-decisions`' false clauses carry no status-adjacent vocabulary, because they are present-tense assertions about the wording of another file, so once its leading token is corrected this command stops flagging it while every one of those clauses is still false. That is why criterion 11 exists.
 
-11. EVERY OPENING LINE WAS READ WHOLE. The outcome states, for each file on THIS STEP'S WORKLIST, that its opening line was read end to end against the step's declared `status`, and records what that reading found beyond what criterion 10 flagged. This is the criterion that is a judgement rather than a command, and it is here because the measured evidence says no command covers the class: the demonstration under WHAT THE FIX IS shows a token-only fix leaving false prose, and `planner-folds-decisions` goes silent under criterion 10 once its leading token is corrected while every assertion the bullet above records is still false. That silence survives an enlarged word list: adding `remains`, `awaiting`, `planned`, `to do`, `not done`, `when built`, `blocked`, `paused`, `will be` and `yet to` picks up `doc-redundancy-cleanup` (on `when built`) and `reviewer-reproducible-evidence` (on `paused`) and still does not reach it.
+11. EVERY OPENING LINE WAS READ WHOLE. The outcome states, for each file on THIS STEP'S WORKLIST, that its opening line was read end to end against the step's declared `status`, and records what that reading found beyond what criterion 10 flagged. This is the criterion that is a judgement rather than a command, and it is here because the measured evidence says no command covers the class: the demonstration under WHAT THE FIX IS shows a token-only fix leaving false prose, and `planner-folds-decisions` goes silent under criterion 10 once its leading token is corrected while every assertion the bullet above records is still false. That silence survives an enlarged word list. MEASURED OVER THIS STEP'S WORKLIST, adding `remains`, `awaiting`, `planned`, `to do`, `not done`, `when built`, `blocked`, `paused`, `will be` and `yet to` picks up `doc-redundancy-cleanup` on `when built`, and does not reach `planner-folds-decisions`, which is on the worklist. THE SCOPE IS NAMED BECAUSE AN EARLIER FORM STATED A PAIR THAT REPRODUCED ON NEITHER SCOPE: its second slug was `reviewer-reproducible-evidence` on `paused`, and that file is on the HANDOVER list, which criterion 11 never reads. What carries this criterion is the last clause and not the row it names: an enlarged list leaves `planner-folds-decisions` silent while every assertion the bullet above records about it is still false, and the outcome records what the enlarged list prints on the day.
 
 12. NO OPENING IS LEFT UNGRAMMATICAL BY THE DELETION, AND NO OPENING STATES A STATUS. Run this from the repository root under bash with the same `WORKLIST` as criterion 10; it prints nothing when every opening line on the worklist begins as prose. MEASURED on a throwaway copy of the enumerated contradicting openings given a bare token deletion, it printed exactly the seven named under WHAT THE FIX IS, so it detects the condition rather than merely staying silent. The widened files were not put through that fixture, so this criterion is also how they are checked for the first time.
 
@@ -2817,7 +2842,9 @@ ACCEPTANCE, EACH EXECUTABLE.
 ./target/debug/agent-flow validate --source docs/plans/TEMPLATE.plan.toml
 ```
 
-Pass: stderr carries a line ending `no source plan at docs/plans/TEMPLATE.plan.toml`, stdout is empty, and the exit status is 1.
+Pass: stderr carries a line that is exactly `error: no source plan at docs/plans/TEMPLATE.plan.toml`, stdout is empty, and the exit status is 1.
+
+THE WHOLE LINE IS THE CONDITION, HEAD AND TAIL, AND AN EARLIER FORM PINNED THE TAIL ALONE IN ALL THREE CRITERIA. The MESSAGES block above states a PREMISE, that each message keeps its current wording AND takes an error prefix, and a CONSEQUENCE, that an existing reader recognises the line. The two come apart. An implementation that drops the `; nothing to validate` tail, which the tail-only form already forced, adds NO prefix, and changes only the exit path satisfies criteria 2, 3 and 4 as they stood and exits 1, while the premise is false of it and the consequence still holds, because the wording is kept. Nothing else here reaches the head of the line: criterion 1 quotes the PRE-change stderr, which carries no prefix, criterion 7 pins a different message and criterion 9 reads `--help`. Pinning the whole line refuses that implementation, and it costs nothing, because the MESSAGES block already gives all three strings in full. MEASURED BEFORE THE CHANGE, in an empty directory outside the repository, the two lines read `no metrics log at docs/metrics/workflow.jsonl; nothing to validate` and `no source plan at docs/plans/TEMPLATE.plan.toml; nothing to validate`, so they end with the tail rather than with the path and an implementation that changes only the exit path fails these criteria on the tail as well as on the head.
 
 3. AN ABSENT EXPLICIT `--plan` FAILS, AND IT IS RUN SEPARATELY. In the same directory:
 
@@ -2825,7 +2852,7 @@ Pass: stderr carries a line ending `no source plan at docs/plans/TEMPLATE.plan.t
 ./target/debug/agent-flow validate --plan docs/plans/nope.md
 ```
 
-Pass: stderr carries a line ending `no plan at docs/plans/nope.md`, stdout is empty, and the exit status is 1. This command is given on its own rather than as a substitution into criterion 2, because a reader who substitutes once proves one flag and the two arms are two pieces of code.
+Pass: stderr carries a line that is exactly `error: no plan at docs/plans/nope.md`, stdout is empty, and the exit status is 1. This command is given on its own rather than as a substitution into criterion 2, because a reader who substitutes once proves one flag and the two arms are two pieces of code. The whole line is the condition here for the reason criterion 2 records.
 
 4. AN ABSENT EXPLICIT `--metrics` FAILS, AND IT IS RUN SEPARATELY.
 
@@ -2833,7 +2860,7 @@ Pass: stderr carries a line ending `no plan at docs/plans/nope.md`, stdout is em
 ./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --metrics docs/metrics/nope.jsonl
 ```
 
-Pass: stderr carries a line ending `no metrics log at docs/metrics/nope.jsonl` and the exit status is 1, run from the repository root where the `--source` path DOES exist, so the failure is attributable to the metrics path alone.
+Pass: stderr carries a line that is exactly `error: no metrics log at docs/metrics/nope.jsonl` and the exit status is 1, run from the repository root where the `--source` path DOES exist, so the failure is attributable to the metrics path alone. The whole line is the condition here for the reason criterion 2 records.
 
 THEN THE USER TYPES THE DEFAULT PATH, AND THAT COMMAND IS GIVEN SEPARATELY BECAUSE IT IS WHAT TYPES `--metrics` AS EXPLICIT. Scaffold into an empty directory outside the repository, create no metrics log, and run:
 
@@ -2841,7 +2868,7 @@ THEN THE USER TYPES THE DEFAULT PATH, AND THAT COMMAND IS GIVEN SEPARATELY BECAU
 ./target/debug/agent-flow validate --source docs/plans/TEMPLATE.plan.toml --metrics docs/metrics/workflow.jsonl
 ```
 
-Pass: stderr carries a line ending `no metrics log at docs/metrics/workflow.jsonl` and the exit status is 1. The path typed here is byte-identical to the DERIVED default, which criterion 5 runs in the same directory and requires to exit 0, so the two commands differ in one thing only: whether the user supplied the flag.
+Pass: stderr carries a line that is exactly `error: no metrics log at docs/metrics/workflow.jsonl` and the exit status is 1. The path typed here is byte-identical to the DERIVED default, which criterion 5 runs in the same directory and requires to exit 0, so the two commands differ in one thing only: whether the user supplied the flag.
 
 WHY THIS COMMAND EXISTS, AND IT IS THE PREMISE HALF OF THIS STEP'S OWN GROUND. THE PREMISE: explicitness is whether the user SUPPLIED the flag, which the code reads as `args.metrics.is_some()` (`metrics: Option<PathBuf>`, `src/main.rs`). THE CONSEQUENCE: an absent explicit `--metrics` fails and an absent defaulted `--metrics` skips. An implementation that decides explicitness by COMPARING the resolved path against the derived default falsifies the premise while the consequence still holds for every path the other criteria supply. Criterion 4's first command names `docs/metrics/nope.jsonl`, which differs from the default, so it fails there. Criterion 5 supplies no flag at all, so it skips there. That implementation passes criteria 2, 3, 4 and 5 as they stood before this command, and it reports success on the command above, which is the state Principle 5 removes. MEASURED before the change, the command above and criterion 5's command both print `docs/plans/TEMPLATE.plan.toml: 1 steps, 0 questions, valid` and exit 0, so the pair detects the condition rather than merely staying silent.
 
@@ -2858,11 +2885,17 @@ Pass: stdout carries exactly `docs/plans/TEMPLATE.plan.toml: 1 steps, 0 question
 
 7. `--workflow` KEEPS ITS OWN BEHAVIOUR. `validate --source <absent> --workflow` still exits 1, and its stderr still carries `--workflow requested but no plan source resolved`. The new error joins that message rather than replacing it, so the diagnostic that already worked is not lost.
 
-8. EACH BRANCH IS PINNED IN THE SUITE. The integration tests gain one test per branch: an absent explicit `--source`, an absent explicit `--plan`, an absent explicit `--metrics` naming a path that is NOT the default, an absent explicit `--metrics` naming a path that IS byte-identical to the default, and an absent DEFAULTED `--metrics` that still exits 0. FIVE TESTS, because five branches. The fourth and the fifth are a pair over the same path string, and only the flag differs, so together they pin explicitness to `is_some()` rather than to a path comparison. The fifth is also the one that fails if the fix is written too wide. Verify with `grep -c 'fn .*missing_.*_path' tests/`, whose count the outcome records. A criterion that only runs by hand does not survive the increment, which is why the pair lives in the suite as well as in criteria 4 and 5.
+8. EACH BRANCH IS PINNED IN THE SUITE. The integration tests gain one test per branch, in a new file `tests/validate_refuses_a_missing_explicit_path.rs`, named `missing_explicit_source_path`, `missing_explicit_plan_path`, `missing_explicit_metrics_path`, `missing_explicit_metrics_path_equal_to_the_default` and `missing_defaulted_metrics_path`. Those are the five branches: an absent explicit `--source`, an absent explicit `--plan`, an absent explicit `--metrics` naming a path that is NOT the default, an absent explicit `--metrics` naming a path that IS byte-identical to the default, and an absent DEFAULTED `--metrics` that still exits 0. FIVE TESTS, because five branches. The fourth and the fifth are a pair over the same path string, and only the flag differs, so together they pin explicitness to `is_some()` rather than to a path comparison. The fifth is also the one that fails if the fix is written too wide. A criterion that only runs by hand does not survive the increment, which is why the pair lives in the suite as well as in criteria 4 and 5. Verify with:
+
+```
+grep -c 'fn missing_.*_path' tests/validate_refuses_a_missing_explicit_path.rs
+```
+
+Pass: stdout is exactly `5`, and the outcome records it. THE FILE IS NAMED RATHER THAN THE DIRECTORY SEARCHED, BECAUSE AN EARLIER FORM RAN THE PATTERN AGAINST `tests/` WITH NO `-r` AND COULD NOT RUN AT ALL. MEASURED from the worktree root, `grep -c 'fn .*missing_.*_path' tests/` prints `grep: tests/: Is a directory` on stderr, prints `0` on stdout and exits 2, so the count the outcome was told to record was `0` whether the suite held five such tests, one, or none. The shell in use replaces `grep` with `ugrep`, which recurses by default and prints one `<path>:0` row per test file, which is not a count either, so neither reading of that command was an oracle. Criterion 10 already requires the changed-path set to name this file, so naming it here costs nothing.
 
 9. THE HELP TEXT STATES THE RULE. `./target/debug/agent-flow validate --help` describes, for each of the three flags, that a path the user supplies must exist. `grep -c -F -- 'must exist' <(./target/debug/agent-flow validate --help)` prints at least `3`.
 
-10. THE CHANGED PATH SET. `git diff --name-only` lists `src/main.rs` and the integration test file criterion 8 adds to, and nothing else. No file under `docs/plans/` appears, and `pack/` does not appear, because the pack ships no `validate` invocation that names a path this rule newly rejects. If that turns out to be false, the pack file joins the set and the outcome says which and why.
+10. THE CHANGED PATH SET. `git diff --name-only` lists `src/main.rs` and `tests/validate_refuses_a_missing_explicit_path.rs`, the file criterion 8 adds, and nothing else. No file under `docs/plans/` appears, and `pack/` does not appear, because the pack ships no `validate` invocation that names a path this rule newly rejects. If that turns out to be false, the pack file joins the set and the outcome says which and why.
 
 11. THE SUITE, THE VALIDATORS AND ASCII. `cargo test` passes. `cargo clippy --all-targets -- -D warnings` exits 0. `cargo run -- render --check --strict docs/plans/agent-scaffold.plan.toml` prints `up to date` and exits 0. `LC_ALL=C grep -cP '[^\t\x20-\x7e]' <file>` prints `0` for every changed file.
 
@@ -2949,7 +2982,14 @@ THE RENDER GOLDEN AND THE TIE-BREAK TEST ARE ONE MOVE:
 - `src/plan/testdata/render-fixture.plan.toml`, whose header comment and whose `zeta` block comment both state the tie-break claim.
 - `ordering_is_numeric_for_questions_and_slug_tiebroken_for_equal_order_steps` in `src/plan/render.rs`. Its STEP assertion re-points at declaration order and the test takes a name that matches. The QUESTION assertions and the skipped/optional/deferred bucket assertion stay. Do not delete the test.
 
-NO FILE UNDER `docs/plans/` OTHER THAN THE PLAN TOML CHANGES IN THIS INCREMENT. `docs/plans/agent-scaffold.md` in particular must not change, and criterion 2 is what proves it.
+THE PACK PROSE NO DECLARATION-SITE SEARCH REACHES, WHICH IS AN EDIT THIS INCREMENT OWES AND AN EARLIER FORM OF THIS SIDECAR OMITTED. The search above is anchored on a TOML assignment, and it is correct for what it searches: it returns the 12 files and the per-file counts tabulated above, and both were reproduced. The sentence below is PROSE, so no anchored search reaches it, and a path set derived from a search cannot contain what the search cannot match.
+
+- `pack/AGENTS.md`, the phase 2 sentence reading "the `<task>.plan.toml` skeleton holds the Roadmap (`[[step]]` entries with status and order)". The `and order` clause goes. MEASURED OVER THE SHIPPED SURFACES, `grep -rln 'entries with status and order' pack/ AGENTS.md .agents/` returns exactly those three paths. The search is scoped rather than whole-tree because the whole-tree form also reaches the rendered plan, this sidecar and this pass's own review records, none of which is shipped and all of which quote the sentence in order to discuss it.
+- `AGENTS.md` and `.agents/AGENTS.reference.md`, the two committed copies. `pack/pack.toml` copies `pack/AGENTS.md` to both destinations with `render = true`, so neither is a byte copy and rule 3's `cmp` does not apply to either. `the_committed_scaffold_matches_a_fresh_render` in `src/agents_md_drift.rs` pins them against a fresh render, so correcting the pack source alone fails `cargo test`, and so does correcting a committed copy alone. The three move together or the suite goes red.
+
+WHY THIS BELONGS TO INCREMENT 1 AND NOT TO THE PROSE SWEEP. Increment 1 ships the deletion, and this increment's own risk ground is that "every previously valid plan in every scaffolded project fails to parse until edited" and that this is widely depended on. An implementation that satisfies every other criterion here ships, to every one of those projects, the instruction to write the field that now makes the plan fail to parse: the criteria would be blind to the consequence their own risk ground names. Increment 2 cannot carry it either, because its criterion 5 reads "No file under `src/`, `tests/` or `pack/` appears."
+
+NO FILE UNDER `docs/plans/` OTHER THAN THE PLAN TOML CHANGES IN THIS INCREMENT. `docs/plans/agent-scaffold.md` in particular must not change, and criterion 2 is what proves it. `docs/plans/TEMPLATE.md` does not change either, and that is measured rather than assumed: `render` emits no order column and the template holds one step, so deleting `order` from `docs/plans/TEMPLATE.plan.toml` leaves that projection byte-identical.
 
 THE ONE DATA MOVE THE MIGRATION OWES, REPRODUCED. Every step's declaration position agrees with its rendered position except `rename-to-agent-flow`. Reproduce the exception with:
 
@@ -3096,11 +3136,15 @@ MEASURED BEFORE THE CHANGE it prints `zeta=1 epsilon=1 roadmap zeta<epsilon=0 de
 
 7. THE TEMPLATE PAIR STAYS BYTE-IDENTICAL. `cmp pack/plan-template.plan.toml docs/plans/TEMPLATE.plan.toml` prints nothing and exits 0. MEASURED, an implementation that updates the pack source and leaves the committed copy stale gives `cargo test` 0 failures, `render --check --strict` exit 0 and `validate` exit 0, and this `cmp` prints `pack/plan-template.plan.toml docs/plans/TEMPLATE.plan.toml differ: byte 1511, line 37` with exit 1.
 
-8. THE CHANGED PATH SET IS THE 12 SEARCHED FILES PLUS THE FOUR GOLDEN AND FIXTURE FILES. `git diff --name-only` over the increment lists exactly:
+8. THE CHANGED PATH SET IS THE 12 SEARCHED FILES, PLUS THE FOUR GOLDEN AND FIXTURE FILES, PLUS THE FOUR THE SEARCH CANNOT REACH. `git diff --name-only` over the increment lists exactly:
 
 ```
+.agents/AGENTS.reference.md
+AGENTS.md
+CHANGELOG.md
 docs/plans/TEMPLATE.plan.toml
 docs/plans/agent-scaffold.plan.toml
+pack/AGENTS.md
 pack/plan-template.plan.toml
 src/next.rs
 src/plan/render.rs
@@ -3117,7 +3161,9 @@ tests/validate_toml_primary_skips_markdown_plan.rs
 tests/validate_workflow_toml_source_needs_no_plan.rs
 ```
 
-`docs/plans/agent-scaffold.md` must not appear, no file under `docs/plans/agent-scaffold.steps/` must appear, `pack/principles.toml` must not appear and `src/tui.rs` must not appear. The last two are named because a search on the bare string `order = ` reaches both and a whole-tree substitution damages both.
+`docs/plans/agent-scaffold.md` must not appear, no file under `docs/plans/agent-scaffold.steps/` must appear, `docs/plans/TEMPLATE.md` must not appear, `pack/principles.toml` must not appear and `src/tui.rs` must not appear. The last two are named because a search on the bare string `order = ` reaches both and a whole-tree substitution damages both. `docs/plans/TEMPLATE.md` is named because the sibling step's increment 3 DOES have to re-render it and this one does not, for the reason recorded above.
+
+THE FOUR PATHS THE SEARCH CANNOT REACH ARE NAMED HERE WITH THEIR REASONS, because this criterion reads as an exact enumeration: an implementer who made those edits under an earlier form of it FAILED the criterion, and one who obeyed it shipped the defect instead. `pack/AGENTS.md` carries the `and order` clause, and `AGENTS.md` and `.agents/AGENTS.reference.md` are its two committed renders, which the drift test pins. `CHANGELOG.md` carries the entry this step's DOCUMENTATION IMPACT owes. Every one of them is a file a CORRECT implementation must change, which is what makes the omission a defect in the criterion rather than in the implementation.
 
 9. THE SUITE AND THE VALIDATORS STAY GREEN. `cargo test` passes. `cargo clippy --all-targets -- -D warnings` exits 0. `./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --metrics docs/metrics/workflow.jsonl` prints a `docs/plans/agent-scaffold.plan.toml: <N> steps, 80 questions, valid` line on stdout and exits 0. `./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --workflow` prints `docs/plans/agent-scaffold.plan.toml vs docs/metrics/workflow.jsonl: workflow invariants hold` and exits 0. The `valid` line is pinned as well as the exit code, because `validate` exits 0 on a source that is not there, which `validate-missing-source-exit` fixes.
 
@@ -3197,7 +3243,9 @@ done < "$DRIFT"
 printf 'rows=%d restated=%d wrong_slug=%d number_survives=%d\n' "$rows" "$restated" "$wrong" "$residual"
 ```
 
-Pass: `rows` equals `wc -l < drift.txt`, `wrong_slug=0`, and `restated` plus the count of `NUMBER SURVIVES` rows equals `rows`. Every `NUMBER SURVIVES` row is then enumerated in the outcome as a verbatim quotation of another file's text whose restatement would falsify the quotation, and a row left without that is the increment not finished. The oracle is the printed line and not an exit status.
+Pass, all four clauses: `rows` equals `wc -l < drift.txt`; `wrong_slug=0`; `restated` equals `rows` MINUS `E`; and `number_survives` EQUALS `E`. `E` is the count of `NUMBER SURVIVES` rows the outcome enumerates as verbatim quotations of another file's text whose restatement would falsify the quotation, and every such row is enumerated that way, and a row left without that is the increment not finished. The oracle is the printed line and not an exit status.
+
+THE LAST TWO CLAUSES ARE THE ONLY DISCRIMINATING ONES, AND AN EARLIER FORM CARRIED NEITHER. It read "`restated` plus the count of `NUMBER SURVIVES` rows equals `rows`". That is an IDENTITY OF THE LOOP and not a condition: every row takes exactly one of three exits, so `rows = restated + wrong + residual` holds on every tree whatever the implementation did, and once `wrong_slug=0` is required that clause is `wrong_slug=0` restated. The first clause is an identity too, because the loop increments `rows` once per line of `drift.txt`. MEASURED, AN UNTOUCHED TREE AND A RENUMBERED TREE BOTH PRINT A BYTE-IDENTICAL `restated=0 wrong_slug=0` LINE WITH `number_survives` EQUAL TO `rows`, and both satisfied all three of the earlier clauses. A renumbering cannot escape the residual arm in either direction, because `expect` holds only the citations at or below 83 on the line and `actual` holds every citation still on it, so any surviving number sends the row to `NUMBER SURVIVES`. RULE 4 is a numbered RULE, it cites Principle 8 by name, and its own last sentence reads "Criterion 2 of increment 2 detects a renumbering", which the earlier pass condition did not; this increment's ground says criterion 2 is the mechanical oracle and criterion 3 is the reading, and under that form BOTH halves carried a reading. The two equalities above are this criterion's own MEASURED table's line for a correct implementation, and moving them into the Pass clause is the whole of the repair. THE BACKSTOP THAT ALREADY WORKED IS UNCHANGED AND IS NOT THE FIX: the obligation to enumerate every `NUMBER SURVIVES` row refuses both trees for an implementer who discharges it, and what failed was the pass condition and the ground's claim about which half is mechanical.
 
 EXACTLY ONE SUCH ROW EXISTS TODAY AND IT IS NAMED, so a correct implementation prints `number_survives=1` rather than `0`. THE ROW is the borderline-case bullet in `docs/plans/agent-scaffold.steps/sidecar-status-opening-drift.md` that quotes the opening line of `docs/plans/agent-scaffold.steps/reviewer-reproducible-evidence.md`. Find it with:
 
@@ -3254,6 +3302,14 @@ grep -noE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.ledger.md | awk -F
 NO COUNT IS WRITTEN HERE AND THE OUTCOME RECORDS WHAT THE COMMAND PRINTS ON THE DAY. The count rises with every appended review round, and the ledger paragraph that motivated the split states the figure the human weighed, dated. THE SPLIT IS DECIDED, so the specification's alternative branch is spent: `ledger-order-citation-currency` owns the ledger and it does not return to this increment. Do not run the increment with the ledger half in.
 
 7. THE SUITE, THE VALIDATORS AND ASCII. As increment 1 criteria 9 and 10. None of the three reads sidecar prose, so they are the no-regression check rather than the oracle. Criterion 2 is the oracle.
+
+### DOCUMENTATION IMPACT
+
+`CHANGELOG.md`, THE `## [Unreleased]` SECTION, WHICH INCREMENT 1 OPENS. `grep -n 'Unreleased' CHANGELOG.md` exits 1 today, so the entry means opening the section rather than appending to one. It records that `[[step]].order` is DELETED, that the array position of a `[[step]]` block is now the plan order, and that a plan written against an earlier version does not parse until every `order = ` line is removed. The entry belongs to increment 1, which ships the schema deletion, and not to increment 2, whose criterion 5 admits no file outside `docs/plans/`. `AGENTS.md` states this duty in this repository's own copy and in the shipped pack copy alike, and `validation-constraints.md` already names `CHANGELOG.md` and its `## [Unreleased]` section for a comparable pending step, which is the shape this section follows. `CHANGELOG.md` is in increment 1 criterion 8's path set for that reason.
+
+THE SHIPPED PACK PROSE IS A FILE EDIT AND NOT A NOTE, so it is stated in increment 1's own path set rather than deferred to here: `pack/AGENTS.md` loses the `and order` clause and its two committed renders move with it, for the reasons that block records.
+
+`README.md` IS NOT MADE STALE, MEASURED. Its one description of the plan source names the Roadmap `[[step]]` entries and lists no field of them, and its other matches on the word `order` are about principle ordering, module declaration order and token de-duplication. Its absence from the path set is a choice.
 
 ### NOT IN SCOPE, NAMED SO IT IS NOT DRAWN IN
 
@@ -3477,7 +3533,9 @@ WHAT A `paraphrased` ROW'S `source` COLUMN PROVES, STATED SO IT IS NOT READ AS M
 
 RULE 8, THE SENTENCE MOVES OUT OF THE SIDECAR. After a step is backfilled, its sidecar must not contain its own `problem` or `approach` string verbatim. This is a pure string comparison inside one plan, it needs no git resolution, and it catches the transcribe-then-forget-to-delete case. It is the guard duty (g) owes.
 
-RULE 9, NO INTENT VALUE OPENS WITH A ROADMAP STATUS TOKEN. 45 sidecars open with a status token and rule 4 makes that opening the first source, so a transcription that starts at the opening word writes the token into the TOML. That re-creates the duplicate `sidecar-status-opening-drift` deletes. The transcription starts after the token.
+RULE 9, NO INTENT VALUE OPENS WITH A ROADMAP STATUS LABEL. A sidecar opening that carries a status LABEL is that step's first source under rule 4, so a transcription that starts at the opening word writes the label into the TOML. That re-creates the duplicate `sidecar-status-opening-drift` deletes. The transcription starts after the label.
+
+THE RULE REACHES A LEADING LABEL AND NOT A LEADING ORDINARY ADJECTIVE, AND THE ANCHORED SELECTOR IS WHAT SEPARATES THE TWO. `sidecar-status-opening-drift` criterion 1 states that anchor, criterion 6's R3 regex reuses it, and that sidecar enumerates by slug the adjectival openings it excludes, every one of them declared `deferred`. Transcribing such an opening from its first word is CORRECT, and rewriting it to satisfy this rule mutilates a legitimate problem statement. NO POPULATION FIGURE IS WRITTEN HERE, AND AN EARLIER FORM STATED 45: that is the RELAXED selector's count and it includes exactly those adjectival openings, so the rule asserted of all 45 something that is false of nine. The population is what the ANCHORED selector prints on the day, and it is smaller again by the time a batch runs, because `sidecar-status-opening-drift` is declared ahead of this step and deletes the label from its own worklist first.
 
 RULE 10, THE RENDER FORMAT IS FROZEN BY A GOLDEN BEFORE THE LIVE PLAN GAINS ONE VALUE. `render --check --strict` is a byte comparison over the whole document, so the first implementer's format choice becomes the golden and every other correct-in-spirit form becomes a hard failure. Increment 1 therefore pins the format in `src/plan/testdata/render-fixture.md`, where the plan carries no intent at all, so the first batch inherits a fixed format rather than invents one.
 
@@ -3567,13 +3625,23 @@ ACCEPTANCE, EACH EXECUTABLE.
 
 1. THE SCHEMA CARRIES BOTH FIELDS AND THEY ARE OPTIONAL. `./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --metrics docs/metrics/workflow.jsonl` prints a `docs/plans/agent-scaffold.plan.toml: <N> steps, 80 questions, valid` line and exits 0, against a plan where no step carries either field. `grep -c 'problem: Option<String>' src/plan/source.rs` prints `1`.
 
-2. THE SINGLE-LINE RULE FIRES ON ALL THREE WAYS A NEWLINE ARRIVES. Build three one-step plans in a scratch directory outside the repository, one with a `"""` block value, one with a `'''` block value, and one with a `\n` escape inside a basic string. Run `./target/debug/agent-flow validate --source <file>` on each. Each exits 1 and prints, on stderr, a line that ends with this string, and nothing on stdout:
+2. THE SINGLE-LINE RULE FIRES ON ALL THREE WAYS A NEWLINE ARRIVES, AND IT FIRES FOR EACH FIELD. Build SIX one-step plans in a scratch directory outside the repository. For `problem`, one with a `"""` block value, one with a `'''` block value and one with a `\n` escape inside a basic string. Then the same three for `approach`. Run `./target/debug/agent-flow validate --source <file>` on each of the six. Each exits 1 and prints nothing on stdout.
+
+Each of the three `problem` files prints, on stderr, a line that ends with this string:
 
 ```
 step `a` field `problem` must be a single line
 ```
 
-MEASURED on the `"""` form and the `\n` form, the whole stderr line is that string with `<file>: ` in front of it. The string is given inside a fenced block rather than inline, because an inline form needs a backslash before each backtick, CommonMark keeps the backslash as a literal character, and `render` inlines this sidecar verbatim, so a reviewer comparing real output against the printed string sees a mismatch that the implementation did not cause.
+Each of the three `approach` files prints, on stderr, a line that ends with this string:
+
+```
+step `a` field `approach` must be a single line
+```
+
+THE TWO STRINGS ARE GIVEN ONCE EACH RATHER THAN AS ONE STRING WITH A FIELD NAME TO SUBSTITUTE, and that is why this criterion runs six files rather than three. RULE 2 reads that `validate` rejects a newline in EITHER field, so an implementation that applies the rejection to `problem` alone satisfies a three-file form of this criterion, satisfies criterion 3, which already runs both fields, and satisfies every other criterion of this increment and of increment 3, while RULE 2 and the Principle 5 it cites are false of it on half their subject. Criterion 13's `approach` single-line test is the same guard in the suite.
+
+MEASURED on the `"""` form and the `\n` form, the whole stderr line is that string with `<file>: ` in front of it. The strings are given inside fenced blocks rather than inline, because an inline form needs a backslash before each backtick, CommonMark keeps the backslash as a literal character, and `render` inlines this sidecar verbatim, so a reviewer comparing real output against the printed string sees a mismatch that the implementation did not cause.
 
 3. THE EMPTY-VALUE RULE FIRES PER FIELD. A one-step plan with `problem = ""` and `approach = ""` gives two stderr lines and exit 1:
 
@@ -3584,7 +3652,7 @@ MEASURED on the `"""` form and the `\n` form, the whole stderr line is that stri
 
 MEASURED at whole-plan scale, `problem = ""` and `approach = ""` across every step of the live plan gives exit 1 and exactly `2 x $(grep -c '^\[\[step\]\]' docs/plans/agent-scaffold.plan.toml)` stderr lines, which is 210 on the tree this sidecar was spliced into and was 202 when the rule was first measured against a 101-step tree. The outcome records both the step count and the line count, so the pair reproduces on the day rather than expiring. This is the criterion that closes the measured trap where an empty backfill survives the required-field flip.
 
-4. THE RENDER FORMAT IS PINNED IN THE GOLDEN. `src/plan/testdata/render-fixture.plan.toml` gains both fields on `alpha`, both on `gamma`, and BOTH on `eta` with only one of them filled, and the golden is regenerated. Then:
+4. THE RENDER FORMAT IS PINNED IN THE GOLDEN. `src/plan/testdata/render-fixture.plan.toml` gains both fields on `alpha`, both on `gamma`, and `problem` ALONE on `eta`, which is the fixture criterion 6 reads, and the golden is regenerated. AN EARLIER FORM READ "BOTH on `eta` with only one of them filled", AND NO CORRECT IMPLEMENTATION SATISFIES IT ALONGSIDE CRITERION 6. An `approach` key present and empty is a value RULE 3 rejects, and once `eta` carries both keys the render sub-rule for a step that carries only one field stops applying to it, so `render` emits an `- approach: ` line where criterion 6 requires the fourth line to be blank. The two criteria could not both be met. Criterion 6 states the intent unambiguously and it is the criterion the render sub-rule needs a fixture for, so criterion 6 is the one that stands and this sentence is corrected to match it. Then:
 
 ```
 grep -c -F -- '- problem: The render golden pins no projected intent.' src/plan/testdata/render-fixture.md
@@ -3683,6 +3751,22 @@ THE SIX `[[step.increment]]` ENTRIES ARE ALREADY DECLARED, `step-intent-encoding
 
 12. THE SUITE, THE VALIDATORS AND ASCII. `cargo test` passes, `cargo clippy --all-targets -- -D warnings` exits 0, both `validate` invocations print their `valid` line and exit 0, and `LC_ALL=C grep -cP '[^\t\x20-\x7e]' <file>` prints `0` for every changed file.
 
+13. RULE 2 AND RULE 3 ARE PINNED IN THE SUITE, ONE TEST PER RULE PER FIELD. `src/plan/source.rs` gains four unit tests in its own `mod tests`, named `validate_rejects_an_empty_problem`, `validate_rejects_an_empty_approach`, `validate_rejects_a_multi_line_problem` and `validate_rejects_a_multi_line_approach`. Each builds a one-step plan carrying the defect its name states, calls `validate_source`, and asserts that the returned problems carry that field's own string from the `validate` block above. NO PATH JOINS CRITERION 11'S SET, because `src/plan/source.rs` is already in it.
+
+WHY THIS IS A CRITERION AND NOT LEFT TO `cargo test`. Criterion 12 runs whatever tests exist, and nothing else in either increment obliges either rule to have one: criterion 11 names no test file, and increment 3 rewrites the code that implements both rules. Increment 3's own stated edit taken literally, turning the two `if let Some` arms into direct reads and dropping the check bodies, leaves BOTH halves of increment 3's ground true, because both fields are still required and every previously valid plan still fails to parse, while RULE 2, RULE 3 and the Principle 5 both cite are false of the result. A hand-run command at increment 1 says nothing about the state of the code after increment 3 rewrites it, which is why the pair lives in the suite. The metrics log's own empty-field rejections are already pinned this way in `src/metrics.rs`, and the `[[step]]` rules get the same treatment here.
+
+THE GROUND SPLITS INTO A PREMISE AND A CONSEQUENCE, AND THE CRITERION RUNS AGAINST BOTH HALVES. THE PREMISE: each of the four tests fails when the rejection it names is removed. THE CONSEQUENCE: four functions with those names exist and `cargo test` passes. A grep can only reach the consequence, so a RED measurement carries the premise.
+
+```
+grep -c 'fn validate_rejects_a' src/plan/source.rs
+```
+
+Pass: stdout is exactly `4`.
+
+THEN THE RED MEASUREMENT, WHICH IS PART OF THE CRITERION AND NOT A NOTE. Delete the empty-after-trim check and the newline check from `validate_source`, leaving both fields read and every other rule in place, run `cargo test --bin agent-flow validate_rejects_a`, and record the output in the outcome. Pass: ALL FOUR named tests FAIL under the deletion. Restore the two checks and show the four green again. This is the shape `plan-order-array-position` increment 1 criterion 5 uses for its own three arms.
+
+WHY BOTH HALVES ARE LOAD-CARRYING. Four correctly named tests that assert nothing satisfy the grep and survive the deletion, so only the RED measurement refuses them. Four tests that pin `problem` on both rules and stub the two `approach` names satisfy the grep and fail the RED measurement on two of the four, which is why the pass condition is ALL FOUR rather than a count of failures.
+
 ### Increments 2a to 2f, `step-intent-encoding-inc2a` and the rest: the cited backfill, one batch each
 
 RISK CLASS `risky` FOR EVERY ONE OF THE SIX (two consecutive clean review rounds each). THE GROUND, WHICH IS THE SAME FOR EACH: a batch authors two prose sentences for up to 18 steps and MOVES the source text out of those sidecars, so a mistake spreads across the published plan document and is not reversible by one revert once a later batch lands on top. The oracle for the sentences themselves is a reading, which is what the batch split bounds. The batch split does not lower the class: it lowers how much any one review round carries, and each batch still ships prose into every scaffolded reader's copy of the plan.
@@ -3711,17 +3795,28 @@ printf 'problem=%d approach=%d\n' "$(grep -c '^problem = ' docs/plans/agent-scaf
 
 Pass: each post count minus its pre count equals the batch size, and the two counts are equal to each other. The outcome records both pairs. Both fields are counted because a batch that fills `problem` and forgets `approach` satisfies a single-field check.
 
+`m` IS DEFINED HERE, ONCE, AND CRITERIA 6 AND 7 READ IT FROM HERE RATHER THAN RESTATING IT. `m` is the POST count of `^problem = ` this command prints, which the pass condition above requires to equal the post count of `^approach = `. It is NOT the number of steps carrying at least one filled field, and the two agree only when every filled step carries both. AN EARLIER FORM LEFT `m` UNDEFINED WHERE CRITERION 6 USES IT AND UNNAMED WHERE CRITERION 7 USES IT, so against a batch that fills one field on twice as many steps the `checked` clause PASSED under one reading and REFUSED under the other, and which reading a reader happened to take decided the outcome. A clause that only refuses a wrong implementation on one of its available readings has not refused it.
+
 THE BATCH-SIZE HALF OF THAT CLAUSE READS FALSE FOR THE LAST BATCH, AND THAT IS AN ACCEPTED RESIDUAL RATHER THAN A REPAIR. Increment 1 criterion 10 defines batch i as declaration positions `(i-1)*S+1` to `min(i*S, N)`, so the last batch covers `N - (K-1)*S`, which is FEWER than `S` whenever `S` does not divide `N`. Read literally, a correct last batch fails the count clause and the implementer must stop and ask, or override the clause without a record. The human accepted this on 2026-08-21 as residual risk, receipt `type:"decision"` `q_id:"Q-78-residuals"` in `docs/metrics/workflow.jsonl`. THE CONSEQUENCE THE HUMAN WEIGHED: nothing wrong can ship, because the IDENTITY check below is a separate check against the batch's declared slug list, and it binds correctly at the last batch's real size. The cost accepted is one avoidable escalation, or one unrecorded override, at the last batch.
 
-The identity, which is what makes the criterion's own heading true. Capture the filled slug set before and after and compare it against the batch's declared slug list from increment 1 criterion 10:
+The identity, which is what makes the criterion's own heading true. IT RUNS OVER BOTH FIELDS AND NOT OVER `problem` ALONE, for the reason the count half already states in its own last sentence. Capture the filled slug set PER FIELD before and after, and compare each against the batch's declared slug list from increment 1 criterion 10:
 
 ```
 sed -n 's/^slug = "\(.*\)"$/\1/p' docs/plans/agent-scaffold.plan.toml | awk -v s="$S" -v b="$B" '{if (int((NR-1)/s)+1 == b) print}' | sort > declared.txt
-awk '/^slug = /{s=$0} /^problem = /{print s}' docs/plans/agent-scaffold.plan.toml | sed -n 's/^slug = "\(.*\)"$/\1/p' | sort > filled-post.txt
-printf 'declared=%d gained=%d outside=%d missing=%d\n' "$(wc -l < declared.txt)" "$(comm -13 filled-pre.txt filled-post.txt | wc -l)" "$(comm -13 declared.txt <(comm -13 filled-pre.txt filled-post.txt) | wc -l)" "$(comm -23 declared.txt <(comm -13 filled-pre.txt filled-post.txt) | wc -l)"
+for field in problem approach; do
+  awk -v f="^$field = " '/^slug = /{s=$0} $0 ~ f {print s}' docs/plans/agent-scaffold.plan.toml |
+    sed -n 's/^slug = "\(.*\)"$/\1/p' | sort > "filled-$field-post.txt"
+  comm -13 "filled-$field-pre.txt" "filled-$field-post.txt" > "gained-$field.txt"
+  printf '%s declared=%d gained=%d outside=%d missing=%d\n' "$field" \
+    "$(wc -l < declared.txt)" "$(wc -l < "gained-$field.txt")" \
+    "$(comm -13 declared.txt "gained-$field.txt" | wc -l)" \
+    "$(comm -23 declared.txt "gained-$field.txt" | wc -l)"
+done
 ```
 
-where `B` is the batch number, `S` the batch size, and `filled-pre.txt` is the same `filled-post.txt` command run against the pre-increment tree. Pass: `gained` equals `declared`, `outside=0` and `missing=0`. This uses process substitution, so it runs under bash and not under nu. MEASURED, a count-only check passes on a batch that fills the right NUMBER of steps from the wrong part of the plan, and `outside` is what reports that.
+where `B` is the batch number, `S` the batch size, and each `filled-<field>-pre.txt` is the same per-field capture run against the pre-increment tree. Pass, on BOTH printed rows: `gained` equals `declared`, `outside=0` and `missing=0`. Run it under bash, as with the other scripts in this block.
+
+MEASURED, a count-only check passes on a batch that fills the right NUMBER of steps from the wrong part of the plan, and `outside` is what reports that. THE SECOND ROW IS WHAT REFUSES THE SPLIT-FIELD BATCH, and a `problem`-only identity check does not. An implementation that fills `problem` on its own declared slugs and `approach` on as many steps drawn from a LATER batch satisfies the count clause, because both counts rise by the batch size and stay equal to each other, and it satisfies a `problem`-only identity check in full. It falsifies this block's shared risk ground on the premise half, that a batch authors two prose sentences FOR ITS OWN STEPS, while the consequence half holds whole, because the prose still ships into the published plan and is still not reversible by one revert. On that implementation the `approach` row prints `outside` and `missing` each equal to `declared`, and no figure is written here because the batch size moves with the plan.
 
 2. THE SIZING SAMPLE RUNS FIRST, IN BATCH a ONLY, AND IT REPORTS THE TWO FIELDS SEPARATELY. Before any field is filled, take the first ten steps of batch a, read each sidecar, and record in the outcome, for `problem` and for `approach` separately, how many of the ten yield a transcribable sentence and how many need a paraphrase. The design's own claim that most steps already state their intent is UNMEASURED, and this sample is the measurement. It is an acceptance criterion rather than a paragraph, because a named remedy that no criterion enforces is a remedy an implementer can skip. The recorded pair is what later batches are read against under criterion 8. One known case is named so the sample is not read as a formality: `file-dropper.md`, the shortest sidecar in the plan, states an approach and states no problem at all.
 
@@ -3846,7 +3941,7 @@ done
 printf 'checked=%d duplicated=%d status_token=%d\n' "$checked" "$dup" "$token"
 ```
 
-Pass: the printed line reads `checked=<2m> duplicated=0 status_token=0`, where `m` is the number of steps filled so far across all batches, AND `checked` is greater than zero. The last clause is the absent-input guard: the loop over a plan with no filled field prints `checked=0 duplicated=0 status_token=0`, which reads as a clean run.
+Pass: the printed line reads `checked=<2m> duplicated=0 status_token=0`, where `m` IS THE QUANTITY CRITERION 1 DEFINES AND IS NOT RE-DEFINED HERE, AND `checked` is greater than zero. The last clause is the absent-input guard: the loop over a plan with no filled field prints `checked=0 duplicated=0 status_token=0`, which reads as a clean run.
 
 EVERY ARM IS ANCHORED ON A SENTENCE BOUNDARY, AND THE ANCHOR IS THE SAME ONE `sidecar-status-opening-drift` USES. A status word is a LABEL when the token is followed by punctuation, by an opening parenthesis, by end of value, or by a conjunction or preposition. It is an ORDINARY ADJECTIVE when a noun follows it, and an adjective is not what rule 9 forbids. MEASURED, an earlier form of this test matched `Complete`, `Skipped`, `Optional` and `Deferred` unanchored, so the sentence "Deferred cleanup from the `Q-44` audit (`architecture-audit`), raised there and scheduled here." fired it, and that sentence is the faithful opening of six sidecars in this plan and a legitimate problem statement. The anchored form does not fire on it. Nine sidecars in this plan open that way and every one is declared `deferred`.
 
@@ -3901,7 +3996,7 @@ printf 'steps=%d source=%d/%d quoted=%d/%d projected=%d/%d\n' \
   "$(grep -c '^- problem: ' "$MD")" "$(grep -c '^- approach: ' "$MD")"
 ```
 
-Pass, for a batch: `projected` minus `quoted` equals `source`, for BOTH fields, and both halves of `source` are equal to each other and to the running total of filled steps. The outcome records the whole printed line.
+Pass, for a batch: `projected` minus `quoted` equals `source`, for BOTH fields, and both halves of `source` are equal to each other and each equals `m`, THE QUANTITY CRITERION 1 DEFINES AND WHICH IS NOT RE-DEFINED HERE. The outcome records the whole printed line.
 
 WHY THE COUNT IS TAKEN IN THE SOURCE AND ONLY RECONCILED IN THE PROJECTION. `render` inlines every sidecar verbatim, so a sidecar that QUOTES a `- problem: ` line contributes one to the projection and nothing to the source. This sidecar quotes exactly such a pair, in the fenced block under `render` in increment 1. MEASURED on the untouched tree, before any batch runs, R4 prints `steps=105 source=0/0 quoted=1/1 projected=1/1`, so a criterion that compares the projection against the step count directly cannot be satisfied by a correct implementation at any point in the migration. The reconciliation holds at every point, which is why increment 3 criterion 8 runs the same script. Principle 8, Structured data first, project for humans, is the ground: the TOML is the source and the `.md` is the projection, so the totality claim is a claim about the source.
 
@@ -3925,13 +4020,13 @@ THE CONSEQUENCE. Every previously valid scaffolded plan fails to parse until its
 
 THE TWO HALVES COME APART, AND THE SEPARATION WAS BUILT, COMPILED AND RUN. A pre-increment plan carries neither field, so it fails to parse whenever EITHER field is required. The consequence therefore survives an implementation that requires `problem` and leaves `approach` optional, while the premise is false of it. MEASURED on that build: the schema greps for `problem` both pass, the parse check on a plan with no `problem` prints ``missing field `problem` `` and exits 1, and a plan carrying `problem` and no `approach` prints `1 steps, 0 questions, valid` and exits 0. THE MIRROR CONSTRUCTION also comes apart the other way: both fields declared `String` under `#[serde(default)]` keeps the premise's wording and falsifies the consequence, because MEASURED on that build a plan with neither field prints `1 steps, 0 questions, valid` and exits 0 rather than failing to parse. Criterion 1 below runs against both halves and refuses both constructions.
 
-THE INCREMENT ALSO CHANGES `pack/plan-template.plan.toml`, `pack/plan-template.documentation-protocol.md` and their committed copies under `docs/plans/`, which every scaffolded project inherits.
+THE INCREMENT ALSO CHANGES `pack/plan-template.plan.toml`, `pack/plan-template.documentation-protocol.md`, `pack/plan-template.steps/example-step.md` and their committed copies under `docs/plans/`, which every scaffolded project inherits.
 
 THE BATCH BLOCK ONE INCREMENT EARLIER ALREADY CLOSED THE IDENTICAL HOLE, in its own words at criterion 1: "Both fields are counted because a batch that fills `problem` and forgets `approach` satisfies a single-field check." Its ground is stated symmetrically and has no surviving half to hide behind, which is why the same author saw the hazard there and missed it here.
 
 THE HUMAN DECISION THIS INCREMENT WAITED ON IS TAKEN (2026-08-21, receipt `q_id:"Q-78-requiredfields"`). `problem` AND `approach` ARE REQUIRED, IN THE SHIPPED PACK AS WELL AS HERE, over an optional field with a validation warning. The human rejected a third option, required here and optional in the pack. The human weighed the cost this increment states below, and accepted the residual that a placeholder satisfies a required field forever. So this increment builds what it already specifies, and it waits only on the review the whole step waits on.
 
-WHAT CHANGES. `Option<String>` becomes `String` on both fields and the two `if let Some` arms in `validate` become direct reads. `render` emits both lines unconditionally. `next` wraps both in `Some` at the `steps_from_toml` boundary, so `StepInfo` keeps its `Option` for the Markdown substrate, which carries no such column. `status --step` drops the `(not recorded)` fallback for a TOML source and keeps it for the Markdown one.
+WHAT CHANGES. `Option<String>` becomes `String` on both fields and the two `if let Some` arms in `validate` become direct reads, and the four rejections themselves stay, pinned by the four tests increment 1 criterion 13 puts in the suite. `render` emits both lines unconditionally. `next` wraps both in `Some` at the `steps_from_toml` boundary, so `StepInfo` keeps its `Option` for the Markdown substrate, which carries no such column. `status --step` drops the `(not recorded)` fallback for a TOML source and keeps it for the Markdown one, WHICH IS AN EDIT TO `src/main.rs`: `StatusArgs` is declared there and `run_status` is the function that prints the fallback, and `step_views` projects `slug` and `status` alone, so `status --step` cannot read the intent through `PlanProjection`. `src/main.rs` is therefore in criterion 9's path set and criterion 12 is the command that reads the surviving half.
 
 Every inline `[[step]]` declaration in `src/`, `tests/` and the two template files gains both fields.
 
@@ -3943,11 +4038,17 @@ Every inline `[[step]]` declaration in `src/`, `tests/` and the two template fil
 A Step Detail below its own heading line must not repeat a `[[step]]` field. The heading line is the exception, and `render` takes it over later.
 ```
 
+THE SENTENCE LANDS AS ITS OWN PARAGRAPH BELOW THE ANGLE-BRACKET PLACEHOLDER NOTE AND OUTSIDE IT, and the placement is specified rather than left open. The entire body of that file below its heading is one angle-bracket placeholder note, and `pack/prompts/planner.md` directs the adopter's planner to "Delete the template's angle-bracket placeholder notes as you fill each part in". A sentence written INSIDE the brackets is therefore a rule the first planner of every scaffolded project deletes on sight, while a sentence written outside them survives into that project's own plan. Criterion 6's `grep -c -F` cannot tell the two placements apart, which is why it gains the placement command as well. The same placement holds in the committed copy `docs/plans/TEMPLATE.documentation-protocol.md`, which is a verbatim copy of the pack source.
+
+`pack/plan-template.steps/example-step.md` AND ITS COMMITTED COPY `docs/plans/TEMPLATE.steps/example-step.md` GAIN THE TWO FIELDS IN THE PACK'S ONE HOW-TO-ADD-A-STEP SENTENCE. That sentence reads today "To add a step, add a `[[step]]` entry to the `.plan.toml` and a matching `<slug>.md` body sidecar in this directory, then re-render", and it is the only such guidance the pack ships. After the flip its literal execution produces a plan that no longer parses, and the parser aborts on the FIRST missing field, so an operator following it learns about `approach` only after supplying `problem` and re-running. Shipping that instruction to every scaffolded project is what Principle 3, Safe on existing projects, is cited to prevent in this increment's own cost paragraph, and every criterion below would otherwise pass over it. The corrected sentence names `problem` and `approach` as required entries of the `[[step]]` block. `render` inlines this file into `docs/plans/TEMPLATE.md`, so that projection changes with it.
+
+`docs/plans/TEMPLATE.md` IS RE-RENDERED, AND IT IS NOT OPTIONAL. `docs/plans/TEMPLATE.plan.toml` is one of the declaration sites this increment requires to carry both fields, increment 1's render rule emits the two lines into the Step Details body immediately after the leading heading line, and `docs/plans/TEMPLATE.md` is a committed render of that source which `render --check --strict` reports up to date today. So the committed projection changes twice over, once from the placeholder values and once from the corrected example-step sentence. Nothing else detects a stale one: `.agents/checks.toml` declares one check and it names `docs/plans/agent-scaffold.plan.toml`, and `src/agents_md_drift.rs` names the `docs/plans/TEMPLATE` family as outside its coverage. A FRESH SCAFFOLD IS UNAFFECTED EITHER WAY, because `scaffold` re-renders `TEMPLATE.md` into the target project rather than copying the committed one; what would ship stale is this repository's own committed copy. THE SIBLING CONTRAST IS WHY THIS IS NOT A GENERAL RULE: `plan-order-array-position` increment 1 also edits `docs/plans/TEMPLATE.plan.toml` and correctly omits `docs/plans/TEMPLATE.md`, because `render` emits no order column and the template holds one step, so that edit leaves the projection byte-identical.
+
 `docs/plans/step-intent-encoding.migration.tsv` is deleted.
 
 WHY THE SENTENCE IS SCOPED. The unqualified form must not ship, because `pack/plan-template.steps/example-step.md:1` restates `slug` and `title` on its own first line, and so does almost every sidecar in this repository. The rule rides in this increment rather than elsewhere because this increment already edits the pack, so it already owes the rendered-pair check below.
 
-TWO RENDERED PAIRS ARE HAND-EDITED HERE AND NO GUARD COVERS EITHER. `pack/pack.toml` maps `plan-template.plan.toml` to `docs/plans/TEMPLATE.plan.toml` and `plan-template.documentation-protocol.md` to `docs/plans/TEMPLATE.documentation-protocol.md`, both as verbatim copies with no `render = true`, so each pair is byte-identical today. `src/agents_md_drift.rs` names "the `docs/plans/TEMPLATE` family" as UNGUARDED in its own coverage block, and `.agents/checks.toml` declares only `render-check`. Criterion 5 is the guard and it is `cmp`, not `just scaffold-self`: that recipe's second command is `nix fmt`, which formats the whole tree, and this tree is not formatter-clean, so the recipe reformats files this increment did not intend and breaks criterion 9, the changed-path set, until the implementer re-renders.
+THREE COPIED PAIRS ARE HAND-EDITED HERE AND NO GUARD COVERS ANY OF THEM. `pack/pack.toml` maps `plan-template.plan.toml` to `docs/plans/TEMPLATE.plan.toml`, `plan-template.documentation-protocol.md` to `docs/plans/TEMPLATE.documentation-protocol.md` and `plan-template.steps/example-step.md` to `docs/plans/TEMPLATE.steps/example-step.md`, all three as verbatim copies with no `render = true`, so each pair is byte-identical today. `src/agents_md_drift.rs` names "the `docs/plans/TEMPLATE` family" as UNGUARDED in its own coverage block, and `.agents/checks.toml` declares only `render-check`. Criterion 5 is the guard and it is `cmp`, not `just scaffold-self`: that recipe's second command is `nix fmt`, which formats the whole tree, and this tree is not formatter-clean, so the recipe reformats files this increment did not intend and breaks criterion 9, the changed-path set, until the implementer re-renders.
 
 THE DECLARATION-SITE SET, ESTABLISHED BY SEARCH.
 
@@ -4024,6 +4125,8 @@ WHY EVERY ONE OF THE SIX IS LOAD-CARRYING, MEASURED AGAINST TWO CONSTRUCTIONS TH
 
 ONE NAMED TEST CHANGES DIRECTION HERE, AND THE DIRECTION IS STATED SO THE IMPLEMENTER DOES NOT CHOOSE IT. `empty_details_sections_emit_no_bare_heading` in `src/plan/render.rs`, marked `N1`, asserts that `## Step Details` is ABSENT for a step with an empty body. Its inline `[[step]]` fixture is one of the sites this criterion requires to carry both fields, so after the patch the step carries intent and increment 1's render sub-rule makes the section appear. ITS STEP-DETAILS ASSERTION RE-POINTS: the section is PRESENT and carries the two projected lines, and the test takes a name that matches. Its Question-Details assertion and its non-vacuous half stay. DO NOT DELETE THE TEST. Without this instruction the implementer meets `cargo test` by editing a named regression test with no stated direction, which is the shape `plan-order-array-position` increment 1 already rules on for its own tie-break test.
 
+THE FOUR RULE 2 AND RULE 3 TESTS INCREMENT 1 CRITERION 13 ADDS STAY, AND THEY STAY GREEN. `grep -c 'fn validate_rejects_a' src/plan/source.rs` still prints `4`, and `cargo test --bin agent-flow validate_rejects_a` reports four passing tests and none failing. This increment rewrites the code both rules sit in, and the cheapest way to make `cargo test` pass after dropping a check body is to delete the test that reads it. DO NOT DELETE THEM.
+
 3. A FRESH SCAFFOLD VALIDATES AND RENDERS. In an empty directory outside the repository:
 
 ```
@@ -4056,13 +4159,39 @@ grep -c -F -- '- approach: <how this step addresses it>' docs/plans/TEMPLATE.md
 
 Pass: each prints exactly `1` on stdout and exits 0. Two commands, given once each, because a template that ships one placeholder and renders the other nowhere satisfies a single-field check. This is the pack-side form of increment 1 criterion 4, and it is stated because a required field that renders nowhere in the shipped template is the same defect one layer out.
 
-5. THE TEMPLATE PAIR STAYS BYTE-IDENTICAL. `cmp pack/plan-template.plan.toml docs/plans/TEMPLATE.plan.toml` prints nothing and exits 0. See `plan-order-array-position` rule 3 for the measurement that shows nothing else detects this.
+5. EVERY TEMPLATE PAIR THIS INCREMENT TOUCHES STAYS BYTE-IDENTICAL, AND EACH `cmp` IS WRITTEN OUT. `plan-order-array-position` rule 3, which this criterion cites as its authority, reads "Every increment that touches either file runs the `cmp`", and the design pass states the same rule for the whole `docs/plans/TEMPLATE` family. This increment hand-edits BOTH SIDES OF THREE PAIRS. Three commands. Each prints nothing and exits 0.
 
-6. THE PACK PROSE RULE SHIPS AND ITS RENDERED COPY MATCHES. Run this, and then the same command against `docs/plans/TEMPLATE.documentation-protocol.md`. Two commands, given once each, because the pack source and its committed copy are two files and only the pair check proves both. Each prints `1`.
+```
+cmp pack/plan-template.plan.toml docs/plans/TEMPLATE.plan.toml
+```
+
+```
+cmp pack/plan-template.documentation-protocol.md docs/plans/TEMPLATE.documentation-protocol.md
+```
+
+```
+cmp pack/plan-template.steps/example-step.md docs/plans/TEMPLATE.steps/example-step.md
+```
+
+`pack/pack.toml` maps each of the three sources to its destination with `ownership = "working"` and no `render = true`, so each pair is a verbatim copy and byte equality is the whole of the contract. AN EARLIER FORM RAN THE FIRST `cmp` ALONE, while this increment's own paragraph above says two rendered pairs are hand-edited here and no guard covers either. Under that form any divergence introduced anywhere else in either unchecked pair, a reflowed paragraph, a typo corrected on one side, a trailing-newline difference, passed criterion 5, passed criterion 6's greps for the one sentence, and passed criterion 9, which names the paths and proves nothing about their content. See `plan-order-array-position` rule 3 for the measurement that shows nothing else detects any of the three.
+
+6. THE PACK PROSE RULE SHIPS, ITS COMMITTED COPY MATCHES, AND NEITHER COPY BURIES IT IN THE PLACEHOLDER. Two presence commands, written out in full rather than as one command plus a path to substitute, because the pack source and its committed copy are two files and a reader who substitutes once proves one file. Each prints exactly `1`.
 
 ```
 grep -c -F -- 'must not repeat a `[[step]]` field' pack/plan-template.documentation-protocol.md
 ```
+
+```
+grep -c -F -- 'must not repeat a `[[step]]` field' docs/plans/TEMPLATE.documentation-protocol.md
+```
+
+THEN THE PLACEMENT, WHICH THE TWO PRESENCE COMMANDS CANNOT SEE. Each file's body below its heading is one angle-bracket placeholder note occupying a single unwrapped line, so a sentence written inside the note shares that line and a sentence written outside it starts its own:
+
+```
+grep -c -- '^<.*must not repeat a' pack/plan-template.documentation-protocol.md docs/plans/TEMPLATE.documentation-protocol.md
+```
+
+Pass: one row per named path, each row ending `:0`. The printed rows are the oracle and the exit status is not, because `grep -c` exits 1 when every count is zero, which is this command's pass case. Both paths are arguments of the one command, so neither is substituted in by the reader. MEASURED AGAINST THE WRONG PLACEMENT, with the sentence appended inside the brackets: both presence commands still print `1` and both rows here read `:1`. That placement ships a rule the first planner of every scaffolded project deletes on sight, because `pack/prompts/planner.md` directs it to delete the angle-bracket placeholder notes as it fills each part in, so the presence check alone cannot separate a rule that survives into the adopter's plan from one that does not.
 
 7. THE MIGRATION RECORD IS GONE. `test -e docs/plans/step-intent-encoding.migration.tsv` exits 1, and `git diff --name-status` over the increment lists `D	docs/plans/step-intent-encoding.migration.tsv`. Both halves are the criterion: the `test` alone passes on a tree where the file never existed.
 
@@ -4072,21 +4201,43 @@ Pass, all three clauses: `source` equals `steps` for both fields; `projected` mi
 
 MEASURED on the untouched tree, before any of this is built, R4 prints `steps=105 source=0/0 quoted=1/1 projected=1/1`. A CRITERION THAT COMPARED THE PROJECTION AGAINST THE STEP COUNT DIRECTLY COULD NOT BE SATISFIED BY A CORRECT IMPLEMENTATION, because this sidecar's own fenced block under `render` in increment 1 carries a `- problem: ` line and a `- approach: ` line, and `render` inlines the sidecar verbatim into the document being counted. An earlier draft of this criterion did exactly that and stated `MEASURED at 101 steps, all three print 101`; the two projection counts print `1` today and cannot print a step count at any point in the migration, so nothing was measured. The step count itself moves and the outcome records what R4 prints on the day.
 
-9. THE CHANGED PATH SET. `git diff --name-only` lists the 12 declaration-site files, plus `docs/plans/agent-scaffold.md`, plus `pack/plan-template.documentation-protocol.md` and `docs/plans/TEMPLATE.documentation-protocol.md`, plus the deleted `docs/plans/step-intent-encoding.migration.tsv`. `docs/plans/agent-scaffold.plan.toml` appears only if a `[[step.increment]]` declaration changes, and its diff must touch no `problem` or `approach` value, because the batches own those.
+9. THE CHANGED PATH SET. `git diff --name-only` lists the 12 declaration-site files, plus `src/main.rs`, plus `docs/plans/agent-scaffold.md`, plus `docs/plans/TEMPLATE.md`, plus `pack/plan-template.documentation-protocol.md` and `docs/plans/TEMPLATE.documentation-protocol.md`, plus `pack/plan-template.steps/example-step.md` and `docs/plans/TEMPLATE.steps/example-step.md`, plus `CHANGELOG.md`, plus the deleted `docs/plans/step-intent-encoding.migration.tsv`. `docs/plans/agent-scaffold.plan.toml` appears only if a `[[step.increment]]` declaration changes, and its diff must touch no `problem` or `approach` value, because the batches own those.
+
+THE PATHS AN EARLIER FORM OF THIS SET OMITTED ARE NAMED HERE WITH THEIR REASONS, because this criterion reads as an exact enumeration: an implementer who made any of those edits FAILED it, and one who obeyed it shipped the defect instead. `src/main.rs` carries the `status --step` fallback this increment changes, which WHAT CHANGES states and criterion 12 reads. `docs/plans/TEMPLATE.md` is the committed render of a source this increment edits twice, and nothing else in the repository detects a stale one. `pack/plan-template.steps/example-step.md` and its committed copy carry the pack's one how-to-add-a-step sentence, which the flip turns into a recipe for a plan that does not parse. `CHANGELOG.md` carries the entry this increment's DOCUMENTATION IMPACT owes. Every one of them is a file a CORRECT implementation must change, which is what makes the omission a defect in the criterion rather than in the implementation.
 
 10. NO PLACEHOLDER-REJECTION RULE WAS ADDED. `grep -rn 'the problem this step addresses' src/ --include='*.rs'` prints nothing and exits 1. The rule is barred because it collides with criterion 3, and this criterion is what makes the bar checkable rather than a promise in prose.
 
 11. THE SUITE, THE VALIDATORS AND ASCII. `cargo test` passes, `cargo clippy --all-targets -- -D warnings` exits 0, both `validate` invocations print their `valid` line and exit 0, and `LC_ALL=C grep -cP '[^\t\x20-\x7e]' <file>` prints `0` for every changed file.
 
+12. `status --step` STILL REPORTS AN ABSENT FIELD ON THE MARKDOWN SUBSTRATE. This increment drops the `(not recorded)` fallback for a TOML source and KEEPS it for the Markdown one, and no other criterion here runs `status --step` at all. Run this from the repository root, against the Markdown plan this repository already commits:
+
+```
+./target/debug/agent-flow status --plan docs/plans/agent-scaffold.md --step core-assets
+```
+
+Pass: stdout is exactly the three lines `step: core-assets`, `problem: (not recorded)`, `approach: (not recorded)`, and the exit status is 0. `--source` is not supplied and it carries no default, so the projection is read from the Markdown Roadmap, which carries no such column: `steps_from_markdown` sets both fields to `None` and the fallback is the only correct output. ANY SLUG THE ROADMAP TABLE DECLARES WILL DO, and the outcome records which one was run. `core-assets` is named so the command is executable as printed, and it is the plan's first step.
+
+WHY THE MARKDOWN SUBSTRATE CARRIES THIS AND THE TOML ONE NEEDS NO COMMAND. What the criterion holds is increment 1's sentence "For a field the substrate does not carry, the value prints as `(not recorded)`, so an absent field is never mistaken for an empty one". An implementation that drops the fallback OUTRIGHT rather than for the TOML source only satisfies every other criterion of this increment, because after the flip no TOML step can lack a field and nothing else here reads the Markdown substrate; it prints an empty value where this criterion requires `(not recorded)`. The TOML half needs no command of its own, because criterion 1's two parse checks already make a TOML step with a missing field unbuildable.
+
+### DOCUMENTATION IMPACT
+
+`CHANGELOG.md`, THE `## [Unreleased]` SECTION, WHICH INCREMENT 3 OPENS. `grep -n 'Unreleased' CHANGELOG.md` exits 1 today, so the entry means opening the section rather than appending to one. The entry belongs to increment 3 and not to the batches: the batches add data to this repository's own plan, and increment 3 is where the schema changes for everybody. It records that `[[step]]` gains two REQUIRED fields, `problem` and `approach`, and that a plan written against an earlier version no longer parses until each `[[step]]` carries both. `AGENTS.md` states the duty in this repository's own copy and in the shipped pack copy alike, and `validation-constraints.md` already names `CHANGELOG.md` and its `## [Unreleased]` section for a comparable pending step, which is the shape this section follows. `CHANGELOG.md` is in criterion 9's path set for that reason.
+
+THE PACK GUIDANCE THE FLIP MAKES STALE IS NOT LEFT TO THIS SECTION, because it is a file edit rather than a note: `pack/plan-template.steps/example-step.md` and its committed copy are named in WHAT CHANGES and in criterion 9, and `pack/plan-template.plan.toml` and its committed copy ship the placeholder values.
+
+`README.md` IS NOT MADE STALE, MEASURED. Its one description of the plan source names the Roadmap `[[step]]` entries and lists no field of them, so a field added to `[[step]]` makes nothing in it false. Its absence from the path set is a choice.
+
 ### THE RESIDUALS THIS STEP ACCEPTS RATHER THAN CLOSES
 
-Three. Each is recorded so a later review round does not file it as a fresh finding, and each belongs in the eventual decision receipt. This is their single home; the design pass names them and points here.
+Four. Each is recorded so a later review round does not file it as a fresh finding, and each belongs in the eventual decision receipt. This is their single home; the design pass names them and points here.
 
 RESIDUAL 1, INTENT-PROSE STALENESS. Nothing closes the case where the recorded intent is no longer what the step is for, and no check can. Prose in a TOML string goes stale exactly as prose in Markdown does. What the field removes is the SECOND copy, not the staleness.
 
 RESIDUAL 2, MEANINGLESSNESS UNDER A REQUIRED FIELD. A required `String` needs a value, so `pack/plan-template.plan.toml` ships placeholder text and every scaffolded plan validates on day one with that text in place. The required field makes ABSENCE unrepresentable and leaves MEANINGLESSNESS fully representable and indistinguishable from real intent. `title` carries the same property today. A `validate` rule that rejects the shipped placeholder strings is REJECTED, because it collides head-on with increment 3's own criterion that a fresh scaffold validates, which is correct under Principle 3, Safe on existing projects, and Principle 4, Idempotent. Placeholder detection belongs in `audit`, which is advisory, and it is a separate step.
 
 RESIDUAL 3, THE CITATION PROVES A DATE AND NOT A DERIVATION. Rule 4 makes the current sidecar the primary source and the batch block's criterion 6 requires the sentence to be MOVED, so the commit that satisfies the transcribed check is the commit that held the text before the move, by construction. WHAT RULE 6 DOES PROVE, AND AN EARLIER FORM OF THIS RESIDUAL DENIED IT. The earliest-commit arm of R2 dates the sentence: a value invented during the backfill has the backfill's own commit as its earliest, so a citation to an older commit proves the sentence predates the extraction. The human decided rule 6 on 2026-08-21 (`q_id:"Q-78-earliestcommit"`) on exactly that measurement, and the ledger records the pickaxe result that made it. So the assertion that NO criterion can distinguish provenance from the extraction's own commit is false, and it must not be restated. WHAT REMAINS OPEN is narrower: rule 6 proves the sentence is old, and it does not prove that the recorded field was DERIVED from that text rather than written afresh and matched to it. The human's 2026-08-19 requirement is answered in substance, because the recorded sentence IS the one the person with the context wrote. It is not answered as a mechanical proof of derivation. If the human wants genuine retroactive extraction tested, that is a different design and it must be put as one.
+
+RESIDUAL 4, TWO OF THE FOUR SURFACES AN ADOPTER READS REPORT SUCCESS ON THE PLAN THE FLIP BREAKS. `validate --source` exits 1 on a plan that does not parse, correctly. MEASURED on today's unmodified binary against a two-step plan omitting the ALREADY-required `title`, `next --source` prints `note: --source <path> did not parse as a <task>.plan.toml; projecting from --plan` and then `no active review loop (no plan steps found)` and EXITS 0, and `status --source` prints `plan: not provided` and EXITS 0. So `next` gives the reason as no-plan-steps rather than as a parse failure, and neither command reports the parse failure at all. WHAT A WRONG IMPLEMENTATION COULD THEN SHIP: nothing this increment builds. The mechanism is pre-existing, it is measured against a field that is already required, and no increment of this step touches `next` or `status`'s resolution behaviour. What the residual admits is that WHAT THIS COSTS A SCAFFOLDED PROJECT, above, states an adopter cost that two of the four surfaces understate: an adopter who runs `next` or `status` after the flip is told the plan has no steps rather than that it no longer parses, and must run `validate` to learn why. `validate-missing-source-exit` excludes `next` under NOT IN SCOPE, and that exclusion is written for "EVERY OTHER SUBCOMMAND THAT SKIPS A MISSING PATH", which does not describe a path that exists and fails to parse, so no step in the pass covers it. The repair, if it is wanted, is a separate step of the `validate-missing-source-exit` kind, and the alternative is widening this pass into the product behaviour it deliberately excludes. The human accepted this on 2026-08-22 as residual risk, receipt `type:"decision"` `q_id:"Q-78-round4"` in `docs/metrics/workflow.jsonl`.
 
 ### NOT IN SCOPE, NAMED SO IT IS NOT DRAWN IN
 
