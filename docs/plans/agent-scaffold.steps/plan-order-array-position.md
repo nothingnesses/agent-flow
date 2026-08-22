@@ -75,7 +75,14 @@ THE RENDER GOLDEN AND THE TIE-BREAK TEST ARE ONE MOVE:
 - `src/plan/testdata/render-fixture.plan.toml`, whose header comment and whose `zeta` block comment both state the tie-break claim.
 - `ordering_is_numeric_for_questions_and_slug_tiebroken_for_equal_order_steps` in `src/plan/render.rs`. Its STEP assertion re-points at declaration order and the test takes a name that matches. The QUESTION assertions and the skipped/optional/deferred bucket assertion stay. Do not delete the test.
 
-NO FILE UNDER `docs/plans/` OTHER THAN THE PLAN TOML CHANGES IN THIS INCREMENT. `docs/plans/agent-scaffold.md` in particular must not change, and criterion 2 is what proves it.
+THE PACK PROSE NO DECLARATION-SITE SEARCH REACHES, WHICH IS AN EDIT THIS INCREMENT OWES AND AN EARLIER FORM OF THIS SIDECAR OMITTED. The search above is anchored on a TOML assignment, and it is correct for what it searches: it returns the 12 files and the per-file counts tabulated above, and both were reproduced. The sentence below is PROSE, so no anchored search reaches it, and a path set derived from a search cannot contain what the search cannot match.
+
+- `pack/AGENTS.md`, the phase 2 sentence reading "the `<task>.plan.toml` skeleton holds the Roadmap (`[[step]]` entries with status and order)". The `and order` clause goes. MEASURED OVER THE SHIPPED SURFACES, `grep -rln 'entries with status and order' pack/ AGENTS.md .agents/` returns exactly those three paths. The search is scoped rather than whole-tree because the whole-tree form also reaches the rendered plan, this sidecar and this pass's own review records, none of which is shipped and all of which quote the sentence in order to discuss it.
+- `AGENTS.md` and `.agents/AGENTS.reference.md`, the two committed copies. `pack/pack.toml` copies `pack/AGENTS.md` to both destinations with `render = true`, so neither is a byte copy and rule 3's `cmp` does not apply to either. `the_committed_scaffold_matches_a_fresh_render` in `src/agents_md_drift.rs` pins them against a fresh render, so correcting the pack source alone fails `cargo test`, and so does correcting a committed copy alone. The three move together or the suite goes red.
+
+WHY THIS BELONGS TO INCREMENT 1 AND NOT TO THE PROSE SWEEP. Increment 1 ships the deletion, and this increment's own risk ground is that "every previously valid plan in every scaffolded project fails to parse until edited" and that this is widely depended on. An implementation that satisfies every other criterion here ships, to every one of those projects, the instruction to write the field that now makes the plan fail to parse: the criteria would be blind to the consequence their own risk ground names. Increment 2 cannot carry it either, because its criterion 5 reads "No file under `src/`, `tests/` or `pack/` appears."
+
+NO FILE UNDER `docs/plans/` OTHER THAN THE PLAN TOML CHANGES IN THIS INCREMENT. `docs/plans/agent-scaffold.md` in particular must not change, and criterion 2 is what proves it. `docs/plans/TEMPLATE.md` does not change either, and that is measured rather than assumed: `render` emits no order column and the template holds one step, so deleting `order` from `docs/plans/TEMPLATE.plan.toml` leaves that projection byte-identical.
 
 THE ONE DATA MOVE THE MIGRATION OWES, REPRODUCED. Every step's declaration position agrees with its rendered position except `rename-to-agent-flow`. Reproduce the exception with:
 
@@ -222,11 +229,15 @@ MEASURED BEFORE THE CHANGE it prints `zeta=1 epsilon=1 roadmap zeta<epsilon=0 de
 
 7. THE TEMPLATE PAIR STAYS BYTE-IDENTICAL. `cmp pack/plan-template.plan.toml docs/plans/TEMPLATE.plan.toml` prints nothing and exits 0. MEASURED, an implementation that updates the pack source and leaves the committed copy stale gives `cargo test` 0 failures, `render --check --strict` exit 0 and `validate` exit 0, and this `cmp` prints `pack/plan-template.plan.toml docs/plans/TEMPLATE.plan.toml differ: byte 1511, line 37` with exit 1.
 
-8. THE CHANGED PATH SET IS THE 12 SEARCHED FILES PLUS THE FOUR GOLDEN AND FIXTURE FILES. `git diff --name-only` over the increment lists exactly:
+8. THE CHANGED PATH SET IS THE 12 SEARCHED FILES, PLUS THE FOUR GOLDEN AND FIXTURE FILES, PLUS THE FOUR THE SEARCH CANNOT REACH. `git diff --name-only` over the increment lists exactly:
 
 ```
+.agents/AGENTS.reference.md
+AGENTS.md
+CHANGELOG.md
 docs/plans/TEMPLATE.plan.toml
 docs/plans/agent-scaffold.plan.toml
+pack/AGENTS.md
 pack/plan-template.plan.toml
 src/next.rs
 src/plan/render.rs
@@ -243,7 +254,9 @@ tests/validate_toml_primary_skips_markdown_plan.rs
 tests/validate_workflow_toml_source_needs_no_plan.rs
 ```
 
-`docs/plans/agent-scaffold.md` must not appear, no file under `docs/plans/agent-scaffold.steps/` must appear, `pack/principles.toml` must not appear and `src/tui.rs` must not appear. The last two are named because a search on the bare string `order = ` reaches both and a whole-tree substitution damages both.
+`docs/plans/agent-scaffold.md` must not appear, no file under `docs/plans/agent-scaffold.steps/` must appear, `docs/plans/TEMPLATE.md` must not appear, `pack/principles.toml` must not appear and `src/tui.rs` must not appear. The last two are named because a search on the bare string `order = ` reaches both and a whole-tree substitution damages both. `docs/plans/TEMPLATE.md` is named because the sibling step's increment 3 DOES have to re-render it and this one does not, for the reason recorded above.
+
+THE FOUR PATHS THE SEARCH CANNOT REACH ARE NAMED HERE WITH THEIR REASONS, because this criterion reads as an exact enumeration: an implementer who made those edits under an earlier form of it FAILED the criterion, and one who obeyed it shipped the defect instead. `pack/AGENTS.md` carries the `and order` clause, and `AGENTS.md` and `.agents/AGENTS.reference.md` are its two committed renders, which the drift test pins. `CHANGELOG.md` carries the entry this step's DOCUMENTATION IMPACT owes. Every one of them is a file a CORRECT implementation must change, which is what makes the omission a defect in the criterion rather than in the implementation.
 
 9. THE SUITE AND THE VALIDATORS STAY GREEN. `cargo test` passes. `cargo clippy --all-targets -- -D warnings` exits 0. `./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --metrics docs/metrics/workflow.jsonl` prints a `docs/plans/agent-scaffold.plan.toml: <N> steps, 80 questions, valid` line on stdout and exits 0. `./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --workflow` prints `docs/plans/agent-scaffold.plan.toml vs docs/metrics/workflow.jsonl: workflow invariants hold` and exits 0. The `valid` line is pinned as well as the exit code, because `validate` exits 0 on a source that is not there, which `validate-missing-source-exit` fixes.
 
@@ -323,7 +336,9 @@ done < "$DRIFT"
 printf 'rows=%d restated=%d wrong_slug=%d number_survives=%d\n' "$rows" "$restated" "$wrong" "$residual"
 ```
 
-Pass: `rows` equals `wc -l < drift.txt`, `wrong_slug=0`, and `restated` plus the count of `NUMBER SURVIVES` rows equals `rows`. Every `NUMBER SURVIVES` row is then enumerated in the outcome as a verbatim quotation of another file's text whose restatement would falsify the quotation, and a row left without that is the increment not finished. The oracle is the printed line and not an exit status.
+Pass, all four clauses: `rows` equals `wc -l < drift.txt`; `wrong_slug=0`; `restated` equals `rows` MINUS `E`; and `number_survives` EQUALS `E`. `E` is the count of `NUMBER SURVIVES` rows the outcome enumerates as verbatim quotations of another file's text whose restatement would falsify the quotation, and every such row is enumerated that way, and a row left without that is the increment not finished. The oracle is the printed line and not an exit status.
+
+THE LAST TWO CLAUSES ARE THE ONLY DISCRIMINATING ONES, AND AN EARLIER FORM CARRIED NEITHER. It read "`restated` plus the count of `NUMBER SURVIVES` rows equals `rows`". That is an IDENTITY OF THE LOOP and not a condition: every row takes exactly one of three exits, so `rows = restated + wrong + residual` holds on every tree whatever the implementation did, and once `wrong_slug=0` is required that clause is `wrong_slug=0` restated. The first clause is an identity too, because the loop increments `rows` once per line of `drift.txt`. MEASURED, AN UNTOUCHED TREE AND A RENUMBERED TREE BOTH PRINT A BYTE-IDENTICAL `restated=0 wrong_slug=0` LINE WITH `number_survives` EQUAL TO `rows`, and both satisfied all three of the earlier clauses. A renumbering cannot escape the residual arm in either direction, because `expect` holds only the citations at or below 83 on the line and `actual` holds every citation still on it, so any surviving number sends the row to `NUMBER SURVIVES`. RULE 4 is a numbered RULE, it cites Principle 8 by name, and its own last sentence reads "Criterion 2 of increment 2 detects a renumbering", which the earlier pass condition did not; this increment's ground says criterion 2 is the mechanical oracle and criterion 3 is the reading, and under that form BOTH halves carried a reading. The two equalities above are this criterion's own MEASURED table's line for a correct implementation, and moving them into the Pass clause is the whole of the repair. THE BACKSTOP THAT ALREADY WORKED IS UNCHANGED AND IS NOT THE FIX: the obligation to enumerate every `NUMBER SURVIVES` row refuses both trees for an implementer who discharges it, and what failed was the pass condition and the ground's claim about which half is mechanical.
 
 EXACTLY ONE SUCH ROW EXISTS TODAY AND IT IS NAMED, so a correct implementation prints `number_survives=1` rather than `0`. THE ROW is the borderline-case bullet in `docs/plans/agent-scaffold.steps/sidecar-status-opening-drift.md` that quotes the opening line of `docs/plans/agent-scaffold.steps/reviewer-reproducible-evidence.md`. Find it with:
 
@@ -380,6 +395,14 @@ grep -noE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.ledger.md | awk -F
 NO COUNT IS WRITTEN HERE AND THE OUTCOME RECORDS WHAT THE COMMAND PRINTS ON THE DAY. The count rises with every appended review round, and the ledger paragraph that motivated the split states the figure the human weighed, dated. THE SPLIT IS DECIDED, so the specification's alternative branch is spent: `ledger-order-citation-currency` owns the ledger and it does not return to this increment. Do not run the increment with the ledger half in.
 
 7. THE SUITE, THE VALIDATORS AND ASCII. As increment 1 criteria 9 and 10. None of the three reads sidecar prose, so they are the no-regression check rather than the oracle. Criterion 2 is the oracle.
+
+### DOCUMENTATION IMPACT
+
+`CHANGELOG.md`, THE `## [Unreleased]` SECTION, WHICH INCREMENT 1 OPENS. `grep -n 'Unreleased' CHANGELOG.md` exits 1 today, so the entry means opening the section rather than appending to one. It records that `[[step]].order` is DELETED, that the array position of a `[[step]]` block is now the plan order, and that a plan written against an earlier version does not parse until every `order = ` line is removed. The entry belongs to increment 1, which ships the schema deletion, and not to increment 2, whose criterion 5 admits no file outside `docs/plans/`. `AGENTS.md` states this duty in this repository's own copy and in the shipped pack copy alike, and `validation-constraints.md` already names `CHANGELOG.md` and its `## [Unreleased]` section for a comparable pending step, which is the shape this section follows. `CHANGELOG.md` is in increment 1 criterion 8's path set for that reason.
+
+THE SHIPPED PACK PROSE IS A FILE EDIT AND NOT A NOTE, so it is stated in increment 1's own path set rather than deferred to here: `pack/AGENTS.md` loses the `and order` clause and its two committed renders move with it, for the reasons that block records.
+
+`README.md` IS NOT MADE STALE, MEASURED. Its one description of the plan source names the Roadmap `[[step]]` entries and lists no field of them, and its other matches on the word `order` are about principle ordering, module declaration order and token de-duplication. Its absence from the path set is a choice.
 
 ### NOT IN SCOPE, NAMED SO IT IS NOT DRAWN IN
 

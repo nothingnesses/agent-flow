@@ -54,7 +54,9 @@ ACCEPTANCE, EACH EXECUTABLE.
 ./target/debug/agent-flow validate --source docs/plans/TEMPLATE.plan.toml
 ```
 
-Pass: stderr carries a line ending `no source plan at docs/plans/TEMPLATE.plan.toml`, stdout is empty, and the exit status is 1.
+Pass: stderr carries a line that is exactly `error: no source plan at docs/plans/TEMPLATE.plan.toml`, stdout is empty, and the exit status is 1.
+
+THE WHOLE LINE IS THE CONDITION, HEAD AND TAIL, AND AN EARLIER FORM PINNED THE TAIL ALONE IN ALL THREE CRITERIA. The MESSAGES block above states a PREMISE, that each message keeps its current wording AND takes an error prefix, and a CONSEQUENCE, that an existing reader recognises the line. The two come apart. An implementation that drops the `; nothing to validate` tail, which the tail-only form already forced, adds NO prefix, and changes only the exit path satisfies criteria 2, 3 and 4 as they stood and exits 1, while the premise is false of it and the consequence still holds, because the wording is kept. Nothing else here reaches the head of the line: criterion 1 quotes the PRE-change stderr, which carries no prefix, criterion 7 pins a different message and criterion 9 reads `--help`. Pinning the whole line refuses that implementation, and it costs nothing, because the MESSAGES block already gives all three strings in full. MEASURED BEFORE THE CHANGE, in an empty directory outside the repository, the two lines read `no metrics log at docs/metrics/workflow.jsonl; nothing to validate` and `no source plan at docs/plans/TEMPLATE.plan.toml; nothing to validate`, so they end with the tail rather than with the path and an implementation that changes only the exit path fails these criteria on the tail as well as on the head.
 
 3. AN ABSENT EXPLICIT `--plan` FAILS, AND IT IS RUN SEPARATELY. In the same directory:
 
@@ -62,7 +64,7 @@ Pass: stderr carries a line ending `no source plan at docs/plans/TEMPLATE.plan.t
 ./target/debug/agent-flow validate --plan docs/plans/nope.md
 ```
 
-Pass: stderr carries a line ending `no plan at docs/plans/nope.md`, stdout is empty, and the exit status is 1. This command is given on its own rather than as a substitution into criterion 2, because a reader who substitutes once proves one flag and the two arms are two pieces of code.
+Pass: stderr carries a line that is exactly `error: no plan at docs/plans/nope.md`, stdout is empty, and the exit status is 1. This command is given on its own rather than as a substitution into criterion 2, because a reader who substitutes once proves one flag and the two arms are two pieces of code. The whole line is the condition here for the reason criterion 2 records.
 
 4. AN ABSENT EXPLICIT `--metrics` FAILS, AND IT IS RUN SEPARATELY.
 
@@ -70,7 +72,7 @@ Pass: stderr carries a line ending `no plan at docs/plans/nope.md`, stdout is em
 ./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --metrics docs/metrics/nope.jsonl
 ```
 
-Pass: stderr carries a line ending `no metrics log at docs/metrics/nope.jsonl` and the exit status is 1, run from the repository root where the `--source` path DOES exist, so the failure is attributable to the metrics path alone.
+Pass: stderr carries a line that is exactly `error: no metrics log at docs/metrics/nope.jsonl` and the exit status is 1, run from the repository root where the `--source` path DOES exist, so the failure is attributable to the metrics path alone. The whole line is the condition here for the reason criterion 2 records.
 
 THEN THE USER TYPES THE DEFAULT PATH, AND THAT COMMAND IS GIVEN SEPARATELY BECAUSE IT IS WHAT TYPES `--metrics` AS EXPLICIT. Scaffold into an empty directory outside the repository, create no metrics log, and run:
 
@@ -78,7 +80,7 @@ THEN THE USER TYPES THE DEFAULT PATH, AND THAT COMMAND IS GIVEN SEPARATELY BECAU
 ./target/debug/agent-flow validate --source docs/plans/TEMPLATE.plan.toml --metrics docs/metrics/workflow.jsonl
 ```
 
-Pass: stderr carries a line ending `no metrics log at docs/metrics/workflow.jsonl` and the exit status is 1. The path typed here is byte-identical to the DERIVED default, which criterion 5 runs in the same directory and requires to exit 0, so the two commands differ in one thing only: whether the user supplied the flag.
+Pass: stderr carries a line that is exactly `error: no metrics log at docs/metrics/workflow.jsonl` and the exit status is 1. The path typed here is byte-identical to the DERIVED default, which criterion 5 runs in the same directory and requires to exit 0, so the two commands differ in one thing only: whether the user supplied the flag.
 
 WHY THIS COMMAND EXISTS, AND IT IS THE PREMISE HALF OF THIS STEP'S OWN GROUND. THE PREMISE: explicitness is whether the user SUPPLIED the flag, which the code reads as `args.metrics.is_some()` (`metrics: Option<PathBuf>`, `src/main.rs`). THE CONSEQUENCE: an absent explicit `--metrics` fails and an absent defaulted `--metrics` skips. An implementation that decides explicitness by COMPARING the resolved path against the derived default falsifies the premise while the consequence still holds for every path the other criteria supply. Criterion 4's first command names `docs/metrics/nope.jsonl`, which differs from the default, so it fails there. Criterion 5 supplies no flag at all, so it skips there. That implementation passes criteria 2, 3, 4 and 5 as they stood before this command, and it reports success on the command above, which is the state Principle 5 removes. MEASURED before the change, the command above and criterion 5's command both print `docs/plans/TEMPLATE.plan.toml: 1 steps, 0 questions, valid` and exit 0, so the pair detects the condition rather than merely staying silent.
 
@@ -95,11 +97,17 @@ Pass: stdout carries exactly `docs/plans/TEMPLATE.plan.toml: 1 steps, 0 question
 
 7. `--workflow` KEEPS ITS OWN BEHAVIOUR. `validate --source <absent> --workflow` still exits 1, and its stderr still carries `--workflow requested but no plan source resolved`. The new error joins that message rather than replacing it, so the diagnostic that already worked is not lost.
 
-8. EACH BRANCH IS PINNED IN THE SUITE. The integration tests gain one test per branch: an absent explicit `--source`, an absent explicit `--plan`, an absent explicit `--metrics` naming a path that is NOT the default, an absent explicit `--metrics` naming a path that IS byte-identical to the default, and an absent DEFAULTED `--metrics` that still exits 0. FIVE TESTS, because five branches. The fourth and the fifth are a pair over the same path string, and only the flag differs, so together they pin explicitness to `is_some()` rather than to a path comparison. The fifth is also the one that fails if the fix is written too wide. Verify with `grep -c 'fn .*missing_.*_path' tests/`, whose count the outcome records. A criterion that only runs by hand does not survive the increment, which is why the pair lives in the suite as well as in criteria 4 and 5.
+8. EACH BRANCH IS PINNED IN THE SUITE. The integration tests gain one test per branch, in a new file `tests/validate_refuses_a_missing_explicit_path.rs`, named `missing_explicit_source_path`, `missing_explicit_plan_path`, `missing_explicit_metrics_path`, `missing_explicit_metrics_path_equal_to_the_default` and `missing_defaulted_metrics_path`. Those are the five branches: an absent explicit `--source`, an absent explicit `--plan`, an absent explicit `--metrics` naming a path that is NOT the default, an absent explicit `--metrics` naming a path that IS byte-identical to the default, and an absent DEFAULTED `--metrics` that still exits 0. FIVE TESTS, because five branches. The fourth and the fifth are a pair over the same path string, and only the flag differs, so together they pin explicitness to `is_some()` rather than to a path comparison. The fifth is also the one that fails if the fix is written too wide. A criterion that only runs by hand does not survive the increment, which is why the pair lives in the suite as well as in criteria 4 and 5. Verify with:
+
+```
+grep -c 'fn missing_.*_path' tests/validate_refuses_a_missing_explicit_path.rs
+```
+
+Pass: stdout is exactly `5`, and the outcome records it. THE FILE IS NAMED RATHER THAN THE DIRECTORY SEARCHED, BECAUSE AN EARLIER FORM RAN THE PATTERN AGAINST `tests/` WITH NO `-r` AND COULD NOT RUN AT ALL. MEASURED from the worktree root, `grep -c 'fn .*missing_.*_path' tests/` prints `grep: tests/: Is a directory` on stderr, prints `0` on stdout and exits 2, so the count the outcome was told to record was `0` whether the suite held five such tests, one, or none. The shell in use replaces `grep` with `ugrep`, which recurses by default and prints one `<path>:0` row per test file, which is not a count either, so neither reading of that command was an oracle. Criterion 10 already requires the changed-path set to name this file, so naming it here costs nothing.
 
 9. THE HELP TEXT STATES THE RULE. `./target/debug/agent-flow validate --help` describes, for each of the three flags, that a path the user supplies must exist. `grep -c -F -- 'must exist' <(./target/debug/agent-flow validate --help)` prints at least `3`.
 
-10. THE CHANGED PATH SET. `git diff --name-only` lists `src/main.rs` and the integration test file criterion 8 adds to, and nothing else. No file under `docs/plans/` appears, and `pack/` does not appear, because the pack ships no `validate` invocation that names a path this rule newly rejects. If that turns out to be false, the pack file joins the set and the outcome says which and why.
+10. THE CHANGED PATH SET. `git diff --name-only` lists `src/main.rs` and `tests/validate_refuses_a_missing_explicit_path.rs`, the file criterion 8 adds, and nothing else. No file under `docs/plans/` appears, and `pack/` does not appear, because the pack ships no `validate` invocation that names a path this rule newly rejects. If that turns out to be false, the pack file joins the set and the outcome says which and why.
 
 11. THE SUITE, THE VALIDATORS AND ASCII. `cargo test` passes. `cargo clippy --all-targets -- -D warnings` exits 0. `cargo run -- render --check --strict docs/plans/agent-scaffold.plan.toml` prints `up to date` and exits 0. `LC_ALL=C grep -cP '[^\t\x20-\x7e]' <file>` prints `0` for every changed file.
 
