@@ -18,6 +18,7 @@ orphan_tasks = [
   "q65-capture",
   "q66-q67-fold",
   "q70-capture",
+  "q78-design-pass",
   "uniform-isolation",
   "vc-step-fold",
   "workflow-hardening",
