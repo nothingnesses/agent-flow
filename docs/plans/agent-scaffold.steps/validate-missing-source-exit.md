@@ -105,7 +105,17 @@ grep -c 'fn missing_.*_path' tests/validate_refuses_a_missing_explicit_path.rs
 
 Pass: stdout is exactly `5`, and the outcome records it. THE FILE IS NAMED RATHER THAN THE DIRECTORY SEARCHED, BECAUSE AN EARLIER FORM RAN THE PATTERN AGAINST `tests/` WITH NO `-r` AND COULD NOT RUN AT ALL. MEASURED from the worktree root, `grep -c 'fn .*missing_.*_path' tests/` prints `grep: tests/: Is a directory` on stderr, prints `0` on stdout and exits 2, so the count the outcome was told to record was `0` whether the suite held five such tests, one, or none. The shell in use replaces `grep` with `ugrep`, which recurses by default and prints one `<path>:0` row per test file, which is not a count either, so neither reading of that command was an oracle. Criterion 10 already requires the changed-path set to name this file, so naming it here costs nothing.
 
+THEN RUN THE RED CONTROLS IN A THROWAWAY WORKTREE, ONE BRANCH FAMILY AT A TIME. A test name is not evidence that its body exercises the branch.
+
+- Restore the absent explicit `--source` arm to its pre-increment note-and-skip result while leaving the other arms fixed. `cargo test --test validate_refuses_a_missing_explicit_path missing_explicit_source_path` must FAIL. Restore it, apply the mirror mutation to `--plan`, and the `missing_explicit_plan_path` test must FAIL.
+- Make an explicitly supplied missing metrics path take the defaulted note-and-skip branch. The two tests `missing_explicit_metrics_path` and `missing_explicit_metrics_path_equal_to_the_default` must BOTH FAIL, while `missing_defaulted_metrics_path` stays green.
+- Make the absent defaulted metrics path take the explicit-error branch. `missing_defaulted_metrics_path` must FAIL.
+
+Restore the implementation and run `cargo test --test validate_refuses_a_missing_explicit_path`; all five pass. The outcome records each red and the final green. Five correctly named `assert!(true)` stubs satisfy the grep and `cargo test`, and fail this control because none reddens; that construction is therefore refused.
+
 9. THE HELP TEXT STATES THE RULE. `./target/debug/agent-flow validate --help` describes, for each of the three flags, that a path the user supplies must exist. `grep -c -F -- 'must exist' <(./target/debug/agent-flow validate --help)` prints at least `3`.
+
+ACCEPTED RESIDUAL `GB-9` (`low`), OWNED BY INCREMENT 1 CRITERION 9. The human accepted the cost that `grep -c` counts matching lines rather than attributing one match to each flag, so the command can pass with the phrase on three unrelated help lines while one flag, especially `--metrics`, remains undocumented. THE NON-EXPANSION BOUNDARY: this accepts only the attribution hole in the help-text guard; it does not waive criteria 2 to 5, the per-branch tests and red controls in criterion 8, or any behaviour change. The acceptance is decision `Q-78-round4-low-residuals`, as revised by `Q-78-gb11-revision` to retain four residuals.
 
 10. THE CHANGED PATH SET. `git diff --name-only` lists `src/main.rs` and `tests/validate_refuses_a_missing_explicit_path.rs`, the file criterion 8 adds, and nothing else. No file under `docs/plans/` appears, and `pack/` does not appear, because the pack ships no `validate` invocation that names a path this rule newly rejects. If that turns out to be false, the pack file joins the set and the outcome says which and why.
 

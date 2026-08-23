@@ -258,7 +258,15 @@ tests/validate_workflow_toml_source_needs_no_plan.rs
 
 THE FOUR PATHS THE SEARCH CANNOT REACH ARE NAMED HERE WITH THEIR REASONS, because this criterion reads as an exact enumeration: an implementer who made those edits under an earlier form of it FAILED the criterion, and one who obeyed it shipped the defect instead. `pack/AGENTS.md` carries the `and order` clause, and `AGENTS.md` and `.agents/AGENTS.reference.md` are its two committed renders, which the drift test pins. `CHANGELOG.md` carries the entry this step's DOCUMENTATION IMPACT owes. Every one of them is a file a CORRECT implementation must change, which is what makes the omission a defect in the criterion rather than in the implementation.
 
-9. THE SUITE AND THE VALIDATORS STAY GREEN. `cargo test` passes. `cargo clippy --all-targets -- -D warnings` exits 0. `./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --metrics docs/metrics/workflow.jsonl` prints a `docs/plans/agent-scaffold.plan.toml: <N> steps, 80 questions, valid` line on stdout and exits 0. `./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --workflow` prints `docs/plans/agent-scaffold.plan.toml vs docs/metrics/workflow.jsonl: workflow invariants hold` and exits 0. The `valid` line is pinned as well as the exit code, because `validate` exits 0 on a source that is not there, which `validate-missing-source-exit` fixes.
+THE SHIPPED INSTRUCTION IS GONE, AND THIS IS A CONTENT CHECK RATHER THAN A PATH CHECK:
+
+```
+grep -rln 'entries with status and order' pack/ AGENTS.md .agents/
+```
+
+Pass: stdout is empty and the exit status is 1. MEASURED BEFORE THE CHANGE, the command prints exactly `pack/AGENTS.md`, `AGENTS.md` and `.agents/AGENTS.reference.md`. Criterion 8's path enumeration proves only that those files moved; this command proves that the stale clause did not ride through a mechanically green regeneration.
+
+9. THE SUITE AND THE VALIDATORS STAY GREEN. `cargo test` passes. `cargo clippy --all-targets -- -D warnings` exits 0. `./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --metrics docs/metrics/workflow.jsonl` prints a `docs/plans/agent-scaffold.plan.toml: <N> steps, <M> questions, valid` line on stdout and exits 0. The outcome records the complete line rather than pinning either changing count. `./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --workflow` prints `docs/plans/agent-scaffold.plan.toml vs docs/metrics/workflow.jsonl: workflow invariants hold` and exits 0. The `valid` line is pinned as well as the exit code, because `validate` exits 0 on a source that is not there, which `validate-missing-source-exit` fixes.
 
 10. ASCII ONLY. `LC_ALL=C grep -cP '[^\t\x20-\x7e]' <file>` prints `0` for every changed file. Use that pattern rather than `[^ -~]`, which matches every hard tab. `grep -c` exits 1 when the count is 0, so it breaks an `&&` chain.
 
@@ -286,8 +294,10 @@ awk -F'\t' '{n=$3; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' pre.txt | sort -u
 ```
 
 ```
-awk '/^slug = /{s=$3} /^order = /{sub(/order = /,""); print $0"\t"s}' docs/plans/agent-scaffold.plan.toml | tr -d '"' | sort -n > order-to-slug.tsv
+git show <pre-deletion-commit>:docs/plans/agent-scaffold.plan.toml | awk '/^slug = /{s=$3} /^order = /{sub(/order = /,""); print $0"\t"s}' | tr -d '"' | sort -n > order-to-slug.tsv
 ```
+
+`<pre-deletion-commit>` is a named commit recorded in the outcome and containing the `order` field before increment 1 deletes it. The working tree is NOT a permitted table source: increment 2 always runs after increment 1, so a working-tree table is empty and forces the implementer to invent a mapping. The named commit makes the table independent of increment order and preserves the pre-deletion order-to-slug relation that this criterion exists to check (Principle 7, Reproducible).
 
 A ROW IS A PATH, A LINE NUMBER AND A CITATION, and the line number is load-carrying, because criterion 2 reads the line back at that number. An earlier form of this command dropped the line number, so three citations on one line collapsed into one row and the worklist was short by the surplus.
 
@@ -399,6 +409,8 @@ NO COUNT IS WRITTEN HERE AND THE OUTCOME RECORDS WHAT THE COMMAND PRINTS ON THE 
 ### DOCUMENTATION IMPACT
 
 `CHANGELOG.md`, THE `## [Unreleased]` SECTION, WHICH INCREMENT 1 OPENS. `grep -n 'Unreleased' CHANGELOG.md` exits 1 today, so the entry means opening the section rather than appending to one. It records that `[[step]].order` is DELETED, that the array position of a `[[step]]` block is now the plan order, and that a plan written against an earlier version does not parse until every `order = ` line is removed. The entry belongs to increment 1, which ships the schema deletion, and not to increment 2, whose criterion 5 admits no file outside `docs/plans/`. `AGENTS.md` states this duty in this repository's own copy and in the shipped pack copy alike, and `validation-constraints.md` already names `CHANGELOG.md` and its `## [Unreleased]` section for a comparable pending step, which is the shape this section follows. `CHANGELOG.md` is in increment 1 criterion 8's path set for that reason.
+
+ACCEPTED RESIDUAL `F3` (`low`), OWNED BY INCREMENT 1 CRITERION 8 AND THIS DOCUMENTATION-IMPACT DUTY, AND RECORDED AGAIN BESIDE THE OTHER OWNER IN `step-intent-encoding` INCREMENT 3. The human accepted the cost that both schema-breaking increments currently say they open `## [Unreleased]`, although the declared dependency means this increment runs first and the later one must append to the section this one leaves. A literal implementation of both instructions can duplicate the heading or clobber the first entry, and neither increment has a content check for that collision. THE NON-EXPANSION BOUNDARY: this accepts only the sequencing ambiguity between these two already-declared documentation duties; it does not permit duplicate headings generally, does not waive either changelog entry, and does not change either increment's changed-path set. The acceptance is decision `Q-78-round4-low-residuals`, as revised by `Q-78-gb11-revision` to retain four residuals.
 
 THE SHIPPED PACK PROSE IS A FILE EDIT AND NOT A NOTE, so it is stated in increment 1's own path set rather than deferred to here: `pack/AGENTS.md` loses the `and order` clause and its two committed renders move with it, for the reasons that block records.
 
