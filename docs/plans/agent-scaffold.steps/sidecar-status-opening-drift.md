@@ -36,11 +36,11 @@ ONE INCREMENT, `sidecar-status-opening-drift-inc1`, DECLARED IN THE PLAN TOML AS
 
 THE GROUND, against the `AGENTS.md` test that an artefact is risky when a defect in it would be costly or hard to reverse. IT IS STATED AS A PREMISE AND A CONSEQUENCE, AND EACH HALF NAMES THE CRITERION THAT REFUSES IT. A ground whose consequence holds for a second reason is a ground no criterion tests, which is the defect this pass measured across two rounds.
 
-THE PREMISE. The increment DELETES the leading status token from the opening LINE of every file on THIS STEP'S WORKLIST, and it authors no replacement line, because `Q-78-statusform` decided a deletion rather than a substitution (see the paragraphs at THE FIX IS A DELETION and TWO HUMAN DECISIONS above). The handover files keep their token and this step does not open them.
+THE PREMISE. The increment DELETES the leading status token from the opening LINE of every file on THIS STEP'S WORKLIST, authors no replacement line, and preserves the captured start of the prose that followed the token, because `Q-78-statusform` decided a deletion rather than a substitution. Any stale clauses later in that same line are removed by deletion rather than replaced with new prose. The handover files keep their token and this step does not open them.
 
 THE CONSEQUENCE. `render` inlines every one of those opening lines verbatim into `docs/plans/agent-scaffold.md`, so every edit ships into the published plan.
 
-BOTH HALVES ARE REFUSED BY CONSTRUCTION, AND BOTH CONSTRUCTIONS WERE BUILT AND RUN. An implementation that rewrites ALL the selected openings falsifies the premise while the consequence still holds, because every rewritten line still ships. MEASURED on a throwaway copy given that implementation, criterion 1 prints ZERO rows against the handover list it requires, and criterion 4 pins the changed set to the worklist and states that no handover file appears. An implementation that deletes the tokens on the worklist and leaves `docs/plans/agent-scaffold.md` unregenerated falsifies the consequence while the premise still holds. MEASURED on that tree, criterion 7 exits 1 and names the first differing line.
+BOTH HALVES ARE REFUSED BY CONSTRUCTION. Criterion 6 captures the pre-edit post-token opening anchor, requires that anchor to remain at the start of every worklist opening, and rejects every added word in those lines. The generic replacement that rewrites every opening therefore fails every anchor, and the probe-first construction that deletes a whole opening line fails the anchor for each line it destroys, even though both constructions satisfy the selector, path and numstat checks. Criterion 7 refuses the other half: an implementation that makes the permitted deletions and leaves `docs/plans/agent-scaffold.md` unregenerated exits 1 and names the first differing line. The premise and consequence now each have an executable oracle rather than a statement that the earlier criteria did not carry.
 
 WHAT DECIDES THE CLASS IS THE READING OBLIGATION, which criteria 11 and 12 both state in their own text. The oracle for the corrected line is a reading and not a command. Nothing here catches an opening that still states a false claim after the deletion. The increment ships nothing to a scaffolded project and one revert undoes it, which argues the other way, and the reading decides it. NO FILE COUNT IS WRITTEN INTO THIS GROUND, because the worklist moves as sidecars are edited, and criterion 2 captures it by command rather than by a number. THE HUMAN RE-CONFIRMED THE CLASS ON 2026-08-21, over a drop to `low_risk`, receipt `type:"decision"` `q_id:"Q-78-driftclass"` in `docs/metrics/workflow.jsonl`. THE REASONING ACCEPTED, cited by name: Principle 3, Safe on existing projects, because every corrected line ships into the published plan and the only oracle for it is criterion 11's reading. AN EARLIER FORM OF THIS GROUND COUNTED 36 REWRITTEN SIDECARS, DESCRIBED A REPLACEMENT, AND DECIDED THE CLASS ON A READING OVER 36 FILES. All three describe the increment the paragraph at WHERE THE SPLIT CUTS refuses to build, and the criteria admit none of them. The classification matches `plan-order-array-position` increment 2, which is `risky` for a prose sweep of the same kind.
 
@@ -109,19 +109,11 @@ NOT IN SCOPE, EACH CONSIDERED AND EXCLUDED SO THE ABSENCE IS A CHOICE.
 
 - WHAT ANY OF THESE STEPS SHOULD SAY. This step corrects a stale claim about state. It does not review, re-scope, re-title or rewrite a single step, and it changes no step's `status`, which is the orchestrator's.
 - THE FRONT MATTER. `docs/plans/agent-scaffold._status-narrative.md` lists `workflow-calibration` under "Still optional/deferred", which is the same contradiction in the plan's most-read paragraph. It is left alone deliberately: that file is a long historical accretion whose currency is a separate and much larger question, and correcting one clause inside it invites the rewrite this step exists to avoid. It is recorded here so it is a named exclusion rather than a miss.
-- ANY SIDECAR TEXT BELOW THE OPENING LINE, with the single exception specified as item `B` below. No sweep was run for stale claims below the opening line, in any sidecar, so nothing here says there are none.
+- ANY SIDECAR TEXT BELOW THE OPENING LINE. No sweep was run for stale claims below the opening line, in any sidecar, so nothing here says there are none. In particular, `workflow-calibration.md`'s stale audit-record inventory is not edited here: that file is on the handover list, criterion 4 forbids this step from opening it, and routing a non-opening correction through this increment made criteria 4 and 6 unsatisfiable together. A later currency pass or the successor step's planner may scope that sentence explicitly; this step makes no claim to close it.
 - A STEP OPENING THAT SITS BELOW AN UMBRELLA PARAGRAPH, WHICH IS THE ONE CLASS THIS SELECTOR CANNOT REACH AND THE REASON THE CLOSURE CLAIM ABOVE IS QUALIFIED. Criterion 1 reads the first non-blank non-heading line of the FILE. Five sidecars open with an umbrella paragraph that carries context shared by several steps, so in those five the selector reads the umbrella paragraph and never reaches the step's own opening. `docs/plans/agent-scaffold.steps/exploration-mode.md:7` opens "Next." on a `complete` step and is invisible to criterion 1 for exactly that reason. It is excluded because admitting it would replace a reproducible selector with a reading, which is the trade this step's first line refuses. `Q-79` records the gap and closes it as a side effect, because the typed-umbrella work moves the umbrella paragraph out of those five files and the selector then reaches their step openings. Re-run criterion 1 after that work lands.
 - `pack-rebuild-tracking`, WHICH IS A REAL INSTANCE OF THE UNDERLYING PROBLEM AND IS STILL EXCLUDED. Its opening reads "To be done before the golden sync-test in `ledger-template`" on a `complete` step whose named successor `ledger-template` is also `complete`. It is excluded because this step's first line fixes the FILE SET by a command, and "To be done" is not a Roadmap status label, so criterion 1 does not select it. Criterion 10's word list does contain `to be done`, so its regex would match this opening; what keeps it out is criterion 10's worklist, not the absence of a rule that reaches it. Admitting a file that only a reading selects would replace a reproducible selector with a judgement, and would break criterion 1 (which would stay silent on it) and criterion 4 (which pins the changed set to the captured worklist).
 - THE PACK PROSE RULE. `pack/plan-template.documentation-protocol.md` carries no sentence about a sidecar restating a `[[step]]` field, so no scaffolded project inherits the rule this plan states at `docs/plans/agent-scaffold.documentation-protocol.md:5`. `step-intent-encoding` increment 3 ships that sentence, because that increment already edits the pack and so already owes the rendered-pair check. This step touches no file under `pack/`.
 - THE HANDOVER LIST, WHICH IS THE 19 OPENINGS THAT NEED AN AUTHORED REPLACEMENT. The human split them out on 2026-08-21 (`q_id:"Q-78-driftsplit"`). THIS SIDECAR IS THE POINTER AND NOT THE STEP: it declares the boundary, records the commands that produce the list and the figure the list holds today, and stops there. The successor step, with its own increments, its own risk classes and their `AGENTS.md:56` grounds, and its own acceptance criteria over an authored opening, is a planner's to author against this sidecar as its input. Nothing is written here for it to inherit, because a stub authored inside a fix pass is the crossing this loop already recorded once.
-
-### `B`: the one non-opening sentence, in `workflow-calibration.md`
-
-`workflow-calibration.md` also states "The directory currently holds `2026-08-13-audit-when-the-loop-turned.md` (the verdict, its evidence, and ten ordered recommendations), `2026-08-13-audit-measurement-methods.md` (the methods reference), and `calibration-analysis.md` (the 2026-07-31 prior analysis, which the audit re-tests with 12 more days of data and corrects in one place)." That reads as an exhaustive list and it names 3 of the 12 files now in `docs/plans/workflow-calibration.explorations/`. The nine it does not name are `2026-08-14-causation-investigation.md`, `finding-provenance-a.tsv`, `finding-provenance-b.tsv`, `finding-provenance-extract-a.md`, `finding-provenance-extract-b.md`, `fix-pass-shape-a.tsv`, `fix-pass-shape-b.tsv`, `fix-pass-shape-mechanical-a.md` and `fix-pass-shape-mechanical-b.md`.
-
-WHY IT IS IN SCOPE, AGAINST THE HABIT THAT ARGUES OTHERWISE. The 2026-08-13 audit measured steps generated by the process itself rising from 8.3% to 54.2%, so "while you are in the file anyway" is the exact habit that produced that number, and it is the reason this is argued rather than assumed. It survives the test on three grounds: it is the same defect class this step is defined by, a stale statement about this step's own state; it is in the same file and two paragraphs from the opening the implementer is already editing; and it is one sentence. It does not open the door to a general currency sweep, which the exclusion above rules out explicitly.
-
-THE IMPLEMENTER PICKS THE FORM. Either name all 12, or drop the enumeration and say what the directory is for. Naming 12 files re-creates a list that goes stale on the next write, so dropping the enumeration is the form that does not need maintaining, and the choice is left open because either satisfies the criterion.
 
 ### ACCEPTANCE, each executable
 
@@ -168,28 +160,43 @@ CRITERION 1 IS NECESSARY AND NOT SUFFICIENT, WHICH IS MEASURED. On the three-fil
 
 - `anchored.txt` is criterion 1's anchored selector run against the pre-increment tree. That is the SELECTED SET, and the outcome records it VERBATIM.
 - `handover.txt` is what the command below prints. The slugs it prints are the HANDOVER LIST, which this step does not touch and the successor step owns.
-- `worklist.txt` is `comm -23 <(cut -f1 anchored.txt | sort) <(cut -f1 handover.txt | sort)`. That is THIS STEP'S WORKLIST, and it is the worklist for criteria 4, 10, 11 and 12.
+- `worklist.txt` is `comm -23 <(cut -f1 anchored.txt | sort) <(cut -f1 handover.txt | sort)`. That is THIS STEP'S WORKLIST, and it is the worklist for criteria 4, 5, 6, 10, 11 and 12.
+- `opening-anchors.tsv` captures, for every worklist slug, the first 48 characters of the opening after the mechanical token-and-delimiter deletion, before any edit. Criterion 6 requires that exact anchor to remain at the start of the post-edit opening, so a replacement or a whole-line deletion cannot masquerade as the decided deletion.
 
-THE HANDOVER CAPTURE IS WRITTEN OUT AS A COMMAND OF ITS OWN AND IS NOT A SUBSTITUTION INTO CRITERION 12, AND THE REASON IS CIRCULARITY RATHER THAN STYLE. Criterion 12's command hard-codes the LIVE path root `docs/plans/agent-scaffold.steps/$slug.md`, so pointing it at a throwaway copy needs a substitution this sidecar would otherwise never write out, and its `$WORKLIST` is THIS STEP'S WORKLIST, which the bullet above defines as `anchored` minus `handover`, so its input set is defined in terms of the very file this capture produces. MEASURED, criterion 12's command run VERBATIM against the live tree prints ZERO rows, because every selected opening still begins with an uppercase status token, and an implementer who copies the command rather than reading the prose gets an EMPTY `handover.txt`. From there the worklist becomes the whole selected set and the criteria jointly endorse doing the successor step's work inside this step, which falsifies this increment's premise half and the human decisions `Q-78-driftsplit` and `Q-78-drifthandover`. The command below breaks the circle by naming its own path root and taking the SELECTED SET as its input. Run it under bash, from the repository root, with `COPY` a path in the same scratch directory that does not yet exist:
+THE HANDOVER CAPTURE IS WRITTEN OUT AS A COMMAND OF ITS OWN AND IS NOT A SUBSTITUTION INTO CRITERION 12, AND THE REASON IS CIRCULARITY RATHER THAN STYLE. Criterion 12's command hard-codes the LIVE path root `docs/plans/agent-scaffold.steps/$slug.md`, so pointing it at a throwaway copy needs a substitution this sidecar would otherwise never write out, and its `$WORKLIST` is THIS STEP'S WORKLIST, which the bullet above defines as `anchored` minus `handover`, so its input set is defined in terms of the very file this capture produces. MEASURED, criterion 12's command run VERBATIM against the live tree prints ZERO rows, because every selected opening still begins with an uppercase status token, and an implementer who copies the command rather than reading the prose gets an EMPTY `handover.txt`. From there the worklist becomes the whole selected set and the criteria jointly endorse doing the successor step's work inside this step, which falsifies this increment's premise half and the human decisions `Q-78-driftsplit` and `Q-78-drifthandover`. The command below breaks the circle by naming its own path root and taking the SELECTED SET as an explicit argument. Save it in the scratch directory, then run it under bash FROM THE REPOSITORY ROOT with BOTH arguments absolute: `bash <scratch>/h1.sh <scratch>/anchored.txt <scratch>/steps-copy > <scratch>/handover.txt`. The copy path must not yet exist.
 
 ```
 #!/usr/bin/env bash
 # H1: the handover list. Strip the leading token from every SELECTED file's opening line
 # in a throwaway copy, then apply criterion 12's test to that copy.
-COPY="$1"
+SELECTED="$1"; COPY="$2"
 cp -r docs/plans/agent-scaffold.steps "$COPY"
-for slug in $(cut -f1 anchored.txt); do
+while IFS=$'\t' read -r slug token; do
   n=$(grep -nvE '^#|^[[:space:]]*$' "$COPY/$slug.md" | head -1 | cut -d: -f1)
   sed -i "${n}s/^\(Not started\|In progress\|Complete\|Skipped\|Next\|Optional\|Deferred\)[.;,:]\{0,1\}[[:space:]]*//" "$COPY/$slug.md"
-done
-for slug in $(cut -f1 anchored.txt); do
+done < "$SELECTED"
+while IFS=$'\t' read -r slug token; do
   line=$(sed -e '/^#/d' -e '/^[[:space:]]*$/d' "$COPY/$slug.md" | head -1)
   case "$line" in
     [A-Z]*|'`'*) ;;
     *) printf '%s\t%s\n' "$slug" "$(printf '%s' "$line" | cut -c1-46)" ;;
   esac
-done
+done < "$SELECTED"
 ```
+
+The selected-set path is never read relative to the repository root or to the copy. MEASURED, the earlier script read bare `anchored.txt`: from the repository root it printed an empty handover after `cut` failed, and from the scratch directory its `cp docs/...` failed; both modes exited 0 and made the later criteria endorse the wrong split.
+
+After `worklist.txt` is captured, build the provenance anchors from the PRE-increment tree:
+
+```
+while read -r slug; do
+  line=$(sed -e '/^#/d' -e '/^[[:space:]]*$/d' "docs/plans/agent-scaffold.steps/$slug.md" | head -1)
+  stripped=$(printf '%s' "$line" | sed 's/^\(Not started\|In progress\|Complete\|Skipped\|Next\|Optional\|Deferred\)[.;,:]\{0,1\}[[:space:]]*//')
+  printf '%s\t%s\n' "$slug" "$(printf '%s' "$stripped" | cut -c1-48)"
+done < <scratch>/worklist.txt > <scratch>/opening-anchors.tsv
+```
+
+Replace each `<scratch>` with the same absolute scratch-directory path. The outcome records the anchor file verbatim; no row count is a pass condition.
 
 THE STRIP REMOVES THE TOKEN AND ITS DELIMITER, NOT THE TOKEN ALONE, which is what makes the capture agree with the measurement under WHAT THE FIX IS: deleting "Deferred. " from `checks-runner-worktree-name-collision` leaves "This is a defect fix in `src/`, ...", while deleting "Deferred" alone would leave a leading full stop and flag a file that strips cleanly. The second loop is criterion 12's body verbatim, with the copy as its path root and the selected set as its input, so the two criteria apply one test and not two. NO ROW COUNT IS WRITTEN HERE, for the reason the paragraph below records.
 
@@ -201,11 +208,35 @@ NO FIGURE IS WRITTEN INTO THIS CRITERION. The three counts move as sidecars are 
 
 4. THE CHANGED PATH SET IS THIS STEP'S WORKLIST PLUS THE PROJECTION. `git diff --name-only` over the step's change lists exactly the sidecars on THIS STEP'S WORKLIST from criterion 2, under `docs/plans/agent-scaffold.steps/`, plus the regenerated `docs/plans/agent-scaffold.md`. NO FILE ON THE HANDOVER LIST APPEARS, and its absence is the point: the successor step owns those files and edits each of them once. No file under `src/`, `pack/` or `tests/` appears, `docs/plans/agent-scaffold.plan.toml` does not appear (no `status` is flipped, and the step's own entry is authored by a planning pass rather than by the implementation), and `docs/metrics/workflow.jsonl` does not appear. No count of paths is stated, because the worklist is the count.
 
-5. THE CHANGE IS CONFINED TO THE OPENING LINE, WITH ONE NAMED EXCEPTION, AND ADDS NO PARAGRAPH. For each file on the worklist, `git diff --numstat` reports at most 2 added and 2 removed lines, since each opening is one line in an unwrapped file and the fix rewrites that line in place rather than splitting it. The exception is `docs/plans/agent-scaffold.steps/workflow-calibration.md`, which carries item `B` as well and so reports at most 4 and 4.
+5. THE CHANGE IS CONFINED TO THE OPENING LINE AND ADDS NO PARAGRAPH. For each file on the worklist, `git diff --numstat` reports at most 2 added and 2 removed lines, since each opening is one line in an unwrapped file and the fix rewrites that line in place rather than splitting it.
 
-AN ACCEPTED RESIDUAL SITS IN THAT BOUND, RECORDED HERE RATHER THAN REPAIRED. The bound is one line-pair per file LOOSER than its own justification: a one-line in-place rewrite is one added and one removed, not two and two, and the named exception is given 4 and 4 for two edits, so the doubling is consistent rather than a slip. The human accepted it on 2026-08-22 as residual risk, receipt `type:"decision"` `q_id:"Q-78-round4"` in `docs/metrics/workflow.jsonl`. WHAT A WRONG IMPLEMENTATION COULD THEN SHIP: one silent, unrelated paragraph rewrite in each file on the worklist, in text `render` publishes into every reader's copy of the plan, that no criterion of this step reads. Criteria 1, 10, 11 and 12 all read the first non-blank non-heading line only, criterion 4 checks path names, and criterion 7 re-renders whatever is there. WHAT BOUNDS IT: the whole-diff read a reviewer does at merge, and the NOT IN SCOPE bullet that excludes ANY SIDECAR TEXT BELOW THE OPENING LINE with one named exception, which a reviewer reads. THE COST ACCEPTED is that this bound stops being the guard the criterion says it is, on both halves of its own header: the extra pair admits an edit outside the opening line, and it admits an added line that is not balanced by a removed one. The repair, one character in each of the two numbers, stays available.
+AN ACCEPTED RESIDUAL SITS IN THAT BOUND, RECORDED HERE RATHER THAN REPAIRED. The bound is one line-pair per file LOOSER than its own justification: a one-line in-place rewrite is one added and one removed, not two and two. The human accepted it on 2026-08-22 as residual risk, receipt `type:"decision"` `q_id:"Q-78-round4"` in `docs/metrics/workflow.jsonl`. WHAT A WRONG IMPLEMENTATION COULD THEN SHIP: one silent, unrelated paragraph rewrite in each file on the worklist, in text `render` publishes into every reader's copy of the plan, that no criterion of this step reads. Criteria 1, 6, 10, 11 and 12 read the opening line, criterion 4 checks path names, and criterion 7 re-renders whatever is there. WHAT BOUNDS IT: criterion 6 forbids additions in the opening itself, the whole-diff read a reviewer does at merge, and the NOT IN SCOPE bullet that excludes ANY SIDECAR TEXT BELOW THE OPENING LINE. THE COST ACCEPTED is that this numstat bound alone still admits an edit outside the opening line and an added line not balanced by a removed one. The repair, one character in each of the two numbers, stays available.
 
-6. ITEM `B` MAKES NO FALSE CLAIM. In `workflow-calibration.md`, every `.md` or `.tsv` filename the audit-records paragraph names exists in `docs/plans/workflow-calibration.explorations/`, and the paragraph either names all 12 entries of that directory or makes no exhaustive claim about its contents (no "the directory currently holds X, Y and Z" form).
+6. THE PRE-EDIT OPENING PROVENANCE SURVIVES, AND THE CHANGE IS DELETION-ONLY. Record the increment's named base commit in the outcome and run this under bash from the repository root, passing the absolute `opening-anchors.tsv` path from criterion 2:
+
+```
+#!/usr/bin/env bash
+ANCHORS="$1"; BASE="$2"
+checked=0; bad_anchor=0; added=0
+while IFS=$'\t' read -r slug anchor; do
+  checked=$((checked+1))
+  path="docs/plans/agent-scaffold.steps/$slug.md"
+  line=$(sed -e '/^#/d' -e '/^[[:space:]]*$/d' "$path" | head -1)
+  case "$line" in
+    "$anchor"*) ;;
+    *) echo "OPENING LOST PROVENANCE $slug"; bad_anchor=$((bad_anchor+1));;
+  esac
+  additions=$(git diff --word-diff=porcelain -U0 "$BASE" -- "$path" | grep -E '^\+' | grep -v '^\+\+\+' || true)
+  if [ -n "$additions" ]; then
+    echo "OPENING ADDS WORDS $slug"
+    printf '%s\n' "$additions"
+    added=$((added+1))
+  fi
+done < "$ANCHORS"
+printf 'checked=%d bad_anchor=%d added=%d\n' "$checked" "$bad_anchor" "$added"
+```
+
+Pass: `checked` equals the worklist row count, `bad_anchor=0` and `added=0`. The anchor is captured AFTER mechanically removing the token, so a correct token deletion preserves it; later false clauses may be removed, but no replacement sentence is authored. A generic sentence replacing every opening fails `bad_anchor` on every row. Deleting a whole opening line where the next paragraph happens to begin as prose also fails its anchor. This is the premise-half oracle that criteria 1, 4, 5 and 12 do not supply.
 
 7. THE PROJECTION IS REGENERATED AND MATCHES. `./target/debug/agent-flow render docs/plans/agent-scaffold.plan.toml` then `./target/debug/agent-flow render --check --strict docs/plans/agent-scaffold.plan.toml` exits 0, so the committed `docs/plans/agent-scaffold.md` carries the corrected Step Details. `docs/plans/agent-scaffold.md` is never hand-edited.
 

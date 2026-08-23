@@ -21,7 +21,7 @@ MEASURED on the tree this step was authored against, the two print `135` and `11
 
 THE DRIFT ARITHMETIC IS THE SIBLING STEP'S. The `order` values 84 and 91 are absent from the range, so a citation at or below 83 reads correctly as an array position and needs no edit, a citation from 85 to 90 drifts by one, and a citation at or above 92 drifts by two. MEASURED, 12 of the 135 sit at or below 83.
 
-TWO CITED VALUES NAME NO STEP AT ALL, and they are named so the implementer does not hunt for them. 84 and 91 are the absent values, and the ledger cites both. MEASURED, 7 hits read `84` and 5 read `91`. Each is either a citation of a RENDERED POSITION rather than an `order` value, or a false positive of the search, or a mistake in the original entry. Criterion 4 disposes of each one by hand and forbids a guess.
+TWO CITED VALUES ARE VACANT TODAY, AND THEY ARE HISTORICAL RATHER THAN UNRESOLVABLE. Values 84 and 91 are absent from the current plan and the ledger cites both. Every current row was correct when written: the 84 rows name `rename-to-agent-flow` before it moved from order 84 to 100, and the 91 rows name `exploring-item-actor-boundary` before that step was deleted. Criterion 4 resolves each from a named historical commit that carries both assignments, rather than forcing a false `(no such step)` disposition. No row count is a pass condition; the criterion's search selects the live rows on the day.
 
 THE RESOLUTION IS PROVABLE, WHICH IS WHAT MAKES THIS SAFE. The ledger spans 2026-07-09 to today and the plan grew throughout, so a reader might expect a citation's referent to depend on its date. It does not. The plan grew by APPENDING, and an `order` value, once assigned, kept its slug. MEASURED at four dated commits against today, every order-to-slug row at or above 85 that existed then agrees with today:
 
@@ -34,11 +34,11 @@ for d in 2026-07-29 2026-08-05 2026-08-12 2026-08-19; do
 done
 ```
 
-MEASURED, the four dates print `then=8 agreeing=8`, `then=11 agreeing=11`, `then=12 agreeing=12` and `then=18 agreeing=18`. So the mapping is append-only and a resolution taken from today's plan is the resolution the entry meant when it was written. Without that measurement the whole step would be a guess, which is why it is stated before the criteria rather than inside one.
+MEASURED, the four dates print `then=8 agreeing=8`, `then=11 agreeing=11`, `then=12 agreeing=12` and `then=18 agreeing=18`. So the mapping is append-only for the values at or above 85 that remain assigned today. Values later vacated are the exception this measurement cannot see; criterion 4 resolves them from a second, named historical table. Without both measurements the whole step would be a guess, which is why they are stated before the criteria rather than inferred from today's array position.
 
 ### The form: ANNOTATE, and do not rewrite
 
-EACH CITATION KEEPS ITS NUMBER AND GAINS THE SLUG, in the form ``<word> <n> (`<slug>`)`` where `<word>` is the citation's own `order` or `step`. The number stays and the slug is added after it. THE FORM IS GIVEN METASYNTACTICALLY AND NOT AS A CONCRETE PAIR, because a concrete pair in this file is itself a numbered citation that `plan-order-array-position` increment 2 then has to restate. One real instance already exists in the ledger, the single pre-existing annotation criterion 2 counts, and it is the worked example.
+EACH CITATION KEEPS ITS NUMBER AND GAINS THE SLUG, in the form ``<word> <n> (`<slug>`)`` where `<word>` is the citation's own `order` or `step`. The number stays and the slug is added after it. A slug must resolve either in the named pre-deletion table or, for a value later vacated, in criterion 4's named historical table; it need not name a step that still exists today. THE FORM IS GIVEN METASYNTACTICALLY AND NOT AS A CONCRETE PAIR, because a concrete pair in this file is itself a numbered citation that `plan-order-array-position` increment 2 then has to restate. One real instance already exists in the ledger, the single pre-existing annotation criterion 2 counts, and it is the worked example.
 
 WHY ADDITIVE RATHER THAN SUBSTITUTIVE, MEASURED RATHER THAN ASSERTED. The ledger is the project's evidence base: every convergence count, every round total and every "do not re-raise without new evidence" ruling reads it, and escalation records quote its narrative. AN EXTERNAL QUOTATION OF THAT NARRATIVE EXISTS AND IT IS COUNTED. `grep -oE '\b(order|step) [0-9]+\b' docs/metrics/workflow.jsonl` returns 14 hits, 13 of them at or above 85, every one inside an `artifact` field quoting ledger narrative, and one of those records already carries the slug beside the number, which is this form arrived at independently. Under a substitutive edit a reader matching a metrics record's citation against the ledger finds nothing, and under an additive edit the substring still matches. Those 13 rows are the evidence for the FORM, and they are the only measurement in this file that distinguishes the two forms. `AGENTS.md` also treats the ledger as a record rather than a projection, so nothing can re-derive it once its text is changed. Principle 6, Ground decisions in evidence, decides it: the evidence must survive the correction that makes it readable.
 
@@ -47,21 +47,29 @@ THE TWO REJECTED ALTERNATIVES, RECORDED SO A REVIEW ROUND DOES NOT RE-RAISE THEM
 - RESTATE BY SLUG AND DELETE THE NUMBER, which is what `plan-order-array-position` RULE 4 prescribes for the sidecars. It is right there, because a sidecar is a live claim and the rendered plan re-derives it. It is wrong here, because the ledger holds frozen round narratives and deleting the number rewrites quoted evidence. The two artefacts differ in kind, and this is the ground for treating them differently.
 - LEAVE THE CITATIONS AND ADD ONE DATED CONVENTION NOTE at the head of the ledger. Cheapest by far, and the human rejected it on 2026-08-21. It also fails the reader it is meant to serve: a note at line 1 does not help someone who lands on line 341 from a search.
 
-THIS FORM IS A PLANNER JUDGEMENT AND NOT A HUMAN DECISION. The human decided that the ledger becomes its own step. The annotate-versus-restate choice was left to be decided on its own evidence, and the 13 external quotations counted above are that evidence. A reviewer who disagrees must argue against that measurement. THE APPEND-ONLY MEASUREMENT BELOW IS NOT EVIDENCE FOR THE FORM and an earlier draft pointed at it as though it were: it establishes that a resolution taken from today's plan is the resolution each entry meant, which is a precondition for ANY correction here and is exactly as true under a substitution as under an annotation.
+THIS FORM IS A PLANNER JUDGEMENT AND NOT A HUMAN DECISION. The human decided that the ledger becomes its own step. The annotate-versus-restate choice was left to be decided on its own evidence, and the 13 external quotations counted above are that evidence. A reviewer who disagrees must argue against that measurement. THE RESOLUTION MEASUREMENTS ARE NOT EVIDENCE FOR THE FORM: the append-only table establishes the extant assignments and the named historical table establishes the later-vacated assignments. Together they prove which slug each entry meant, a precondition equally necessary under substitution or annotation.
 
 ### Increment 1, `ledger-order-citation-currency-inc1`: annotate every drifting citation
 
 RISK CLASS `risky` (two consecutive clean review rounds). THE GROUND: the increment edits most of the drifting set in the artefact that every convergence count, every round total and every re-raise ruling in this project reads, and `next` echoes part of the same file verbatim to an agent as an instruction rather than as a report.
 
-NO EDIT COUNT IS WRITTEN INTO THIS GROUND, AND AN EARLIER FORM STATED THE WRONG ONE. It gave the size of the drifting SET as the number of edits. Criterion 2's own correct-outcome line shows the two differ: the edit count is `drifting` minus `bare`, and `bare` is the rows whose value names no step. That earlier figure was the only figure in this sidecar that was not the output of a stated command, and it was the only one that failed to reproduce. The human accepted the finding on 2026-08-21 as residual risk, receipt `type:"decision"` `q_id:"Q-78-residuals"` in `docs/metrics/workflow.jsonl`, and the record here is the disposition. THE CONSEQUENCE THE HUMAN WEIGHED: nothing wrong can ship, because criterion 2's `bare` clause names those rows explicitly and criterion 4 disposes of each by hand. The cost accepted is that a reviewer of the outcome must re-derive them. A wrong slug on a round narrative misattributes a finding to the wrong step, and no validator reads the ledger, so nothing but this increment's own oracle catches it. The edit is additive and one revert undoes it, and the file ships to no scaffolded project, which argues the other way. The volume and the evidence-base role decide it, and the classification matches `plan-order-array-position` increment 2, which is `risky` for a smaller sweep of the same kind.
+NO EDIT COUNT IS WRITTEN INTO THIS GROUND, AND AN EARLIER FORM STATED THE WRONG ONE. It equated the size of the drifting set with the edit count, then treated the vacated-value rows as unresolvable. The human accepted that stale figure as residual risk on 2026-08-21 (`q_id:"Q-78-residuals"`), but the round 4 evidence now resolves every current vacated-value row historically and this pass repairs rather than relies on that residual. Criterion 1 captures the drifting set, criterion 4 captures every vacated-value row including the ones below the drift threshold, and the outcome derives the edit set from their union without writing a snapshot here. A wrong slug on a round narrative misattributes a finding to the wrong step, and no validator reads the ledger, so nothing but this increment's own oracle catches it. The edit is additive and one revert undoes it, and the file ships to no scaffolded project, which argues the other way. The volume and the evidence-base role decide the `risky` class.
 
-WHAT IT DOES. For every citation at or above 85, append the resolved slug in parentheses after the number. Change nothing else in the file. Do not reflow, do not reword the surrounding sentence and do not correct any other claim, however tempting, because a second kind of edit in this diff makes the oracle below unreadable.
+WHAT IT DOES. For every citation at or above 85, append the resolved slug in parentheses after the number. Also annotate every vacated-value citation criterion 4 establishes as historical, including a value below 85. Change nothing else in the file. Do not reflow, do not reword the surrounding sentence and do not correct any other claim, however tempting, because a second kind of edit in this diff makes the oracle below unreadable.
 
-THE RESOLUTION TABLE IS BUILT FROM A NAMED COMMIT, NOT FROM THE WORKING TREE, so the increment is reproducible whether it runs before or after `plan-order-array-position` deletes the field (Principle 7, Reproducible). When this step runs first the named commit is the increment's own base commit, and `git show` reads it exactly as it reads any earlier one. Record the commit in the outcome and build the table with:
+THE RESOLUTION TABLES ARE BUILT FROM NAMED COMMITS, NOT FROM THE WORKING TREE, so the increment is reproducible whether it runs before or after `plan-order-array-position` deletes the field (Principle 7, Reproducible). Record both full commit ids in the outcome. The first is the increment's pre-deletion base and resolves every assignment still present there:
 
 ```
 git show <pre-deletion-commit>:docs/plans/agent-scaffold.plan.toml | awk '/^slug = /{s=$3} /^order = /{sub(/order = /,""); print $0"\t"s}' | sort -n > order-to-slug.tsv
 ```
+
+The second names a commit at which both currently vacant values were assigned. It is a historical-resolution table, not today's array-position table:
+
+```
+git show <historical-resolution-commit>:docs/plans/agent-scaffold.plan.toml | awk '/^slug = /{s=$3} /^order = /{sub(/order = /,""); if ($0 == 84 || $0 == 91) print $0"\t"s}' | sort -n > vacated-order-to-slug.tsv
+```
+
+Pass for the second table: every row selected by criterion 4 resolves to the slug that row's surrounding ledger narrative names. The outcome records the named commit and the table verbatim, rather than treating the current absence of the values as evidence that no step existed.
 
 ACCEPTANCE, EACH EXECUTABLE.
 
@@ -75,14 +83,14 @@ THERE IS NO `sort -u` IN THAT PIPELINE AND ITS ABSENCE IS THE POINT. A ledger li
 
 No concrete value-and-slug pair is written into this sidecar as an example, for the reason the form paragraph above records: a concrete pair here is itself a drifting citation that the sibling step then has to restate.
 
-The outcome records `wc -l` of that file and the resolution table's own `wc -l`. NO ROW COUNT IS WRITTEN INTO THIS CRITERION. The first number moves with every appended round and the second with every added step, which is why the criterion pins the commands, and the paragraph at THE POPULATION, MEASURED, above the increment block, is the one dated statement of them.
+The outcome records `wc -l` of that file and both resolution tables' own `wc -l`. NO ROW COUNT IS WRITTEN INTO THIS CRITERION. The first number moves with every appended round and the pre-deletion table with every added step, which is why the criterion pins the commands. The historical table is judged by the selected rows and the named commit, not by a fixed count.
 
-2. EVERY DRIFTING CITATION IS ANNOTATED, AND EVERY SLUG NAMES A REAL STEP. Run this under bash, from the repository root:
+2. EVERY DRIFTING CITATION IS ANNOTATED, AND EVERY SLUG RESOLVES IN A NAMED TABLE. Run this under bash, from the repository root:
 
 ```
 #!/usr/bin/env bash
-# L1: annotation coverage, and slug resolution against the pre-deletion table.
-LEDGER="$1"; TABLE="$2"; PLAN="$3"
+# L1: annotation coverage, and slug resolution against the pre-deletion and historical tables.
+LEDGER="$1"; TABLE="$2"; HISTORY="$3"
 drifting=0; annotated=0; bare=0; unknown=0; wrong=0
 while IFS= read -r hit; do
   n=${hit##* }
@@ -94,9 +102,11 @@ while IFS= read -r hit; do
   [ "$n" -ge 85 ] || continue
   annotated=$((annotated+1))
   slug=$(printf '%s' "$hit" | sed -E 's/.*\(`([a-z0-9-]+)`\)$/\1/')
-  grep -q "^slug = \"$slug\"\$" "$PLAN" || { echo "UNKNOWN SLUG: $hit"; unknown=$((unknown+1)); }
   want=$(awk -F'\t' -v n="$n" '$1==n {print $2}' "$TABLE" | tr -d '"')
-  if [ -n "$want" ] && [ "$want" != "$slug" ]; then
+  [ -n "$want" ] || want=$(awk -F'\t' -v n="$n" '$1==n {print $2}' "$HISTORY" | tr -d '"')
+  if [ -z "$want" ]; then
+    echo "UNKNOWN RESOLUTION: $hit"; unknown=$((unknown+1))
+  elif [ "$want" != "$slug" ]; then
     echo "WRONG SLUG: $hit wants $want"; wrong=$((wrong+1))
   fi
 done < <(grep -oE '\b(order|step) [0-9]+ \(`[a-z0-9-]+`\)' "$LEDGER")
@@ -108,30 +118,37 @@ printf 'drifting=%d annotated=%d bare=%d unknown_slug=%d wrong_slug=%d\n' \
 Pass, all four clauses:
 
 - `drifting` EQUALS THE ROW COUNT CRITERION 1 RECORDED. This clause is what makes the edit additive rather than substitutive, and it is stated first because it is the one a cheaper implementation breaks.
-- `unknown_slug=0`.
+- `unknown_slug=0`, meaning every annotation resolves in the named pre-deletion table or the named historical table.
 - `wrong_slug=0`.
-- `bare` equals the count of rows criterion 4 disposes of as non-citations AND whose value is at or above 85. The qualifier is load-carrying: `bare` is `drifting - annotated` and `drifting` counts only hits at or above 85, so a row reading `84` can never reach `bare`, and without the qualifier a correct implementation that disposes of an `84` row as a non-citation fails a condition it cannot satisfy. MEASURED, criterion 4's twelve rows split 7 reading `84` and 5 reading `91`, so at most 5 of them can contribute.
+- `bare` equals the count of rows criterion 4 disposes of as a false positive or an original error AND whose value is at or above 85. A historical citation is annotated and does not contribute to `bare`. The qualifier is load-carrying: `bare` is `drifting - annotated` and `drifting` counts only hits at or above 85, so a row reading `84` can never reach `bare`.
 
 The oracle is the printed line and not the exit status, which is 0 in every case. An absent ledger prints `drifting=0`, which fails the first clause, so an absent input cannot pass.
 
-MEASURED, four ledgers against this script:
+MEASURED by relation against four ledgers:
 
-- BEFORE THE EDIT it prints `drifting=116 annotated=1 bare=115 unknown_slug=0 wrong_slug=0`, so it detects the condition rather than merely staying silent. The single pre-existing annotation is real and is left as it is.
-- A CORRECT ADDITIVE EDIT prints `drifting=116 annotated=111 bare=5 unknown_slug=0 wrong_slug=0`, and the five are the `91` rows, which name no step.
-- AN IMPLEMENTATION THAT SUBSTITUTES THE SLUG FOR THE NUMBER at every drifting site, which is the rejected alternative recorded above and which falsifies the form's own ground, prints `drifting=5 annotated=0 bare=5 unknown_slug=0 wrong_slug=0`.
-- A MIXED IMPLEMENTATION that annotates ten sites correctly and substitutes the other 101 prints `drifting=15 annotated=10 bare=5 unknown_slug=0 wrong_slug=0`, which keeps criterion 3's red-then-green executable.
+- BEFORE THE EDIT, `annotated` is smaller than `drifting` and `bare` is non-zero, so the script detects the condition rather than merely staying silent. The single pre-existing annotation is real and is left as it is.
+- A CORRECT ADDITIVE EDIT annotates every historical row selected by criterion 4; `annotated` equals `drifting` except for any row criterion 4 proves is a false positive or original error at or above 85, and `bare` equals exactly that exception count.
+- AN IMPLEMENTATION THAT SUBSTITUTES THE SLUG FOR THE NUMBER at every drifting site reduces `drifting` below criterion 1's captured row count, even if every remaining clause reads clean.
+- A MIXED IMPLEMENTATION that annotates some sites and substitutes the rest also reduces `drifting` below criterion 1's captured row count, which keeps criterion 3's red-then-green executable.
 
-BOTH SUBSTITUTIONS SATISFY THE OTHER THREE CLAUSES IN FULL. Only the `drifting` clause separates them from the correct edit, which is why this criterion states it first and why criterion 1 records the number it compares against.
+Only the `drifting` clause separates the substitution family from the correct edit, which is why this criterion states it first and why criterion 1 records the number it compares against.
 
-3. RED THEN GREEN ON ONE ANNOTATION. Take one annotated citation, strip its parenthesised slug, run criterion 2's script and record that `bare` rises by one and `annotated` falls by one. Restore it and show the pair back at their passing values. The red output lands as evidence in the outcome.
+3. RED THEN GREEN ON ONE DRIFTING ANNOTATION. Take one annotated citation whose value is at or above 85, strip its parenthesised slug, run criterion 2's script and record that `bare` rises by one and `annotated` falls by one. Restore it and show the pair back at their passing values. The red output lands as evidence in the outcome.
 
-4. THE TWO ABSENT VALUES ARE DISPOSED OF ROW BY ROW, AND NO ROW IS GUESSED. The `order` values 84 and 91 name no step, so no annotation is possible for a hit on either. List them with:
+4. THE TWO VACATED VALUES ARE DISPOSED OF ROW BY ROW, AND NO ROW IS GUESSED. List the live rows with:
 
 ```
 grep -noE '\b(order|step) (84|91)\b' docs/plans/agent-scaffold.ledger.md
 ```
 
-MEASURED, that prints 12 rows. THE OBLIGATION: the outcome records, for every row it prints, which of three things the row is, and no row may be left without one. Either the row cites a RENDERED POSITION rather than an `order` value, in which case it is annotated with the slug at that position and the outcome says so; or the row is a false positive of the search, in which case the outcome quotes enough of the sentence to show it; or the row is an error in the original entry, in which case it is annotated `(no such step)` and left otherwise untouched. A row disposed of by a guess at the intended step is this criterion failed.
+THE OBLIGATION: the outcome records, for every row the command prints, which of four evidence-backed dispositions applies, and no row may be left without one.
+
+- A HISTORICAL `order` CITATION is annotated with the slug from `vacated-order-to-slug.tsv`; the outcome names the historical-resolution commit and quotes enough surrounding narrative to show the table's assignment is the one the entry meant. This is the disposition every current row takes on the tree this criterion was repaired against.
+- A RENDERED-POSITION citation is annotated with the slug at that historical rendered position, from a named commit carrying the cited state.
+- A false positive is left unchanged, with enough of the sentence quoted to prove it is not a step citation.
+- An error in the original entry is annotated `(no such step)` and left otherwise untouched, with the evidence that defeats both named historical tables.
+
+The current absence of an `order` value is NOT evidence for `(no such step)`: both values were assigned when these rows were written. A row disposed of by today's array position or by a guess at the intended step is this criterion failed.
 
 5. NOTHING BUT ANNOTATIONS CHANGED. The diff of the ledger adds text and removes none:
 
