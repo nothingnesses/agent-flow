@@ -317,7 +317,57 @@ For every matrix row, no `review_findings` key exists. The human test compares t
 
 The repeated-blank, outer-whitespace, interior-line-whitespace, CRLF and bare-CR rows retain the exact display behaviour specified for the review state, with only `review_findings` absent. The same named tests, `next_json_preserves_the_parser_value_matrix` and `human_next_preserves_the_display_matrix`, own BOTH state families; a row in only one state does not satisfy either test's matrix obligation.
 
-THE `build_context` SEAM OWNS THE COMPLETE STATE AXIS. A table-driven test in `src/next.rs`, named `build_context_carries_intent_in_every_loop_state`, supplies `problem = Some("all-state problem")` and `approach = Some("all-state approach")` through one `LoopFacts`, calls `build_context` directly for every `LoopState`, and for every row compares `context["problem"]` byte-for-byte with `"all-state problem"` and `context["approach"]` byte-for-byte with `"all-state approach"`. The table contains `ReadyToPlan`, `Blocked`, `AwaitingFirstReview`, `AwaitingFixes`, `AwaitingReviewers`, `Converged`, `Escalate`, `RiskClassConflict` and `Done`; state-specific context keys may differ and do not weaken either exact intent assertion. This seam test complements rather than replaces the complete human and JSON matrices above.
+THE TWO PENDING CONSTRUCTORS ALSO RUN END TO END FROM TOML, BECAUSE THE DIRECT STATE SEAM STARTS BELOW THEIR TRANSFER. A test in `src/next.rs` named `ready_to_plan_next_carries_toml_intent_on_both_surfaces` deserialises a one-step TOML plan whose step `a` has `status = "next"`, `problem = "ready problem"` and `approach = "ready approach"`, enters through `steps_from_toml` rather than constructing `StepInfo` or `LoopFacts`, and reaches `ReadyToPlan` through `build_pending_loop`. Its JSON assertion compares the COMPLETE `next_instruction.context` object, with no extra or omitted key, against exactly:
+
+```
+{
+  "approach": "ready approach",
+  "isolation_tier": "worktree",
+  "ledger": "ledger.md",
+  "problem": "ready problem"
+}
+```
+
+The same test compares the complete human context range byte-for-byte against exactly:
+
+```
+  context:
+    approach:
+      > ready approach
+    isolation_tier: worktree
+    ledger: ledger.md
+    problem:
+      > ready problem
+```
+
+A second test in `src/next.rs`, named `blocked_next_carries_toml_intent_on_both_surfaces`, deserialises a TOML plan where step `a` is `not-started`, carries `blocked_by = ["dep"]`, `problem = "blocked problem"` and `approach = "blocked approach"`, and `dep` is a declared `deferred` step, so no in-progress or ready step can pre-empt the blocked path and `dep` is a real unresolved blocker. It also enters through `steps_from_toml` and `build_pending_loop`. Its JSON assertion compares the COMPLETE context object against exactly:
+
+```
+{
+  "approach": "blocked approach",
+  "blocked_by": "dep",
+  "isolation_tier": "worktree",
+  "ledger": "ledger.md",
+  "problem": "blocked problem"
+}
+```
+
+Its complete human context range is exactly:
+
+```
+  context:
+    approach:
+      > blocked approach
+    blocked_by: dep
+    isolation_tier: worktree
+    ledger: ledger.md
+    problem:
+      > blocked problem
+```
+
+THE PENDING-TRANSFER RED CONTROL CHANGES ONLY THE SEAM THESE TWO TESTS OWN. Temporarily set only `build_pending_loop`'s `LoopFacts.problem` and `LoopFacts.approach` to `None` instead of copying the populated `StepInfo` fields. Leave `steps_from_toml`, the in-progress `LoopFacts` construction and `build_context` correct. Record BOTH `ready_to_plan_next_carries_toml_intent_on_both_surfaces` and `blocked_next_carries_toml_intent_on_both_surfaces` failing on their absent intent keys on both surfaces, while `next_json_preserves_the_parser_value_matrix`, `human_next_preserves_the_display_matrix` and `build_context_carries_intent_in_every_loop_state` all stay green. Restore the two pending copies and run all five green. A mutation that drops an in-progress transfer or changes `build_context` does not satisfy this control: it must isolate the separately constructed pending path.
+
+THE `build_context` SEAM OWNS THE COMPLETE STATE AXIS. A table-driven test in `src/next.rs`, named `build_context_carries_intent_in_every_loop_state`, supplies `problem = Some("all-state problem")` and `approach = Some("all-state approach")` through one `LoopFacts`, calls `build_context` directly for every `LoopState`, and for every row compares `context["problem"]` byte-for-byte with `"all-state problem"` and `context["approach"]` byte-for-byte with `"all-state approach"`. The table contains `ReadyToPlan`, `Blocked`, `AwaitingFirstReview`, `AwaitingFixes`, `AwaitingReviewers`, `Converged`, `Escalate`, `RiskClassConflict` and `Done`; state-specific context keys may differ and do not weaken either exact intent assertion. This seam test complements rather than replaces the complete human and JSON matrices and the two pending-constructor projections above.
 
 THE TABLE IS EXHAUSTIVE BY CONSTRUCTION, NOT BY A HAND-MAINTAINED COUNT. Define the test table through one local macro invocation whose variant list generates both the table rows and a no-wildcard `match state { LoopState::<variant> => (), ... }`, and call that generated exhaustive match for every row. The macro invocation is the only state list in the test. Adding a `LoopState` variant therefore makes the generated match fail to compile until the same invocation gains the new variant, and adding it there necessarily adds its table row; a separate `ALL_STATES` array plus an unrelated match does not satisfy this criterion.
 
@@ -399,15 +449,17 @@ THE STATUS MATRIX HAS TWO FIELD-AND-SURFACE-SPECIFIC RED MUTATIONS IN ADDITION T
 
 THE HUMAN DISPLAY MATRIX HAS THREE REQUIRED RED MUTATIONS ACROSS ALL THREE SURFACES. First temporarily collapse every run of blank logical lines to one in the shared display helper; `each_intent_field_projects_once_inside_its_own_step_details`, `human_next_preserves_the_display_matrix` and `human_status_step_preserves_the_display_matrix` must all fail their repeated-blank row. Restore it. Then temporarily normalise CRLF only and leave bare CR untouched; all three tests must fail their bare-CR row. Restore it. Finally temporarily trim every non-empty logical line independently instead of trimming only the whole value; all three tests must fail their interior-line-whitespace row. Restore it and run all three green. A named test that remains green under any mutation does not count as coverage for that surface.
 
-THE INCREMENT-1 NAMED PROJECTION CONTRACT IS THIS ONE AUTHORITATIVE LIST: `render_is_deterministic_and_matches_the_golden`, `each_intent_field_projects_once_inside_its_own_step_details`, `intent_only_step_emits_complete_step_details_fragment`, `intent_precedes_a_body_without_a_heading`, `build_context_carries_intent_in_every_loop_state`, `next_json_preserves_the_parser_value_matrix`, `human_next_preserves_the_display_matrix`, `human_status_step_preserves_the_display_matrix`, `status_step_json_preserves_the_parser_value_matrix` and `status_step_preserves_both_partial_states`. Each name must resolve to exactly one test, every test passes after all red controls are restored, and increment 3 retains this same list and these expectations rather than defining a weaker replacement contract.
+THE INCREMENT-1 NAMED PROJECTION AND CLI-SURFACE CONTRACT IS THIS ONE AUTHORITATIVE LIST: `render_is_deterministic_and_matches_the_golden`, `each_intent_field_projects_once_inside_its_own_step_details`, `intent_only_step_emits_complete_step_details_fragment`, `intent_precedes_a_body_without_a_heading`, `build_context_carries_intent_in_every_loop_state`, `ready_to_plan_next_carries_toml_intent_on_both_surfaces`, `blocked_next_carries_toml_intent_on_both_surfaces`, `next_json_preserves_the_parser_value_matrix`, `human_next_preserves_the_display_matrix`, `human_status_step_preserves_the_display_matrix`, `status_step_json_preserves_the_parser_value_matrix`, `status_step_preserves_both_partial_states` and `clap_subcommand_names_are_the_seven_product_commands_plus_help`. Each name must resolve to exactly one test, every test passes after all red controls are restored, and increment 3 retains this same list and these expectations rather than defining a weaker replacement contract.
 
-AND NO EIGHTH SUBCOMMAND WAS ADDED, which is the executable form of the Principle 2 ruling above rather than a promise in prose:
+AND THE COMMAND SURFACE IS THE EXACT SEVEN PRODUCT COMMANDS PLUS CLAP'S GENERATED `help`, which is the executable form of the Principle 2 ruling above rather than a help-row heuristic. A test in `src/main.rs` named `clap_subcommand_names_are_the_seven_product_commands_plus_help` imports `clap::CommandFactory`, creates `Cli::command()`, calls `render_long_help()` once so Clap materialises its generated help subcommand, and then collects every `get_subcommands()` name in declaration order. It compares the complete vector against exactly:
 
 ```
-./target/debug/agent-flow --help | sed -n '/^Commands:/,/^$/p' | grep -cE '^  [a-z]+ '
+["scaffold", "validate", "status", "next", "checks", "render", "audit", "help"]
 ```
 
-Pass: stdout is exactly `8`, the seven subcommands plus `help`. MEASURED BEFORE THE CHANGE it prints `8` as well, so this is a bar rather than a detector, the same shape increment 3 criterion 10 uses; an implementation that answers the read query with a new subcommand as well as the flag prints `9`.
+No grep or alphabetic-token filter participates in the oracle. The current seven product variants plus generated help pass.
+
+THE HYPHENATED EXTRA-SUBCOMMAND RED CONTROL IS REQUIRED. Temporarily add a unit `IntentQuery` variant to the derived `Command` enum and the minimal temporary dispatch arm needed for the crate to compile; Clap exposes that variant as `intent-query`. Record `clap_subcommand_names_are_the_seven_product_commands_plus_help` failing with `intent-query` as the extra name while the expected vector remains the eight names above. Restore the enum and dispatch, then run the test green. A hand-edited help transcript does not satisfy this control: the mutation must enter through the same `CommandFactory` model the production CLI uses.
 
 9. THE LIVE PROJECTION IS UNCHANGED. `./target/debug/agent-flow render --check docs/plans/agent-scaffold.plan.toml --strict` prints `docs/plans/agent-scaffold.plan.toml: up to date` and exits 0, and `git diff --name-only` over the increment does NOT list `docs/plans/agent-scaffold.md` or `docs/plans/agent-scaffold.plan.toml`. Both halves are the criterion.
 
@@ -821,7 +873,7 @@ WHY EVERY ONE OF THE SIX IS LOAD-CARRYING, MEASURED AGAINST TWO CONSTRUCTIONS TH
 
 ONE NAMED TEST CHANGES DIRECTION HERE, AND THE DIRECTION IS STATED SO THE IMPLEMENTER DOES NOT CHOOSE IT. `empty_details_sections_emit_no_bare_heading` in `src/plan/render.rs`, marked `N1`, asserts that `## Step Details` is ABSENT for a step with an empty body. Its inline `[[step]]` fixture is one of the sites this criterion requires to carry both fields, so after the patch the step carries intent and increment 1's render sub-rule makes the section appear. ITS STEP-DETAILS ASSERTION RE-POINTS: the section is PRESENT and carries the two projected lines, and the test takes a name that matches. Its Question-Details assertion and its non-vacuous half stay. DO NOT DELETE THE TEST. Without this instruction the implementer meets `cargo test` by editing a named regression test with no stated direction, which is the shape `plan-order-array-position` increment 1 already rules on for its own tie-break test.
 
-THE COMPLETE INCREMENT-1 NAMED PROJECTION CONTRACT ALSO STAYS, AND IT STAYS GREEN WITHOUT WEAKENED EXPECTATIONS. Run every test in the single authoritative list under increment 1 criterion 8 by its exact name and record one passing test for each. No listed function is deleted, renamed, ignored or replaced by a required-field-only smoke test. Its independent parser comparisons, complete human ranges, exact key sets and order, exhaustive all-`LoopState` `build_context` table, per-field absence/null assertions, per-step ownership, byte-zero no-heading boundary, complete empty-body Step Details fragment and red-mutation obligations all remain. The only permitted setup adaptation is in `status_step_preserves_both_partial_states`: because a partial TOML `Step` becomes unparseable after the flip, construct the same one-`Some`/one-`None` status projection at the formatter/query seam, while retaining both exact human outputs, both `found` assertions, both present parser strings and both null positions byte-for-byte. This keeps the optional-window formatting contract executable without pretending a partial required TOML source remains valid. `cargo test` must run this retained contract as part of the ordinary suite; a diff that removes or relaxes any listed assertion fails this criterion.
+THE COMPLETE INCREMENT-1 NAMED PROJECTION AND CLI-SURFACE CONTRACT ALSO STAYS, AND IT STAYS GREEN WITHOUT WEAKENED EXPECTATIONS. Run every test in the single authoritative list under increment 1 criterion 8 by its exact name and record one passing test for each. No listed function is deleted, renamed, ignored or replaced by a required-field-only smoke test. Its independent parser comparisons, complete human ranges, exact key sets and order, exhaustive all-`LoopState` `build_context` table, end-to-end `ReadyToPlan` and `Blocked` TOML constructor transfers on both surfaces, exact seven-product-command-plus-help Clap set, per-field absence/null assertions, per-step ownership, byte-zero no-heading boundary, complete empty-body Step Details fragment and red-mutation obligations all remain. The only permitted setup adaptation is in `status_step_preserves_both_partial_states`: because a partial TOML `Step` becomes unparseable after the flip, construct the same one-`Some`/one-`None` status projection at the formatter/query seam, while retaining both exact human outputs, both `found` assertions, both present parser strings and both null positions byte-for-byte. This keeps the optional-window formatting contract executable without pretending a partial required TOML source remains valid. `cargo test` must run this retained contract as part of the ordinary suite; a diff that removes or relaxes any listed assertion fails this criterion.
 
 THE FOUR RULE 2 AND RULE 3 TESTS INCREMENT 1 CRITERION 13 ADDS STAY, AND THEY STAY GREEN. `grep -cE 'fn validate_(rejects|accepts)_a' src/plan/source.rs` still prints `4`, and the two empty-value rejections plus the two paragraph-value acceptances all pass. This increment rewrites the code both rules sit in, so deleting either test family is not an acceptable way to make the suite green. DO NOT DELETE THEM.
 
