@@ -317,55 +317,69 @@ For every matrix row, no `review_findings` key exists. The human test compares t
 
 The repeated-blank, outer-whitespace, interior-line-whitespace, CRLF and bare-CR rows retain the exact display behaviour specified for the review state, with only `review_findings` absent. The same named tests, `next_json_preserves_the_parser_value_matrix` and `human_next_preserves_the_display_matrix`, own BOTH state families; a row in only one state does not satisfy either test's matrix obligation.
 
-THE TWO PENDING CONSTRUCTORS ALSO RUN END TO END FROM TOML, BECAUSE THE DIRECT STATE SEAM STARTS BELOW THEIR TRANSFER. A test in `src/next.rs` named `ready_to_plan_next_carries_toml_intent_on_both_surfaces` deserialises a one-step TOML plan whose step `a` has `status = "next"`, `problem = "ready problem"` and `approach = "ready approach"`, enters through `steps_from_toml` rather than constructing `StepInfo` or `LoopFacts`, and reaches `ReadyToPlan` through `build_pending_loop`. Its JSON assertion compares the COMPLETE `next_instruction.context` object, with no extra or omitted key, against exactly:
+THE TWO PENDING CONSTRUCTORS ALSO RUN THE COMPLETE INDEPENDENT PARSER-VALUE MATRIX END TO END FROM TOML, BECAUSE THE DIRECT STATE SEAM STARTS BELOW THEIR TRANSFER. The tests reuse all eight logical cases and every TOML representation from criterion 2 as source fixtures, with field-labelled instances of every case in BOTH `problem` and `approach`. They parse each fixture separately into criterion 2's minimal test-only oracle before invoking the product; no `StepInfo`, `LoopFacts`, product display helper or product projection supplies an expected value.
+
+A test in `src/next.rs` named `ready_to_plan_next_carries_toml_intent_on_both_surfaces` gives step `a` `status = "next"` in every matrix fixture, enters through `steps_from_toml` rather than constructing `StepInfo` or `LoopFacts`, and reaches `ReadyToPlan` through `build_pending_loop`. FOR EVERY MATRIX ROW, its JSON assertion compares the COMPLETE `next_instruction.context` object, including key order, with exactly these four keys and no others:
 
 ```
 {
-  "approach": "ready approach",
+  "approach": <the unchanged approach parser value>,
   "isolation_tier": "worktree",
   "ledger": "ledger.md",
-  "problem": "ready problem"
+  "problem": <the unchanged problem parser value>
 }
 ```
 
-The same test compares the complete human context range byte-for-byte against exactly:
+After JSON decoding, EACH intent string is byte-for-byte equal to its independent parser-oracle string. Thus the outer-whitespace row retains both outer runs, CRLF remains CRLF, bare CR remains bare CR, repeated blank lines remain repeated, the continuation remains one paragraph, and both sides of each interior line retain their spaces for BOTH fields. The complete decoded object also fixes `isolation_tier` and `ledger` to the values above, so an extra, omitted or altered non-intent key fails the row.
+
+FOR EVERY MATRIX ROW, the same test compares the complete human context range byte-for-byte with a test-only expected block assembled from fixed framing bytes and criterion 2's independent display formatter. The formatter receives the parser-oracle values, not product output. The range starts at the two spaces before `context:` and ends immediately before the two spaces of `reminders:`, so its final byte is the single LF after the final displayed `problem` line; no prefix or suffix inside the context block is ignored:
 
 ```
   context:
     approach:
-      > ready approach
+      <the exact independently formatted approach lines>
     isolation_tier: worktree
     ledger: ledger.md
     problem:
-      > ready problem
+      <the exact independently formatted problem lines>
 ```
 
-A second test in `src/next.rs`, named `blocked_next_carries_toml_intent_on_both_surfaces`, deserialises a TOML plan where step `a` is `not-started`, carries `blocked_by = ["dep"]`, `problem = "blocked problem"` and `approach = "blocked approach"`, and `dep` is a declared `deferred` step, so no in-progress or ready step can pre-empt the blocked path and `dep` is a real unresolved blocker. It also enters through `steps_from_toml` and `build_pending_loop`. Its JSON assertion compares the COMPLETE context object against exactly:
+The single-paragraph, two-paragraph, repeated-blank, outer-whitespace, CRLF, bare-CR, continuation and interior-line-whitespace rows all undergo this complete comparison for BOTH fields. The expected builder prefixes every line from criterion 2's independently formatted quoted value with six spaces, preserves trailing spaces on interior lines, emits one `      >` line for each blank logical line, emits no carriage return, and terminates the final problem line with exactly the one LF that separates the context block from `reminders:`. The single-paragraph row therefore carries `> single approach paragraph` and `> single problem paragraph` inside the fixed four-key frame; it is one of eight pending oracles rather than a one-line substitute for the matrix.
+
+A second test in `src/next.rs`, named `blocked_next_carries_toml_intent_on_both_surfaces`, runs the SAME complete eight-row, two-field source matrix. In every fixture step `a` is `not-started`, carries `blocked_by = ["dep"]`, and `dep` is a declared `deferred` step, so no in-progress or ready step can pre-empt the blocked path and `dep` is a real unresolved blocker. The test enters through `steps_from_toml` and `build_pending_loop`; it does not construct `StepInfo` or `LoopFacts`. FOR EVERY MATRIX ROW, its JSON assertion compares the COMPLETE context object, including key order, with exactly these five keys and no others:
 
 ```
 {
-  "approach": "blocked approach",
+  "approach": <the unchanged approach parser value>,
   "blocked_by": "dep",
   "isolation_tier": "worktree",
   "ledger": "ledger.md",
-  "problem": "blocked problem"
+  "problem": <the unchanged problem parser value>
 }
 ```
 
-Its complete human context range is exactly:
+Both decoded intent strings compare byte-for-byte with the independent parser oracle on every row, and all three non-intent values are exact. FOR EVERY MATRIX ROW, its human assertion compares the complete range byte-for-byte with the same independent display formatter and this fixed framing:
 
 ```
   context:
     approach:
-      > blocked approach
+      <the exact independently formatted approach lines>
     blocked_by: dep
     isolation_tier: worktree
     ledger: ledger.md
     problem:
-      > blocked problem
+      <the exact independently formatted problem lines>
 ```
 
-THE PENDING-TRANSFER RED CONTROL CHANGES ONLY THE SEAM THESE TWO TESTS OWN. Temporarily set only `build_pending_loop`'s `LoopFacts.problem` and `LoopFacts.approach` to `None` instead of copying the populated `StepInfo` fields. Leave `steps_from_toml`, the in-progress `LoopFacts` construction and `build_context` correct. Record BOTH `ready_to_plan_next_carries_toml_intent_on_both_surfaces` and `blocked_next_carries_toml_intent_on_both_surfaces` failing on their absent intent keys on both surfaces, while `next_json_preserves_the_parser_value_matrix`, `human_next_preserves_the_display_matrix` and `build_context_carries_intent_in_every_loop_state` all stay green. Restore the two pending copies and run all five green. A mutation that drops an in-progress transfer or changes `build_context` does not satisfy this control: it must isolate the separately constructed pending path.
+The range has the same byte boundaries and covers the same eight cases in both fields as the ready test. Each pending test evaluates all four field-by-surface comparisons, human and JSON for `problem` and `approach`, before reporting its accumulated, state-and-surface-labelled mismatches. A failure on one field or surface therefore cannot hide whether the other field and surface reddened.
+
+THREE SEPARATE PENDING-TRANSFER RED CONTROLS CHANGE ONLY THE SEAM THESE TWO TESTS OWN. Leave `steps_from_toml`, every in-progress `LoopFacts` construction, `build_context` and both renderers correct for every control. Run and restore each mutation separately; a composite mutation does not satisfy another control.
+
+- THE ABSENCE-ONLY CONTROL REMAINS. Temporarily set only `build_pending_loop`'s `LoopFacts.problem` and `LoopFacts.approach` to `None` instead of copying the populated `StepInfo` fields. Record BOTH pending tests reporting absent-key failures in their human and JSON comparisons for both fields, while `next_json_preserves_the_parser_value_matrix`, `human_next_preserves_the_display_matrix` and `build_context_carries_intent_in_every_loop_state` all stay green. Restore the copies.
+- THE PARAGRAPH-TRUNCATION CONTROL IS PENDING-ONLY. Temporarily copy into each pending `LoopFacts` field only the prefix before its first blank logical line. Record the two-paragraph and repeated-blank rows making BOTH pending tests report wrong-value failures on BOTH human and JSON surfaces, for both fields and both states. The two in-progress matrix tests and the direct all-state seam stay green. Restore the unchanged copies.
+- THE WHITESPACE-NORMALISATION CONTROL IS PENDING-ONLY. Temporarily trim every non-empty logical line independently while copying both fields into pending `LoopFacts`, leaving line boundaries in place. Record the interior-line-whitespace row making BOTH pending tests report wrong-value failures on BOTH human and JSON surfaces, for both fields and both states: JSON has lost parser bytes and human display has lost the two leading and two trailing interior spaces. The two in-progress matrix tests and the direct all-state seam stay green. Restore the unchanged copies.
+
+Finally run `ready_to_plan_next_carries_toml_intent_on_both_surfaces`, `blocked_next_carries_toml_intent_on_both_surfaces`, `next_json_preserves_the_parser_value_matrix`, `human_next_preserves_the_display_matrix` and `build_context_carries_intent_in_every_loop_state` green. A mutation that changes an in-progress transfer, `build_context` or a renderer does not satisfy any pending control: every mutation must isolate the separately constructed pending path.
 
 THE `build_context` SEAM OWNS THE COMPLETE STATE AXIS. A table-driven test in `src/next.rs`, named `build_context_carries_intent_in_every_loop_state`, supplies `problem = Some("all-state problem")` and `approach = Some("all-state approach")` through one `LoopFacts`, calls `build_context` directly for every `LoopState`, and for every row compares `context["problem"]` byte-for-byte with `"all-state problem"` and `context["approach"]` byte-for-byte with `"all-state approach"`. The table contains `ReadyToPlan`, `Blocked`, `AwaitingFirstReview`, `AwaitingFixes`, `AwaitingReviewers`, `Converged`, `Escalate`, `RiskClassConflict` and `Done`; state-specific context keys may differ and do not weaken either exact intent assertion. This seam test complements rather than replaces the complete human and JSON matrices and the two pending-constructor projections above.
 
@@ -873,7 +887,7 @@ WHY EVERY ONE OF THE SIX IS LOAD-CARRYING, MEASURED AGAINST TWO CONSTRUCTIONS TH
 
 ONE NAMED TEST CHANGES DIRECTION HERE, AND THE DIRECTION IS STATED SO THE IMPLEMENTER DOES NOT CHOOSE IT. `empty_details_sections_emit_no_bare_heading` in `src/plan/render.rs`, marked `N1`, asserts that `## Step Details` is ABSENT for a step with an empty body. Its inline `[[step]]` fixture is one of the sites this criterion requires to carry both fields, so after the patch the step carries intent and increment 1's render sub-rule makes the section appear. ITS STEP-DETAILS ASSERTION RE-POINTS: the section is PRESENT and carries the two projected lines, and the test takes a name that matches. Its Question-Details assertion and its non-vacuous half stay. DO NOT DELETE THE TEST. Without this instruction the implementer meets `cargo test` by editing a named regression test with no stated direction, which is the shape `plan-order-array-position` increment 1 already rules on for its own tie-break test.
 
-THE COMPLETE INCREMENT-1 NAMED PROJECTION AND CLI-SURFACE CONTRACT ALSO STAYS, AND IT STAYS GREEN WITHOUT WEAKENED EXPECTATIONS. Run every test in the single authoritative list under increment 1 criterion 8 by its exact name and record one passing test for each. No listed function is deleted, renamed, ignored or replaced by a required-field-only smoke test. Its independent parser comparisons, complete human ranges, exact key sets and order, exhaustive all-`LoopState` `build_context` table, end-to-end `ReadyToPlan` and `Blocked` TOML constructor transfers on both surfaces, exact seven-product-command-plus-help Clap set, per-field absence/null assertions, per-step ownership, byte-zero no-heading boundary, complete empty-body Step Details fragment and red-mutation obligations all remain. The only permitted setup adaptation is in `status_step_preserves_both_partial_states`: because a partial TOML `Step` becomes unparseable after the flip, construct the same one-`Some`/one-`None` status projection at the formatter/query seam, while retaining both exact human outputs, both `found` assertions, both present parser strings and both null positions byte-for-byte. This keeps the optional-window formatting contract executable without pretending a partial required TOML source remains valid. `cargo test` must run this retained contract as part of the ordinary suite; a diff that removes or relaxes any listed assertion fails this criterion.
+THE COMPLETE INCREMENT-1 NAMED PROJECTION AND CLI-SURFACE CONTRACT ALSO STAYS, AND IT STAYS GREEN WITHOUT WEAKENED EXPECTATIONS. Run every test in the single authoritative list under increment 1 criterion 8 by its exact name and record one passing test for each. No listed function is deleted, renamed, ignored or replaced by a required-field-only smoke test. Its independent parser comparisons, complete human ranges, exact key sets and order, exhaustive all-`LoopState` `build_context` table, end-to-end `ReadyToPlan` and `Blocked` TOML constructor transfers of the complete eight-row parser-value matrix through both fields and both surfaces, the separate pending-only absence, paragraph-truncation and whitespace-normalisation red controls, exact seven-product-command-plus-help Clap set, per-field absence/null assertions, per-step ownership, byte-zero no-heading boundary, complete empty-body Step Details fragment and red-mutation obligations all remain. The only permitted setup adaptation is in `status_step_preserves_both_partial_states`: because a partial TOML `Step` becomes unparseable after the flip, construct the same one-`Some`/one-`None` status projection at the formatter/query seam, while retaining both exact human outputs, both `found` assertions, both present parser strings and both null positions byte-for-byte. This keeps the optional-window formatting contract executable without pretending a partial required TOML source remains valid. `cargo test` must run this retained contract as part of the ordinary suite; a diff that removes or relaxes any listed assertion fails this criterion.
 
 THE FOUR RULE 2 AND RULE 3 TESTS INCREMENT 1 CRITERION 13 ADDS STAY, AND THEY STAY GREEN. `grep -cE 'fn validate_(rejects|accepts)_a' src/plan/source.rs` still prints `4`, and the two empty-value rejections plus the two paragraph-value acceptances all pass. This increment rewrites the code both rules sit in, so deleting either test family is not an acceptable way to make the suite green. DO NOT DELETE THEM.
 
