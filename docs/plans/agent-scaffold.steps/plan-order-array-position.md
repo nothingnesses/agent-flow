@@ -278,18 +278,19 @@ SCOPE. Every numbered citation of a step in the step sidecars and in the front s
 
 THE TWO SPELLINGS, AND WHY THE NUMBER MATTERS. The rendered positions and the `order` values are two different quantities, because 84 and 91 are absent from the value range. A citation at or below 83 reads correctly as a position. A citation from 85 to 90 drifts by one. A citation at or above 92 drifts by two. So the citations at or above 85 are the drifting set, and the citations at or below 83 are safe as positions and stay on the worklist only as a recorded exemption.
 
-The drift lives in both spellings. Do not search one.
+The drift lives in both spellings and in both leading-word cases. Matching is intentionally case-insensitive: `order`, `Order`, `step` and `Step` are one citation class. Do not search one spelling or one case.
 
 ACCEPTANCE, EACH EXECUTABLE.
 
 1. THE WORKLIST, THE EXEMPTION LIST AND THE RESOLUTION TABLE ARE CAPTURED BEFORE THE EDIT. Run these against the pre-increment tree and write every output to a scratch directory OUTSIDE the repository, or to files the increment deletes before it commits.
 
 ```
-grep -rnoE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.steps/ docs/plans/agent-scaffold.success-criteria.md docs/plans/agent-scaffold.documentation-protocol.md docs/plans/agent-scaffold._status-narrative.md | awk -F: '{print $1"\t"$2"\t"$3}' | sort -u > pre.txt
+grep -rnoE '\b([Oo]rder|[Ss]tep) [0-9]+\b' docs/plans/agent-scaffold.steps/ docs/plans/agent-scaffold.success-criteria.md docs/plans/agent-scaffold.documentation-protocol.md docs/plans/agent-scaffold._status-narrative.md | awk -F: '{print $1"\t"$2"\t"$3}' | sort -u > pre.txt
 ```
 
 ```
 awk -F'\t' '{n=$3; gsub(/[^0-9]/,"",n); if (n+0 <= 83) print}' pre.txt | sort -u > exempt.txt
+awk -F'\t' '{n=$3; gsub(/[^0-9]/,"",n); if (n+0 == 84) print}' pre.txt | sort -u > eighty-four.txt
 awk -F'\t' '{n=$3; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' pre.txt | sort -u > drift.txt
 ```
 
@@ -304,7 +305,7 @@ A ROW IS A PATH, A LINE NUMBER AND A CITATION, and the line number is load-carry
 THE WORKLIST COUNTS LINES AND NOT SITES, AND THAT IS AN ACCEPTED RESIDUAL RATHER THAN A REPAIR. `sort -u` still collapses the SAME citation repeated on one line, which the line number cannot separate. The sibling step drops `sort -u` for exactly this case (`ledger-order-citation-currency.md`, criterion 1). Reproduce the surplus and record it in the outcome, so a line that needs several edits and shows up once is not a surprise:
 
 ```
-raw=$(grep -rnoE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.steps/ docs/plans/agent-scaffold.success-criteria.md docs/plans/agent-scaffold.documentation-protocol.md docs/plans/agent-scaffold._status-narrative.md | awk -F: '{print $1"\t"$2"\t"$3}' | awk -F'\t' '{n=$3; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' | wc -l)
+raw=$(grep -rnoE '\b([Oo]rder|[Ss]tep) [0-9]+\b' docs/plans/agent-scaffold.steps/ docs/plans/agent-scaffold.success-criteria.md docs/plans/agent-scaffold.documentation-protocol.md docs/plans/agent-scaffold._status-narrative.md | awk -F: '{print $1"\t"$2"\t"$3}' | awk -F'\t' '{n=$3; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' | wc -l)
 printf 'raw_sites=%d worklist_rows=%d surplus=%d\n' "$raw" "$(wc -l < drift.txt)" "$((raw - $(wc -l < drift.txt)))"
 ```
 
@@ -316,7 +317,7 @@ Capture the line count of every file the worklist names as well, so criterion 2 
 cut -f1 pre.txt | sort -u | while IFS= read -r f; do printf '%s\t%s\n' "$(wc -l < "$f")" "$f"; done > lines-pre.txt
 ```
 
-The outcome records `wc -l` of `pre.txt`, `exempt.txt` and `drift.txt`, and the resolution table's own `wc -l`. NO ROW COUNT IS WRITTEN INTO THIS CRITERION, AND THE REASON IS MEASURED RATHER THAN CAUTIONARY. This search set includes `docs/plans/agent-scaffold.steps/`, which holds this sidecar and its four siblings, so every edit to a `Q-78` sidecar moves the figures this criterion would state. An earlier form stated three counts as a measurement on "the tree this file was spliced into", and the very fix pass that edited these criteria moved all three of them. A specification whose search set contains itself cannot state a snapshot that survives its own edit. The relation that holds is `pre` equals `exempt` plus `drift` plus the rows reading 84, and criterion 2's pass condition is stated against `wc -l < drift.txt` rather than against any number.
+The outcome records `wc -l` of `pre.txt`, `exempt.txt`, `eighty-four.txt` and `drift.txt`, and the resolution table's own `wc -l`. NO ROW COUNT IS WRITTEN INTO THIS CRITERION, AND THE REASON IS MEASURED RATHER THAN CAUTIONARY. This search set includes `docs/plans/agent-scaffold.steps/`, which holds this sidecar and its four siblings, so every edit to a `Q-78` sidecar moves the figures this criterion would state. An earlier form stated three counts as a measurement on "the tree this file was spliced into", and the very fix pass that edited these criteria moved all three of them. A specification whose search set contains itself cannot state a snapshot that survives its own edit. The relation that holds is `pre` equals the disjoint union of `exempt`, `eighty-four` and `drift`, and criterion 2's pass condition is stated against `wc -l < drift.txt` rather than against any number.
 
 NO CONCRETE VALUE-AND-SLUG PAIR IS WRITTEN INTO THIS SIDECAR AS AN EXAMPLE, WHICH IS A RULE AND NOT A PREFERENCE. A concrete pair here is itself a numbered citation inside this increment's own search set, so writing one adds a row to the worklist that the increment then owes. This is the rule `ledger-order-citation-currency.md` states for itself, adopted here for the same reason.
 
@@ -333,7 +334,7 @@ while IFS=$'\t' read -r path lineno cit; do
   want=$(awk -F'\t' -v n="$n" '$1==n {print $2}' "$TABLE")
   line=$(sed -n "${lineno}p" "$path")
   expect=$(awk -F'\t' -v p="$path" -v l="$lineno" '$1==p && $2==l {n=$3; gsub(/[^0-9]/,"",n); if (n+0 <= 83) print $3}' "$PRE" | sort)
-  actual=$(printf '%s' "$line" | grep -oE '\b(order|step) [0-9]+\b' | sort)
+  actual=$(printf '%s' "$line" | grep -oE '\b([Oo]rder|[Ss]tep) [0-9]+\b' | sort)
   if [ "$expect" != "$actual" ]; then
     echo "NUMBER SURVIVES $path:$lineno (was $cit)"; residual=$((residual+1)); continue
   fi
@@ -358,25 +359,30 @@ grep -n 'opens "Next (built first' docs/plans/agent-scaffold.steps/sidecar-statu
 
 NO LINE NUMBER IS WRITTEN HERE, because that file sits inside this increment's own search set and every edit to it moves the number. The quotation carries the numbered citation, and the sentence after it states in its own words that the number is a citation by `order` value, so a restatement strands that sentence as well as falsifying the quotation.
 
-THE HUMAN DECIDED THIS ON 2026-08-21, over a restatement by slug, receipt `type:"decision"` `q_id:"Q-78-quotationrow"` in `docs/metrics/workflow.jsonl`. THE REASONING ACCEPTED, cited by name: Principle 8, Structured data first, project for humans. A restatement makes the quotation stop matching the text it quotes, and `render` publishes both files. `reviewer-reproducible-evidence` also sits on the drift step's HANDOVER list, so its opening gets re-authored by the successor step in any case. AN EARLIER FORM OF THIS PARAGRAPH SAID NO SUCH ROW EXISTS and directed a correct implementation to print `number_survives=0`. That sentence was false on every tree this file has sat on, and its guidance clause pointed the implementer at the destructive route.
+THE HUMAN DECIDED THIS ON 2026-08-21, over a restatement by slug, receipt `type:"decision"` `q_id:"Q-78-quotationrow"` in `docs/metrics/workflow.jsonl`. THE REASONING ACCEPTED, cited by name: Principle 8, Structured data first, project for humans. A restatement makes the quotation stop matching the text it quotes, and `render` publishes both files. The exception applies whether the quoted leading word is lower-case or capitalized: case does not turn a verbatim quotation into live prose. `reviewer-reproducible-evidence` also sits on the drift step's HANDOVER list, so its opening gets re-authored by the successor step in any case. AN EARLIER FORM OF THIS PARAGRAPH SAID NO SUCH ROW EXISTS and directed a correct implementation to print `number_survives=0`. That sentence was false on every tree this file has sat on, and its guidance clause pointed the implementer at the destructive route.
 
 Then prove the line numbers still resolved, and that the edit disturbed no exempt citation and created no new drifting one:
 
 ```
 cut -f1 pre.txt | sort -u | while IFS= read -r f; do printf '%s\t%s\n' "$(wc -l < "$f")" "$f"; done | diff - lines-pre.txt
-grep -rnoE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.steps/ docs/plans/agent-scaffold.success-criteria.md docs/plans/agent-scaffold.documentation-protocol.md docs/plans/agent-scaffold._status-narrative.md | awk -F: '{print $1"\t"$2"\t"$3}' | sort -u > post.txt
-printf 'post=%d exempt_lost=%d\n' "$(wc -l < post.txt)" "$(comm -13 post.txt exempt.txt | wc -l)"
+grep -rnoE '\b([Oo]rder|[Ss]tep) [0-9]+\b' docs/plans/agent-scaffold.steps/ docs/plans/agent-scaffold.success-criteria.md docs/plans/agent-scaffold.documentation-protocol.md docs/plans/agent-scaffold._status-narrative.md | awk -F: '{print $1"\t"$2"\t"$3}' | sort -u > post.txt
+printf 'post=%d exempt_lost=%d eighty_four_lost=%d\n' \
+  "$(wc -l < post.txt)" \
+  "$(comm -13 post.txt exempt.txt | wc -l)" \
+  "$(comm -13 post.txt eighty-four.txt | wc -l)"
 ```
 
-Pass: the `diff` prints nothing and exits 0, `exempt_lost=0`, and `post` equals `wc -l < exempt.txt` plus the enumerated `NUMBER SURVIVES` rows. A tree with the sidecar directory missing gives `post=0` and `exempt_lost` equal to the whole exemption list, so an absent input cannot pass.
+Pass: the `diff` prints nothing and exits 0, `exempt_lost=0`, `eighty_four_lost=0`, and `post` equals `wc -l < exempt.txt` plus `wc -l < eighty-four.txt` plus the enumerated `NUMBER SURVIVES` rows. The 84 rows are neither exempt nor drifting and intentionally survive, so omitting their captured term refuses a correct implementation. A tree with the sidecar directory missing gives `post=0` and `exempt_lost` equal to the whole exemption list, so an absent input cannot pass.
 
-MEASURED, five trees against P1, each built on a copy of the sidecar tree. EVERY ROW BELOW IS A RELATION AND NOT A ROW COUNT. Write `R` for `wc -l < drift.txt` and `E` for the count of enumerated quotation rows, which is one today. AN EARLIER FORM KEYED ALL FIVE TREES TO A LITERAL ROW COUNT, and the fix pass that edited these criteria moved that count while it edited them, because this increment's search set holds this sidecar and its four siblings.
+MEASURED, five trees against P1, each built on a copy of the sidecar tree. EVERY ROW BELOW IS A RELATION AND NOT A ROW COUNT. Write `R` for `wc -l < drift.txt`, `H` for `wc -l < eighty-four.txt`, and `E` for the count of enumerated quotation rows, which is one today. `H` contributes to the post-sweep relation and not to P1, whose input is `drift.txt`. AN EARLIER FORM KEYED ALL FIVE TREES TO A LITERAL ROW COUNT, and the fix pass that edited these criteria moved that count while it edited them, because this increment's search set holds this sidecar and its four siblings.
 
 - The untouched tree prints `rows=R restated=0 wrong_slug=0 number_survives=R`.
 - A CORRECT IMPLEMENTATION prints `rows=R restated=R-E wrong_slug=0 number_survives=E`.
 - An implementation that DELETES every drifting citation, replacing it with the bare words `that step`, prints `number_survives=0` and `wrong_slug` GREATER THAN ZERO. A deleted number leaves the line carrying no `order` citation, so it clears the first test, and every line that did not already name the step then carries no slug.
 - An implementation that RENUMBERS every drifting citation prints `restated=0 wrong_slug=0 number_survives=R`, which is the untouched tree's own line. That is why the pass condition reads `restated` rather than a before-and-after diff.
 - An implementation that restates every one by a REAL BUT WRONG slug prints `number_survives=0` and `wrong_slug` GREATER THAN ZERO.
+
+CAPITALIZED RED CONTROL. In a throwaway copy of a correct implementation, restore one captured capitalized `Order` or `Step` citation at or above 85 on a non-quotation row, removing its slug restatement. Run P1 and the post sweep. Pass for the red control: P1 reports that row as `NUMBER SURVIVES` and the post sweep grows by one beyond the required `exempt + eighty-four + E` relation. Restore the slug restatement and show both relations passing again. A lower-case-only pre-capture or `actual` recomputation leaves the mutation invisible and fails this control.
 
 THE DELETION IS WHY THIS CRITERION READS THE LINE BACK. An earlier form counted rows before and after and required the drifting rows to be gone, and the deletion satisfied every clause of it while it destroyed cross-references across the sidecar tree, all of which `render` ships into every reader's copy of the plan. NO COUNT OF DESTROYED REFERENCES IS WRITTEN HERE, for the reason criterion 1 records. THE WRONG-SLUG CASE IS WHY THE RESOLUTION TABLE EXISTS: it is the "or worse, to the wrong step" half of this increment's own risk ground, and nothing that reads only the shape of the line can reach it.
 
@@ -399,7 +405,7 @@ This is NOT a pass-or-fail oracle and its empty output is not the target, becaus
 6. THE LEDGER IS A NAMED EXCLUSION. The outcome records that `docs/plans/agent-scaffold.ledger.md` is out of scope and states the count that motivated the split, from:
 
 ```
-grep -noE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.ledger.md | awk -F: '{n=$NF; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' | wc -l
+grep -noE '\b([Oo]rder|[Ss]tep) [0-9]+\b' docs/plans/agent-scaffold.ledger.md | awk -F: '{n=$NF; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' | wc -l
 ```
 
 NO COUNT IS WRITTEN HERE AND THE OUTCOME RECORDS WHAT THE COMMAND PRINTS ON THE DAY. The count rises with every appended review round, and the ledger paragraph that motivated the split states the figure the human weighed, dated. THE SPLIT IS DECIDED, so the specification's alternative branch is spent: `ledger-order-citation-currency` owns the ledger and it does not return to this increment. Do not run the increment with the ledger half in.
