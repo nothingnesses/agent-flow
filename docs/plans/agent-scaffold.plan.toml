@@ -1587,7 +1587,6 @@ status = "not-started"
 order = 107
 blocked_by = ["plan-order-array-position"]
 folds = []
-waiver = []
 
 [step.provenance]
 decisions = ["Q-81"]
@@ -1623,6 +1622,14 @@ risk_class = "risky"
 [[step.increment]]
 id = "step-intent-encoding-inc3"
 risk_class = "risky"
+
+[[step.waiver]]
+id = "step-intent-encoding-w1"
+unit = "increment"
+increment = "step-intent-encoding-inc1"
+reason = "accepted-at-escalation"
+evidence_tier = "record-backed"
+evidence = "step-intent-encoding-inc1"
 
 [[question]]
 id = "Q-1"
