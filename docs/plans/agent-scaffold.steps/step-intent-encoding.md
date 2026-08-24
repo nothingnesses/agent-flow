@@ -109,7 +109,7 @@ for f in docs/plans/agent-scaffold.steps/*.md; do head -1 "$f" | grep -q '^#' ||
 
 It prints `docs/plans/agent-scaffold.steps/core-assets.md` and nothing else. That file opens with the lead-in sentence "Decisions carried from the resolved open questions:" and a bullet list, and its own heading sits at line 9. `core-assets` is the first step in the plan, so `## Step Details` opens directly on that prose, and a first-line rule would file the intent above the step's own heading.
 
-`next`. `StepInfo` gains `problem: Option<String>` and `approach: Option<String>`. `steps_from_toml` copies them. `steps_from_markdown` sets both to `None`, because the Markdown Roadmap carries no such column, and the parity comment on that function records it. `LoopFacts` carries both, and `build_context` inserts a `problem` slot and an `approach` slot when the field is present, in every loop state. The context map is a `BTreeMap`, so the six slots print in this order: `approach`, `isolation_tier`, `ledger`, `problem`, `review_findings`, `triage_findings`. The JSON context values are the unchanged deserialised strings. In human output a multiline context slot is labelled on its own line and uses the same quoted-line helper, indented beneath the map key. At `AwaitingFirstReview`, a two-paragraph pair appears exactly as:
+`next`. `StepInfo` gains `problem: Option<String>` and `approach: Option<String>`. `steps_from_toml` copies them. `steps_from_markdown` sets both to `None`, because the Markdown Roadmap carries no such column, and the parity comment on that function records it. `LoopFacts` carries both, and `build_context` inserts a `problem` slot and an `approach` slot when the field is present, in every loop state. The context map is a `BTreeMap`, so the six slots print in this order: `approach`, `isolation_tier`, `ledger`, `problem`, `review_findings`, `triage_findings`. The JSON context values are the unchanged deserialised strings. In human output every `problem` and `approach` context slot is labelled on its own line and uses the same quoted-line helper, indented beneath the map key, whether the value has one paragraph or several. At `AwaitingFirstReview`, a two-paragraph pair appears exactly as:
 
 ```
   context:
@@ -161,17 +161,32 @@ ACCEPTANCE, EACH EXECUTABLE.
 
 1. THE SCHEMA CARRIES BOTH FIELDS AND THEY ARE OPTIONAL. `./target/debug/agent-flow validate --source docs/plans/agent-scaffold.plan.toml --metrics docs/metrics/workflow.jsonl` prints a `docs/plans/agent-scaffold.plan.toml: <N> steps, <M> questions, valid` line and exits 0, against a plan where no step carries either field. The outcome records the complete line rather than pinning either changing count. `grep -c 'problem: Option<String>' src/plan/source.rs` prints `1`.
 
-2. EVERY TOML STRING FORM IS ACCEPTED, AND THE LOGICAL VALUE SURVIVES. Build four one-step plans in the owned scratch directory, each carrying both fields: (a) `problem` as a multiline basic string and `approach` as a multiline literal string, each with two paragraphs separated by one blank logical line; (b) both as basic strings containing `\n\n`; (c) a multiline basic continuation whose physical newline is escaped and therefore deserialises to one paragraph, paired with the equivalent literal single paragraph; and (d) two ordinary single-paragraph strings. Run `./target/debug/agent-flow validate --source <file>` on all four. Each prints its `1 steps, 0 questions, valid` line, emits no validation problem on stderr, and exits 0.
+2. EVERY TOML STRING FORM IS ACCEPTED, AND ONE LOGICAL-VALUE MATRIX IS THE ORACLE FOR EVERY PROJECTION. Build one-step plans in the owned scratch directory that jointly cover: (a) a single paragraph; (b) two paragraphs separated by one blank logical line; (c) `paragraph one\n\n\nparagraph two`, which contains two consecutive blank logical lines; (d) `  paragraph one\nparagraph two  `, which carries leading and trailing whitespace around the whole value; (e) `paragraph one\r\nparagraph two`; (f) `paragraph one\rparagraph two`; and (g) a multiline basic continuation whose physical newline is escaped and therefore deserialises to one paragraph. Across the matrix, exercise a single-line basic string, a single-line literal string, a multiline basic string, a multiline literal string and escaped newline characters inside a basic string, and exercise every case as both `problem` and `approach`.
 
-Then run `status --source <file> --step a --json` on each and compare `.problem` and `.approach` with the TOML parser's logical values, not with the physical source layout. For the two-paragraph escaped fixture:
+Run `./target/debug/agent-flow validate --source <file>` on every matrix file. Each prints its `1 steps, 0 questions, valid` line, emits no validation problem on stderr, and exits 0. A test-only oracle deserialises each fixture directly with the workspace's `toml` crate into a minimal struct and retains each resulting Rust string as bytes; it does not call `render`, `next`, `status`, the production display helper or another product projection. Criteria 4, 7 and 8 compare their output with those parser values or with the exact human display bytes derived from the matrix, so two projections cannot certify the same normalising defect in each other.
+
+For JSON, "unchanged" means byte-for-byte equality with the oracle string after JSON decoding: extraction uses `jq -j` or a Rust string comparison, never `jq -r`, and adds no newline. For human output, the parser values in cases (c), (e) and (f) become, before surface-specific indentation, exactly:
 
 ```
-jq -r '.problem' status.json
+> paragraph one
+>
+>
+> paragraph two
 ```
 
-prints the first paragraph, one blank line, then the second paragraph; the same holds for `.approach`. For the continuation fixture each field prints one logical paragraph with the continuation collapsed according to TOML. For the single-paragraph fixture neither field gains a newline. This criterion makes multiline support positive behaviour rather than merely removing an old rejection.
+```
+> paragraph one
+> paragraph two
+```
 
-THE SMALL FORMAT PROOF RAN BEFORE THESE BYTES WERE SPECIFIED. Against the current crate's `toml = "0.8"` dependency and the current `render`/`next`/`status` helper shapes, a scratch proof parsed a multiline basic `problem`, a multiline literal `approach`, an escaped-newline pair, a continuation-escaped multiline source and a single-paragraph pair. It printed the exact `render`, human `next`, JSON `next`, human `status --step` and JSON `status --step` forms specified above. The multiline pair retained the internal blank line on every surface, the continuation became one paragraph, and the single-paragraph pair gained no separator. The executable fixtures in this criterion and criteria 4 to 8 reproduce that proof inside the implementation rather than relying on the scratch artifact.
+```
+> paragraph one
+> paragraph two
+```
+
+The first block preserves both blank logical lines. The second and third blocks are byte-identical because human display normalises CRLF and bare CR to LF; neither output contains a carriage-return byte. Case (d) keeps its internal newline and trims only the two outer runs for human display, while its JSON value retains both outer runs unchanged. Case (g) stays one logical paragraph. This criterion makes the supported representations, outer whitespace, repeated blank lines and both carriage-return forms positive behaviour rather than merely removing an old rejection.
+
+THE SMALL FORMAT PROOF RAN BEFORE THESE BYTES WERE SPECIFIED. Against the current crate's `toml = "0.8"` dependency and the current `render`/`next`/`status` helper shapes, a scratch proof parsed the complete matrix and printed the exact `render`, human `next`, JSON `next`, human `status --step` and JSON `status --step` forms specified above. Criteria 4, 7 and 8 reproduce that proof inside the implementation rather than relying on the scratch artifact.
 
 3. THE EMPTY-VALUE RULE FIRES PER FIELD. A one-step plan with `problem = ""` and `approach = ""` gives two stderr lines and exit 1:
 
@@ -184,7 +199,11 @@ MEASURED at whole-plan scale, `problem = ""` and `approach = ""` across every st
 
 ACCEPTED RESIDUAL `GB-4` (`low`), OWNED BY INCREMENT 1 CRITERION 3 AND RULE 3. The human accepted the cost that the criterion exercises `""` but not a whitespace-only string, so an implementation using `value.is_empty()` rather than `value.trim().is_empty()` can satisfy every listed check while the trim clause of RULE 3 is false. THE NON-EXPANSION BOUNDARY: this accepts only the whitespace-only distinction; it does not waive rejection of the empty literal, acceptance of paragraph values in criterion 2, either field, or the required-field flip. The acceptance is decision `Q-78-round4-low-residuals`, as revised by `Q-78-gb11-revision` to retain four residuals.
 
-4. THE RENDER FORMAT IS PINNED IN THE GOLDEN. `src/plan/testdata/render-fixture.plan.toml` gains both single-paragraph fields on `alpha`, both two-paragraph multiline fields on `gamma`, and `problem` ALONE on `eta`, which is the partial fixture criterion 6 reads, and the golden is regenerated. Then:
+4. THE RENDER FORMAT IS RECONCILED PER STEP; GLOBAL LABEL COUNTS ARE A SECONDARY CENSUS ONLY. `src/plan/testdata/render-fixture.plan.toml` gains both single-paragraph fields on `alpha`, both two-paragraph multiline fields on `gamma`, and `problem` ALONE on `eta`, which is the partial fixture criterion 6 reads. Its other existing steps carry the remaining shared-matrix cases so the fixture includes two consecutive blank logical lines, outer whitespace, CRLF and bare CR without adding another fixture path, and the golden is regenerated.
+
+A test in `src/plan/render.rs`, named `each_intent_field_projects_once_inside_its_own_step_details`, iterates every source step rather than counting the document globally. For each step it calls the private per-step Step Details renderer on that step and its own sidecar body. For each present field, the returned fragment must contain exactly one correctly cased label line and exactly one byte-for-byte expected labelled block built by a test-only reference formatter from criterion 2's independent parser value. For each absent field, that step's fragment must contain no label for it. The expected formatter implements RULE 10 directly in test code and does not call the production quoted-line helper. Its assertions cover every source field in the render fixture, including the repeated-blank, CRLF and bare-CR cases; therefore each source field is reconciled with its own generated section rather than with another step's labels.
+
+Then record the secondary census:
 
 ```
 printf 'problem_labels=%s approach_labels=%s\n' \
@@ -192,9 +211,11 @@ printf 'problem_labels=%s approach_labels=%s\n' \
   "$(grep -c '^\*\*Approach\*\*$' src/plan/testdata/render-fixture.md)"
 ```
 
-Pass: stdout is exactly `problem_labels=3 approach_labels=2`. A missing golden file cannot pass both counts. The fixture asserts a labelled multiline block rather than flattening a value onto one generated line.
+Pass: the counts equal the numbers of present source fields the fixture reports, and the per-step test passes. The counts catch a missing golden file, but they do not certify ownership.
 
-THIS CRITERION IS THE ONE THAT CATCHES THE `title` TRAP. Against an implementation that adds both fields to the schema and emits neither, the schema and query criteria can pass while both label counts print zero. Criteria 5 and 6 pin placement, spacing, paragraph preservation and the partial case inside those labelled blocks.
+THE OFFSETTING RED CONTROL IS REQUIRED. In a temporary mutation of the renderer, omit `alpha`'s two intent blocks and emit duplicate copies in `beta`'s Step Details, preserving both global label counts. Record that the secondary census still passes and `each_intent_field_projects_once_inside_its_own_step_details` fails on both slugs; restore the renderer and run the test green. This is what prevents an omission and a duplicate from cancelling.
+
+THIS CRITERION IS THE ONE THAT CATCHES THE `title` TRAP. Against an implementation that adds both fields to the schema and emits neither, the schema and query criteria can pass while the census prints zero. Criteria 4 to 6 pin field ownership, placement, spacing, paragraph preservation and the partial case inside the labelled blocks.
 
 5. THE LEADING-HEADING RULE AND PARAGRAPH BOUNDARIES ARE PINNED TOGETHER. `src/plan/testdata/render-fixture.steps/gamma.md` takes a lead-in sentence above its own `###` heading, the `core-assets` shape, while `gamma` carries two paragraphs in each field. Print from the `gamma` heading through the start of its original body:
 
@@ -212,31 +233,64 @@ awk '/^### `eta`/{f=1} f{print} /The eta step body/{exit}' src/plan/testdata/ren
 
 Pass: the range is the heading, one blank line, `**Problem**`, one blank line, one `> ` value line, one blank line, then the original body. It contains no `**Approach**` and no `(not recorded)`. This is the optional-window shape only; increment 3 makes it unrepresentable in a TOML plan.
 
-7. `next` CARRIES BOTH SLOTS, ON BOTH SURFACES, WITH PARAGRAPHS INTACT. Build a one-step in-progress plan whose `problem` and `approach` each have two paragraphs, run `next --json`, and extract the raw strings:
+7. `next` CARRIES BOTH SLOTS, ON BOTH SURFACES, ACROSS THE WHOLE LOGICAL-VALUE MATRIX. Run `next --json` on every criterion 2 fixture. For each fixture and each field, extract `.active_loop.next_instruction.context[$field]` with `jq -j` to a file and `cmp` it with the independent parser-oracle bytes. Every comparison is exact: the outer-whitespace value retains both outer runs, CRLF remains CRLF, bare CR remains bare CR, repeated blank lines remain repeated, and no value gains a display prefix. The JSON object's deterministic `BTreeMap` order keeps `approach` before `problem` among the context keys.
+
+The test `next_json_preserves_the_parser_value_matrix` performs the same byte comparisons in Rust over all matrix rows. THE NORMALISING RED CONTROL IS LOAD-BEARING: temporarily change the JSON context insertion to trim the value and normalise CRLF and bare CR to LF. Record that the ordinary two-paragraph LF case still passes while the outer-whitespace, CRLF and bare-CR matrix rows fail this test; restore the unchanged insertion and run it green.
+
+Then run the human form on the single-paragraph, repeated-blank, CRLF and bare-CR fixtures and compare the complete fixed context range byte-for-byte with checked-in test literals or scratch expected files. The test fixes the four non-intent values to `worktree`, `ledger.md`, `reviews/reviewer.md` and `reviews/triage.md`, so no placeholder or path variability sits inside the comparison. For the single-paragraph pair the exact shape includes labels on their own lines:
 
 ```
-./target/debug/agent-flow next --source intent.plan.toml --json > next.json
-jq -r '.active_loop.next_instruction.context.approach' next.json
-jq -r '.active_loop.next_instruction.context.problem' next.json
+    approach:
+      > single approach paragraph
+    isolation_tier: worktree
+    ledger: ledger.md
+    problem:
+      > single problem paragraph
+    review_findings: reviews/reviewer.md
+    triage_findings: reviews/triage.md
 ```
 
-Pass: each command prints its first paragraph, one blank line, then its second paragraph, and neither gains the `> ` display prefix. The JSON object's deterministic `BTreeMap` order keeps `approach` before `problem` among the context keys.
+The inline forms `    approach: <value>` and `    problem: <value>` are forbidden for a single paragraph. In the repeated-blank fixture each field has two consecutive `      >` lines. In the CRLF and bare-CR fixtures each logical line has its own `      > ` line and the output contains no carriage-return byte. The test `human_next_preserves_the_display_matrix` compares the entire range, including labels, indentation, blank-line multiplicity and the byte immediately before the following key. An implementation that handles multiline values specially while leaving a single paragraph inline fails the first row, and an implementation that collapses a blank run or leaves a bare CR fails its own row.
 
-Then run the human form and print the context range. Pass: it contains exactly one `    approach:` label and one `    problem:` label; beneath each, the first paragraph is a `      > ` line, the paragraph break is `      >`, and the second paragraph is a `      > ` line, before the next map key. An implementation that adds the JSON values while leaving `render_active_loop`'s one-line `key: value` loop untouched fails the human range because the second paragraph escapes its label.
-
-8. `status --step` ANSWERS FIVE WAYS, AND EACH IS RUN. `good.plan.toml` carries two paragraphs in each field.
+8. `status --step` ANSWERS EVERY DECLARED DATA STATE, AND EACH IS RUN. `good.plan.toml` carries two paragraphs in each field.
 
 ```
 ./target/debug/agent-flow status --source good.plan.toml --step a
 ```
 
-Pass: stdout starts `step: a`; `problem:` and `approach:` each occupy their own line; each value has two `  > ` paragraph lines separated by one `  >` line, exactly as the format block above specifies; stderr is empty and exit is 0.
+Pass: stdout starts `step: a`; `problem:` and `approach:` each occupy their own line; each value has two `  > ` paragraph lines separated by one `  >` line, exactly as the format block above specifies; stderr is empty and exit is 0. Repeat the human command for criterion 2's repeated-blank, CRLF and bare-CR fixtures and compare the complete output byte-for-byte. The repeated-blank value has two consecutive `  >` lines, the two carriage-return cases each produce separate `  > ` lines, and no output contains a carriage-return byte. The test `human_status_step_preserves_the_display_matrix` owns those exact comparisons.
 
 ```
 ./target/debug/agent-flow status --source good.plan.toml --step a --json
 ```
 
-Pass: the object fields occur in the order `step`, `found`, `problem`, `approach`; `step` is `a`, `found` is `true`, and `jq -r` on each prose field prints both paragraphs with one blank line between them and no display prefixes.
+Pass: the object fields occur in the order `step`, `found`, `problem`, `approach`; `step` is `a`, `found` is `true`, and each JSON prose string equals its parser value.
+
+BOTH PARTIAL STATES ARE SEPARATE FIXTURES AND NEITHER MAY COLLAPSE TO UNKNOWN OR NO-INTENT. `problem-only.plan.toml` carries `problem = "  problem one\rproblem two  "` and no `approach`. Its human output is exactly:
+
+```
+step: a
+problem:
+  > problem one
+  > problem two
+approach:
+  > (not recorded)
+```
+
+Its JSON object has `step: "a"`, `found: true`, `approach: null`, and a string-valued `problem` whose bytes, extracted with `jq -j`, are exactly the independent parser bytes including both outer whitespace runs and the bare CR. `approach-only.plan.toml` carries no `problem` and carries `approach = "approach one\n\n\napproach two"`. Its human output is exactly:
+
+```
+step: a
+problem:
+  > (not recorded)
+approach:
+  > approach one
+  >
+  >
+  > approach two
+```
+
+Its JSON object has `step: "a"`, `found: true`, `problem: null`, and an `approach` string byte-identical to the parser value. On both surfaces the present field is preserved exactly according to that surface's contract, and absence appears only for the missing field. The test `status_step_preserves_both_partial_states` compares both complete human outputs, both `found` values, both present strings and both null positions.
 
 ```
 ./target/debug/agent-flow status --source good.plan.toml --step nope
@@ -255,6 +309,8 @@ Pass: stdout is exactly the five lines `step: a`, `problem:`, `  > (not recorded
 ```
 
 Pass: stderr carries `error: the argument '--step <STEP>' cannot be used with '--resume'` and the exit status is 2.
+
+THE HUMAN DISPLAY MATRIX HAS TWO REQUIRED RED MUTATIONS ACROSS ALL THREE SURFACES. First temporarily collapse every run of blank logical lines to one in the shared display helper; `each_intent_field_projects_once_inside_its_own_step_details`, `human_next_preserves_the_display_matrix` and `human_status_step_preserves_the_display_matrix` must all fail their repeated-blank row. Restore it. Then temporarily normalise CRLF only and leave bare CR untouched; all three tests must fail their bare-CR row. Restore it and run all three green. A named test that remains green under either mutation does not count as coverage for that surface.
 
 AND NO EIGHTH SUBCOMMAND WAS ADDED, which is the executable form of the Principle 2 ruling above rather than a promise in prose:
 
@@ -798,7 +854,7 @@ THE PACK GUIDANCE THE FLIP MAKES STALE IS NOT LEFT TO THIS SECTION, because it i
 
 ### THE RESIDUALS THIS STEP ACCEPTS RATHER THAN CLOSES
 
-Four. Each is recorded so a later review round does not file it as a fresh finding, and each belongs in the eventual decision receipt. This is their single home; the design pass names them and points here.
+Four. Each is recorded so a later review round does not file it as a fresh finding, and each belongs in the eventual decision receipt. This is their single home; the structured `Q-78` item and the design exploration point to this complete four-item set rather than maintaining another copy, and the eventual receipt must cover all four.
 
 RESIDUAL 1, INTENT-PROSE STALENESS. Nothing closes the case where the recorded intent is no longer what the step is for, and no check can. Prose in a TOML string goes stale exactly as prose in Markdown does. What the field removes is the SECOND copy, not the staleness.
 
