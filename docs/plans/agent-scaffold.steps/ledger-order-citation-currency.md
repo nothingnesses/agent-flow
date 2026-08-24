@@ -13,13 +13,13 @@ WHY THIS IS NOT `plan-order-array-position` INCREMENT 2. That increment's oracle
 THE POPULATION, MEASURED. Run:
 
 ```
-grep -noE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.ledger.md | wc -l
-grep -noE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.ledger.md | awk -F: '{n=$NF; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' | wc -l
+grep -noE '\b([Oo]rder|[Ss]tep) [0-9]+\b' docs/plans/agent-scaffold.ledger.md | wc -l
+grep -noE '\b([Oo]rder|[Ss]tep) [0-9]+\b' docs/plans/agent-scaffold.ledger.md | awk -F: '{n=$NF; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' | wc -l
 ```
 
-MEASURED on the tree this step was authored against, the two print `135` and `116`. Both numbers rise with every appended review round, so the outcome records what the commands print on the day and no criterion below states either figure as a pass condition.
+THE EARLIER LOWER-CASE-ONLY MEASUREMENT printed `135` and `116`, and reset round 1 proved that population incomplete: the capitalized selector adds 14 citations at or above 85 on the reviewed tree. Both totals rise with every appended review round, so the outcome records what the corrected commands print on the day and no criterion below states either figure as a pass condition.
 
-THE DRIFT ARITHMETIC IS THE SIBLING STEP'S. The `order` values 84 and 91 are absent from the range, so a citation at or below 83 reads correctly as an array position and needs no edit, a citation from 85 to 90 drifts by one, and a citation at or above 92 drifts by two. MEASURED, 12 of the 135 sit at or below 83.
+THE DRIFT ARITHMETIC IS THE SIBLING STEP'S. The `order` values 84 and 91 are absent from the range, so a citation at or below 83 reads correctly as an array position and needs no edit, a citation from 85 to 90 drifts by one, and a citation at or above 92 drifts by two. The outcome records the safe and drifting partitions from the corrected case-insensitive selector rather than inheriting the old lower-case snapshot.
 
 TWO CITED VALUES ARE VACANT TODAY, AND THEY ARE HISTORICAL RATHER THAN UNRESOLVABLE. Values 84 and 91 are absent from the current plan and the ledger cites both. Every current row was correct when written: the 84 rows name `rename-to-agent-flow` before it moved from order 84 to 100, and the 91 rows name `exploring-item-actor-boundary` before that step was deleted. Criterion 4 resolves each from a named historical commit that carries both assignments, rather than forcing a false `(no such step)` disposition. No row count is a pass condition; the criterion's search selects the live rows on the day.
 
@@ -38,9 +38,9 @@ MEASURED, the four dates print `then=8 agreeing=8`, `then=11 agreeing=11`, `then
 
 ### The form: ANNOTATE, and do not rewrite
 
-EACH CITATION KEEPS ITS NUMBER AND GAINS THE SLUG, in the form ``<word> <n> (`<slug>`)`` where `<word>` is the citation's own `order` or `step`. The number stays and the slug is added after it. A slug must resolve either in the named pre-deletion table or, for a value later vacated, in criterion 4's named historical table; it need not name a step that still exists today. THE FORM IS GIVEN METASYNTACTICALLY AND NOT AS A CONCRETE PAIR, because a concrete pair in this file is itself a numbered citation that `plan-order-array-position` increment 2 then has to restate. One real instance already exists in the ledger, the single pre-existing annotation criterion 2 counts, and it is the worked example.
+EACH CITATION KEEPS ITS NUMBER AND GAINS THE SLUG, in the form ``<word> <n> (`<slug>`)`` where `<word>` is the citation's own `order`, `Order`, `step` or `Step`. Matching is intentionally case-insensitive while annotation is case-preserving: the leading word stays byte-for-byte as written, the number stays, and the slug is added after it. A slug must resolve either in the named pre-deletion table or, for a value later vacated, in criterion 4's named historical table; it need not name a step that still exists today. THE FORM IS GIVEN METASYNTACTICALLY AND NOT AS A CONCRETE PAIR, because a concrete pair in this file is itself a numbered citation that `plan-order-array-position` increment 2 then has to restate. One real instance already exists in the ledger, the single pre-existing annotation criterion 2 counts, and it is the worked example. Capitalized rows that already carry a bare slug are still worklist rows: they receive the same parenthesised annotation, and the existing bare slug is left as surrounding prose rather than treated as coverage.
 
-WHY ADDITIVE RATHER THAN SUBSTITUTIVE, MEASURED RATHER THAN ASSERTED. The ledger is the project's evidence base: every convergence count, every round total and every "do not re-raise without new evidence" ruling reads it, and escalation records quote its narrative. AN EXTERNAL QUOTATION OF THAT NARRATIVE EXISTS AND IT IS COUNTED. `grep -oE '\b(order|step) [0-9]+\b' docs/metrics/workflow.jsonl` returns 14 hits, 13 of them at or above 85, every one inside an `artifact` field quoting ledger narrative, and one of those records already carries the slug beside the number, which is this form arrived at independently. Under a substitutive edit a reader matching a metrics record's citation against the ledger finds nothing, and under an additive edit the substring still matches. Those 13 rows are the evidence for the FORM, and they are the only measurement in this file that distinguishes the two forms. `AGENTS.md` also treats the ledger as a record rather than a projection, so nothing can re-derive it once its text is changed. Principle 6, Ground decisions in evidence, decides it: the evidence must survive the correction that makes it readable.
+WHY ADDITIVE RATHER THAN SUBSTITUTIVE, MEASURED RATHER THAN ASSERTED. The ledger is the project's evidence base: every convergence count, every round total and every "do not re-raise without new evidence" ruling reads it, and escalation records quote its narrative. AN EXTERNAL QUOTATION OF THAT NARRATIVE EXISTS AND IT IS COUNTED. `grep -oE '\b([Oo]rder|[Ss]tep) [0-9]+\b' docs/metrics/workflow.jsonl` returns 14 hits, 13 of them at or above 85, every one inside an `artifact` field quoting ledger narrative, and one of those records already carries the slug beside the number, which is this form arrived at independently. Under a substitutive edit a reader matching a metrics record's citation against the ledger finds nothing, and under an additive edit the substring still matches. Those 13 rows are the evidence for the FORM, and they are the only measurement in this file that distinguishes the two forms. `AGENTS.md` also treats the ledger as a record rather than a projection, so nothing can re-derive it once its text is changed. Principle 6, Ground decisions in evidence, decides it: the evidence must survive the correction that makes it readable.
 
 THE TWO REJECTED ALTERNATIVES, RECORDED SO A REVIEW ROUND DOES NOT RE-RAISE THEM.
 
@@ -76,7 +76,7 @@ ACCEPTANCE, EACH EXECUTABLE.
 1. THE WORKLIST IS CAPTURED BEFORE THE EDIT. Write the drifting set to a scratch file OUTSIDE the repository:
 
 ```
-grep -noE '\b(order|step) [0-9]+\b' docs/plans/agent-scaffold.ledger.md | awk -F: '{n=$NF; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' > pre-ledger.txt
+grep -noE '\b([Oo]rder|[Ss]tep) [0-9]+\b' docs/plans/agent-scaffold.ledger.md | awk -F: '{n=$NF; gsub(/[^0-9]/,"",n); if (n+0 >= 85) print}' > pre-ledger.txt
 ```
 
 THERE IS NO `sort -u` IN THAT PIPELINE AND ITS ABSENCE IS THE POINT. A ledger line can carry the same citation more than once, and each occurrence is a separate edit site that this increment owes. MEASURED, the busiest single ledger line carries eight drifting citations across four values, three of them repeats of one value, and a deduplicating form collapses 20 sites across the file. Such a form would hand the implementer a worklist 20 short of the population criterion 2 counts and make the cross-check between the two unsound. Reproduce the surplus by running the command above with and without `sort -u` and subtracting.
@@ -96,9 +96,9 @@ while IFS= read -r hit; do
   n=${hit##* }
   [ "$n" -ge 85 ] || continue
   drifting=$((drifting+1))
-done < <(grep -oE '\b(order|step) [0-9]+\b' "$LEDGER")
+done < <(grep -oE '\b([Oo]rder|[Ss]tep) [0-9]+\b' "$LEDGER")
 while IFS= read -r hit; do
-  n=$(printf '%s' "$hit" | sed -E 's/^(order|step) ([0-9]+) .*/\2/')
+  n=$(printf '%s' "$hit" | sed -E 's/^([Oo]rder|[Ss]tep) ([0-9]+) .*/\2/')
   [ "$n" -ge 85 ] || continue
   annotated=$((annotated+1))
   slug=$(printf '%s' "$hit" | sed -E 's/.*\(`([a-z0-9-]+)`\)$/\1/')
@@ -109,7 +109,7 @@ while IFS= read -r hit; do
   elif [ "$want" != "$slug" ]; then
     echo "WRONG SLUG: $hit wants $want"; wrong=$((wrong+1))
   fi
-done < <(grep -oE '\b(order|step) [0-9]+ \(`[a-z0-9-]+`\)' "$LEDGER")
+done < <(grep -oE '\b([Oo]rder|[Ss]tep) [0-9]+ \(`[a-z0-9-]+`\)' "$LEDGER")
 bare=$((drifting - annotated))
 printf 'drifting=%d annotated=%d bare=%d unknown_slug=%d wrong_slug=%d\n' \
   "$drifting" "$annotated" "$bare" "$unknown" "$wrong"
@@ -133,12 +133,12 @@ MEASURED by relation against four ledgers:
 
 Only the `drifting` clause separates the substitution family from the correct edit, which is why this criterion states it first and why criterion 1 records the number it compares against.
 
-3. RED THEN GREEN ON ONE DRIFTING ANNOTATION. Take one annotated citation whose value is at or above 85, strip its parenthesised slug, run criterion 2's script and record that `bare` rises by one and `annotated` falls by one. Restore it and show the pair back at their passing values. The red output lands as evidence in the outcome.
+3. RED THEN GREEN ON TWO DRIFTING ANNOTATIONS. First take one lower-case annotated citation whose value is at or above 85, strip its parenthesised slug, run criterion 2's script and record that `bare` rises by one and `annotated` falls by one. Restore it and show the pair back at their passing values. Then repeat on a capitalized `Order` or `Step` citation. The capitalized mutation must produce the same one-row delta; a lower-case-only selector leaves both counters unchanged and fails this control. Restore it and record the final passing line. The red outputs land as evidence in the outcome.
 
 4. THE TWO VACATED VALUES ARE DISPOSED OF ROW BY ROW, AND NO ROW IS GUESSED. List the live rows with:
 
 ```
-grep -noE '\b(order|step) (84|91)\b' docs/plans/agent-scaffold.ledger.md
+grep -noE '\b([Oo]rder|[Ss]tep) (84|91)\b' docs/plans/agent-scaffold.ledger.md
 ```
 
 THE OBLIGATION: the outcome records, for every row the command prints, which of four evidence-backed dispositions applies, and no row may be left without one.

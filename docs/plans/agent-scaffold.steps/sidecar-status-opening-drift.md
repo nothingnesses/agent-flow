@@ -226,7 +226,7 @@ while IFS=$'\t' read -r slug anchor; do
     "$anchor"*) ;;
     *) echo "OPENING LOST PROVENANCE $slug"; bad_anchor=$((bad_anchor+1));;
   esac
-  additions=$(git diff --word-diff=porcelain -U0 "$BASE" -- "$path" | grep -E '^\+' | grep -v '^\+\+\+' || true)
+  additions=$(git diff --word-diff=porcelain -U0 "$BASE" -- "$path" | grep -E '^\+' | grep -vE '^\+\+\+' || true)
   if [ -n "$additions" ]; then
     echo "OPENING ADDS WORDS $slug"
     printf '%s\n' "$additions"
@@ -236,7 +236,9 @@ done < "$ANCHORS"
 printf 'checked=%d bad_anchor=%d added=%d\n' "$checked" "$bad_anchor" "$added"
 ```
 
-Pass: `checked` equals the worklist row count, `bad_anchor=0` and `added=0`. The anchor is captured AFTER mechanically removing the token, so a correct token deletion preserves it; later false clauses may be removed, but no replacement sentence is authored. A generic sentence replacing every opening fails `bad_anchor` on every row. Deleting a whole opening line where the next paragraph happens to begin as prose also fails its anchor. This is the premise-half oracle that criteria 1, 4, 5 and 12 do not supply.
+Pass: `checked` equals the worklist row count, `bad_anchor=0` and `added=0`. The anchor is captured AFTER mechanically removing the token, so a correct token deletion preserves it; later false clauses may be removed, but no replacement sentence is authored. A generic sentence replacing every opening fails `bad_anchor` on every row. Deleting a whole opening line where the next paragraph happens to begin as prose also fails its anchor. This is the premise-half oracle that criteria 1, 4, 5 and 12 do not supply. The word-diff guard is deliberately stricter than the opening-only obligation: it scans the whole changed file and rejects any authored word, so criterion 5's loose numstat bound cannot hide an addition below the opening.
+
+RED CONTROL FOR THE ADDITIONS ARM. In a throwaway copy of a correct increment, append `This newly authored sentence carries no status vocabulary.` below the opening of one worklist file, then run the script. Pass for the red control: `bad_anchor=0`, `added` is non-zero, and the output names that slug under `OPENING ADDS WORDS`. Restore the file and show the passing `added=0` line again. The ERE on `grep -vE '^\+\+\+'` is load-carrying: with the former basic-regex `grep -v '^\+\+\+'`, GNU grep reports `stray \ before +` and removes both the `+++` diff header and the authored `+This...` row, so the mutation incorrectly prints `added=0`.
 
 7. THE PROJECTION IS REGENERATED AND MATCHES. `./target/debug/agent-flow render docs/plans/agent-scaffold.plan.toml` then `./target/debug/agent-flow render --check --strict docs/plans/agent-scaffold.plan.toml` exits 0, so the committed `docs/plans/agent-scaffold.md` carries the corrected Step Details. `docs/plans/agent-scaffold.md` is never hand-edited.
 
