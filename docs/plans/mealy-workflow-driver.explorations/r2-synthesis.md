@@ -26,7 +26,7 @@ Committed near-term ordering, each a reviewable increment; later stages behind E
 - Stage 0b (RISKY, deps 0a): generate the AGENTS.md control-constant fragment from the spec via a pack `{{workflow_control}}` render slot, byte-compare guarded. Proves the prose-generation closure on the smallest content.
 - Stage 1 (LOW_RISK, deps 0a): the advisory, read-only, stateless `agent-scaffold next` MVP, largely the already-planned `state-queries` step (Q-28/Q-34) plus a next-action reminder, forward-projecting the W3 reconstruction for the active review loop. Ships the point-of-action anti-drift value and is the EVIDENCE SOURCE for every later gate (adherence rate, drift reduction over ~10 step cycles).
 - Stage 2 (RISKY, deps 1): type the FSM engine in `src/driver/` (a spec-parameterized `ReviewLoop` Mealy machine, nested step/task machines, a stateless `reconstruct` layer shared with the checker so the driver and W3 provably run the same arithmetic).
-- Stage 3+ (GATED): the `blocked_by` ready-frontier scheduler (gate: real parallelism); generation-widening beyond constants; the `record-*` write-path (gate: advisory adoption evidence + reopening Q-24's no-write-path stance); authoritative/blocking driving (gate: a measured-low override rate); and the far corner (calibration closure, workflow-viz as a read, multi-repo).
+- Stage 3+ (partly scheduled): Q-82 lifts the former real-parallelism gate for the read-only `blocked_by` scheduler and makes `docs/plans/agent-scaffold.steps/workflow-ready-frontier-scheduler.md` its implementation authority; that sidecar fixes the step-only eligibility domain, skipped-blocker policy and explicit-action precedence. Generation-widening beyond constants, the `record-*` write-path (gate: advisory adoption evidence + reopening Q-24's no-write-path stance), authoritative/blocking driving (gate: a measured-low override rate), and the far corner (calibration closure, workflow-viz as a read, multi-repo) remain gated.
 
 ## Open decisions the human owns (surfaced, not decided here)
 
@@ -39,7 +39,7 @@ None of these block Stages 0a/0b/1; they gate the later stages they concern.
 
 ## Build-detail gaps the flows found (for the implementer, not human decisions)
 
-A bootstrap "planning complete" signal; a `record-step-start` event (per-unit diff-base, so the ledger becomes purely human narrative and supports parallel in-flight units); a loop-reset marker after a send-back so total rounds are not double-counted; extending W5 to accept `record-override` as completion evidence (parallel to waivers); pre-computing findings-file paths in the `next` output; and defaulting an omitted risk class to `risky` with a warning (fail-safe).
+A bootstrap "planning complete" signal; a `record-step-start` event (per-unit diff-base, so the ledger becomes purely human narrative and supports parallel in-flight units); a loop-reset marker after a send-back so total rounds are not double-counted; extending W5 to accept `record-override` as completion evidence (parallel to waivers); and pre-computing findings-file paths in the `next` output. The earlier candidate to default an omitted class to `risky` is superseded by Q-83: every Roadmap review increment declares `[[step.increment]].risk_class` at loop open, missing declarations fail closed, and each round carries only a matching auditable snapshot.
 
 ## Orchestrator recommendation
 

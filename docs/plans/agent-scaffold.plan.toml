@@ -1646,12 +1646,15 @@ risk_class = "risky"
 
 [[step]]
 slug = "structured-risk-class-source"
-title = "make each structured round record the only authoritative review-loop risk-class source"
+title = "make the plan increment declaration the authoritative review-loop risk-class source"
 status = "not-started"
 order = 109
 blocked_by = []
 folds = []
 waiver = []
+
+[step.provenance]
+decisions = ["Q-83"]
 
 [[step.increment]]
 id = "structured-risk-class-source-inc1"
@@ -1717,7 +1720,7 @@ slug = "workflow-loop-visibility"
 title = "give `next` a legal typed phase carrier and project every active unit while selecting one action (`Q-82`)"
 status = "not-started"
 order = 114
-blocked_by = []
+blocked_by = ["structured-risk-class-source"]
 folds = []
 waiver = []
 
@@ -2496,6 +2499,19 @@ ask = """how to repair `next` after a historically retained roughly 728 KB run p
 3. `Schedule one combined driver overhaul`. Build phase typing, multi-loop projection, the typed fleet and scheduling authority as one change.
 
 RECOMMENDATION AND DECISION (human, 2026-08-25): `Schedule visibility and scheduling in stages`. Principle 1, Prefer the cleaner long-term architecture over the smallest diff, supports completing the already-decided driver architecture; Principle 2, Minimal by default, requires the correctness and visibility repair to land independently of scheduler authority; Principle 6, Ground decisions in evidence, uses the canonical roughly 728 KB historical output and hidden active work as the evidence for doing the first stage now. `workflow-loop-visibility` owns the first stage. `workflow-driver-typed-fleet` then reuses Stage 2 after the shared foreclosure/cap reconstruction, and `workflow-ready-frontier-scheduler` follows it as Stage 3. The dependencies make the sequence durable; no scheduler authority enters the first stage. Decision receipt `type:"decision"` `q_id:"Q-82"` in `docs/metrics/workflow.jsonl`."""
+
+[[question]]
+id = "Q-83"
+status = "decided"
+folded_into = "structured-risk-class-source"
+receipt = "Q-83"
+ask = """which structured risk-class value is authoritative when the plan increment declaration and its round snapshots can disagree, and what supplies the class before round one. THREE OPTIONS WERE PRESENTED.
+
+1. `Make the plan increment authoritative`.
+2. `Make the first round authoritative`.
+3. `Add an authoritative loop-open event`.
+
+RECOMMENDATION AND DECISION (human, 2026-08-25): `Make the plan increment authoritative`. `[[step.increment]].risk_class` is declared at loop open and is authoritative. `round.risk_class` remains an auditable event snapshot. Every round must match its declared increment class, and missing declarations or mismatches fail closed. `next` reads the declared class before round one. This refines the earlier choice to retire the ledger prose duplicate. Principle 5, Make illegal states unrepresentable, rejects the state where a risky declaration and a cheaper snapshot can both validate; Principle 8, Structured data first, project for humans, prefers the plan value that exists at loop open over a first-round inference; Principle 6, Ground decisions in evidence, is served by the reproduced false green and pre-first-round null. Folded into `structured-risk-class-source`; decision receipt `type:"decision"` `q_id:"Q-83"` in `docs/metrics/workflow.jsonl`."""
 
 [[principle]]
 n = 1
