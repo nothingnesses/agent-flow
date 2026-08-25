@@ -944,7 +944,7 @@ slug = "resume-state-currency-signal"
 title = "resume-state currency signal: the minimal Q-59 lifecycle outcome, folds into `Q-58`"
 status = "deferred"
 order = 70
-blocked_by = []
+blocked_by = ["q58-output-ablation"]
 folds = []
 increment = []
 waiver = []
@@ -1631,6 +1631,124 @@ reason = "accepted-at-escalation"
 evidence_tier = "record-backed"
 evidence = "step-intent-encoding-inc1"
 
+[[step]]
+slug = "q58-output-ablation"
+title = "run the existing Q-58 output-content ablation and select the compact resume carrier"
+status = "not-started"
+order = 108
+blocked_by = []
+folds = []
+waiver = []
+
+[[step.increment]]
+id = "q58-output-ablation-inc1"
+risk_class = "risky"
+
+[[step]]
+slug = "structured-risk-class-source"
+title = "make each structured round record the only authoritative review-loop risk-class source"
+status = "not-started"
+order = 109
+blocked_by = []
+folds = []
+waiver = []
+
+[[step.increment]]
+id = "structured-risk-class-source-inc1"
+risk_class = "risky"
+
+[[step]]
+slug = "review-loop-class-inheritance"
+title = "make a rebuilt artefact's reopened loop inherit the retired loop's risk class (`Q-80`)"
+status = "not-started"
+order = 110
+blocked_by = ["structured-risk-class-source"]
+folds = []
+waiver = []
+
+[step.provenance]
+decisions = ["Q-80"]
+
+[[step.increment]]
+id = "review-loop-class-inheritance-inc1"
+risk_class = "risky"
+
+[[step]]
+slug = "review-loop-foreclosure-enforcement"
+title = "report and enforce review-loop foreclosure and the total-round cap"
+status = "not-started"
+order = 111
+blocked_by = ["review-loop-class-inheritance"]
+folds = []
+waiver = []
+
+[[step.increment]]
+id = "review-loop-foreclosure-enforcement-inc1"
+risk_class = "risky"
+
+[[step]]
+slug = "sidecar-status-authored-openings"
+title = "author phase-neutral openings for the handover left by `sidecar-status-opening-drift`"
+status = "not-started"
+order = 112
+blocked_by = ["sidecar-status-opening-drift"]
+folds = []
+waiver = []
+
+[[step.increment]]
+id = "sidecar-status-authored-openings-inc1"
+risk_class = "risky"
+
+[[step]]
+slug = "workflow-loop-visibility"
+title = "make `next` distinguish exploration from review and project every active loop while selecting one next action (`Q-82`)"
+status = "not-started"
+order = 113
+blocked_by = []
+folds = []
+waiver = []
+
+[step.provenance]
+decisions = ["Q-82"]
+
+[[step.increment]]
+id = "workflow-loop-visibility-inc1"
+risk_class = "risky"
+
+[[step]]
+slug = "workflow-driver-typed-fleet"
+title = "build the workflow driver's typed per-unit fleet on the compact Q-58 carrier (`Q-82`, Stage 2)"
+status = "not-started"
+order = 114
+blocked_by = ["workflow-loop-visibility", "resume-state-currency-signal"]
+folds = []
+waiver = []
+
+[step.provenance]
+decisions = ["Q-51", "Q-82"]
+findings = ["docs/plans/mealy-workflow-driver.explorations/r2-synthesis.md", "docs/plans/mealy-workflow-driver.explorations/r2-architecture-build-path.md"]
+
+[[step.increment]]
+id = "workflow-driver-typed-fleet-inc1"
+risk_class = "risky"
+
+[[step]]
+slug = "workflow-ready-frontier-scheduler"
+title = "add the workflow driver's read-only ready-frontier scheduler after the typed fleet (`Q-82`, Stage 3)"
+status = "not-started"
+order = 115
+blocked_by = ["workflow-driver-typed-fleet"]
+folds = []
+waiver = []
+
+[step.provenance]
+decisions = ["Q-51", "Q-82"]
+findings = ["docs/plans/mealy-workflow-driver.explorations/r2-synthesis.md", "docs/plans/mealy-workflow-driver.explorations/r2-architecture-build-path.md"]
+
+[[step.increment]]
+id = "workflow-ready-frontier-scheduler-inc1"
+risk_class = "risky"
+
 [[question]]
 id = "Q-1"
 status = "decided"
@@ -2016,7 +2134,9 @@ ask = """whether `agent-scaffold next` (the driver's Stage-1 forward projection,
 
 DECISION (human, 2026-07-24): resolve the carrier mechanism EMPIRICALLY. Fold candidate (3)'s output-content ablation into the owed `Q-52` design pass (emit `next` output variants full / active-loop-only / +current-anchor / structured-only, score a fresh consuming agent's stated next-action and constraints against the deterministic next-action oracle the ACTIVE LOOP already derives, find the token-cost / task-success knee), and let that evidence choose between candidate (1) prose plus tool-side projection and candidate (2) the structured transient. Build NOTHING tool-side until the ablation reports; the landed source-side fix (the `##`-bounded single live anchor, ~6 KB echo) holds the line meanwhile. Chosen over committing to the structured carrier now (rejected: pre-empts the ablation that would prove structured-only wins the knee, and cuts against the fresh `Q-59` minimal-currency-signal precedent; Minimal by default, Ground decisions in evidence) and over projection-discipline-only now (rejected: leaves the transient prose and the real content question unanswered; Structured data first, project for humans). Grounds the mechanism in measurement not taste (Ground decisions in evidence), merges two owed research arcs into one (Minimal by default; Prefer the cleaner long-term architecture over the smallest diff, revealed by the ablation rather than asserted). Fresh datum feeding the ablation: this session's self-contradictory prose anchor, corrected at commit `a949f34`. Status -> `exploring`: the ablation is the owed design pass that will resolve the carrier, composed into `Q-52`'s falsifiable-deletion research (design record `docs/plans/code-value-audit.explorations/`). The `Q-59` currency signal (checkpoint-commit / last-updated projected as current / N-commits-stale / tree-dirty) remains a required property of whichever carrier the ablation selects. Decision receipt `type:"decision"` `q_id:"Q-58"` in `docs/metrics/workflow.jsonl`.
 
-RUN DECISION (human, 2026-07-24, after the design pass): SHELVE the ablation design; do NOT run it now. The design pass surfaced two facts that narrow its yield: the landed source-side fix already cut the echo from ~150 KB to ~6 KB (the acute problem is gone), and the designer flagged ORACLE CIRCULARITY (Tier A is built from the same `LoopState` code the ACTIVE LOOP block prints, so the ablation can prove the RESUME STATE echo's value, V0 vs V1/V2/V3, but not the derived block's, whose next-action IS the oracle). Keep the design record `docs/plans/code-value-audit.explorations/Q-58-ablation-design.md` on the shelf and RUN it only when resume-quality problems recur OR when the structured-transient carrier is actually being built, so the measurement informs a real build rather than a defused problem. Q-58 remains `exploring` (the carrier mechanism stays unresolved; the prose + `##`-bounded-source status quo holds and carries the `Q-59` currency signal today via the live anchor). Serves Minimal by default and Ground decisions in evidence (do not spend measurement budget where the acute problem is fixed and the yield is bounded). Decision receipt `type:"decision"` `q_id:"Q-58"` (the run/shelve refinement) in `docs/metrics/workflow.jsonl`."""
+HISTORICAL RUN DECISION (human, 2026-07-24, after the design pass): the ablation was shelved while the source-side fix held the echo near 6 KB. The retained rationale was that the acute problem had gone and Tier A's oracle circularity bounds what the experiment can prove. That premise no longer governs the live work.
+
+REOPENED RUN DECISION (human, 2026-08-25): `Reopen Q-58 and run the ablation`, chosen over `Schedule a compact projection directly` and `Keep Q-58 deferred`, and also recommended. A current `next` run emits 727754 bytes, so resume-output cost has recurred beyond the condition that shelved the design. `q58-output-ablation` now owns the owed run of the existing design at `docs/plans/code-value-audit.explorations/Q-58-ablation-design.md`; it refreshes the design's current measurements without weakening its oracle-circularity caveat. The experiment must identify the compact carrier and the human must decide that carrier before any product implementation of the Q-58 transient begins. Q-58 remains `exploring` until that experiment produces the option set; the current prose carrier is an interim state, not the selected end state. Decision receipt `type:"decision"` `q_id:"Q-58"` in `docs/metrics/workflow.jsonl`."""
 
 [[question]]
 id = "Q-59"
@@ -2266,17 +2386,17 @@ THE PASS RAN ON 2026-08-19 AND ITS OUTCOME IS `docs/plans/step-intent-encoding.e
 
 THE PASS COVERED FOUR SUBJECTS AND NOW COVERS THREE, AND ITS REASONING HAS ONE HOME. `docs/plans/step-intent-encoding.explorations/Q-78.md` holds the recommendation, the rejected alternatives, the measurement appendix and the answers to the eight duties above. This item carries the status, the decisions, what is still owed and the steps, and it does NOT restate the reasoning, which is the shape `Q-77` uses. The subject that left is UMBRELLA MEMBERSHIP, and `Q-79` owns it now.
 
-THE RECOMMENDATION, IN THREE PARTS, EACH SUBJECT TO THE REVIEW THE HUMAN DIRECTED. (1) THE ENCODING: two required single-line fields on `[[step]]`, `problem` and `approach`, one sentence each, with everything else the sidecar carries left in the sidecar, on Principle 5, Make illegal states unrepresentable, and Principle 8, Structured data first, project for humans. The pass states plainly what no form buys: the measured drift is a STALE claim rather than an ABSENT one, and neither a schema field nor a validated sidecar section catches staleness. What removes staleness is the removal of the second copy. (2) THE BACKFILL: every step owes intent, `complete` steps included, delivered as optional fields, then a cited backfill in bounded reviewed batches, then a flip to required whose oracle is `validate`. (3) THE ORDER: delete `order` and let the `[[step]]` array position carry the plan order.
+THE LIVE RECOMMENDATION, IN THREE PARTS, EACH SUBJECT TO THE REVIEW THE HUMAN DIRECTED. (1) THE ENCODING: two required non-empty fields on `[[step]]`, `problem` and `approach`, each containing one or more paragraphs, with a single paragraph valid and no sentence, line or character cap; everything else the sidecar carries stays in the sidecar. Principle 5, Make illegal states unrepresentable, and Principle 8, Structured data first, project for humans, decide the representation. The pass states plainly what no form buys: the measured drift is a STALE claim rather than an ABSENT one, and neither a schema field nor a validated sidecar section catches staleness. What removes staleness is the removal of the second copy. (2) THE BACKFILL: every step owes intent, `complete` steps included, delivered as optional fields, then a cited backfill in bounded reviewed batches, then a flip to required whose oracle is `validate`. (3) THE ORDER: delete `order` and let the `[[step]]` array position carry the plan order.
 
-THE HUMAN DECIDED TWELVE TIMES ON 2026-08-21, and `docs/plans/agent-scaffold.ledger.md` is the record of all twelve. THE SIX THAT BEAR ON THIS ITEM'S OWN SUBJECT ARE RECORDED BELOW, each with a `type:"decision"` receipt in `docs/metrics/workflow.jsonl`; the other six are the rebuild mechanism, the batch split, the earliest-commit rule, the drift step's split, its corrected size and the removal of the invented blocking edge, which govern HOW the pass is specified and scheduled rather than WHAT it decides, and the ledger carries them. THE TWO COUNTS ARE STATED SEPARATELY AND ON PURPOSE, because a ledger decision and a receipt are different records and this item is not the authority on either: reproduce the receipt set with the selector in the opening paragraph, and read the ledger for the decision set. AN EARLIER DRAFT GAVE FOUR DIFFERENT TOTALS IN ONE STRING, all of them wrong. (1) PRIORITY IS ARRAY POSITION AND `order` IS DELETED, over an explicit ordered slug list in `[meta]`, receipt `q_id:"Q-78-arrayorder"`. The pass recommended it on Principle 5, because a slug list admits a duplicate entry, a missing entry and an entry naming no step while an array admits none of the three, and on Principle 2, Minimal by default, because array position DELETES a field, a sort in `render` and three `min_by_key` calls in `next`. Two supporting measurements: `steps_from_markdown` (`src/next.rs:560`) already derives the order from the table index, so one substrate treats position as order today, and `docs/plans/structured-skeleton.explorations/design-A-minimal-schema.md:83` made the same argument in this repository before the schema shipped, against the counter-rationale at `design-B-rich-schema.md:147` that the human's 2026-08-19 clarification reverses. THE PRICED COST IS STATED ONCE, WITH ITS COMMAND, in the design pass under "Item 3, ordering and priority", and it is not restated here. Folded into `plan-order-array-position`.
+THE HUMAN DECIDED REPEATEDLY ON 2026-08-21, and `docs/plans/agent-scaffold.ledger.md` records the decisions by subject. The decisions that bear on this item's own subject are recorded below with their `type:"decision"` receipts; additional decisions govern how the pass is specified and scheduled. This item maintains no inventory total or fixed partition: reproduce the receipt set with the selector in the opening paragraph and read the ledger for the decision set. AN EARLIER DRAFT GAVE FOUR DIFFERENT TOTALS IN ONE STRING, all of them wrong. (1) PRIORITY IS ARRAY POSITION AND `order` IS DELETED, over an explicit ordered slug list in `[meta]`, receipt `q_id:"Q-78-arrayorder"`. The pass recommended it on Principle 5, because a slug list admits a duplicate entry, a missing entry and an entry naming no step while an array admits none of the three, and on Principle 2, Minimal by default, because array position DELETES a field, a sort in `render` and three `min_by_key` calls in `next`. Two supporting measurements: `steps_from_markdown` (`src/next.rs:560`) already derives the order from the table index, so one substrate treats position as order today, and `docs/plans/structured-skeleton.explorations/design-A-minimal-schema.md:83` made the same argument in this repository before the schema shipped, against the counter-rationale at `design-B-rich-schema.md:147` that the human's 2026-08-19 clarification reverses. THE PRICED COST IS STATED ONCE, WITH ITS COMMAND, in the design pass under "Item 3, ordering and priority", and it is not restated here. Folded into `plan-order-array-position`.
 
 (2) UMBRELLA MEMBERSHIP LEAVES THIS PASS AND BECOMES ITS OWN, over keeping it here, receipt `q_id:"Q-78-umbrellascope"`. This pass's only stated ground for grouping that subject with the other three was a mechanical binding that a review round measured false three ways: the recommended design declines to generate member headings, the member headings never sat in the first member's sidecar, and the group heading the design DOES generate restates no `[[step]]` field at all. So the subject carried no reason to be here. THE WORK IS NOT DROPPED: three positional claims across two umbrella sidecars are false on the tree today with no reorder involved, and `Q-79` carries them with the recommended form and with the seven specification defects two review rounds found in it.
 
-(3) THE BACKFILL'S PER-FIELD SOURCE REFERENCE AND `transcribed`/`paraphrased` MARK LIVE OUTSIDE THE PLAN, in a migration record the migration owns and the migration deletes, over adding them to the `[[step]]` schema, receipt `q_id:"Q-78-backfillrecord"`. The ground is the pass's own: migration bookkeeping must not outlive the migration, which is the same argument that refuses a `[meta]` exemption field for the same backfill. Folded into `step-intent-encoding`, whose rule 5 names the record's path, its columns and its source grammar, whose six batch increments append to it, and whose increment 3 deletes it. THE BARE `<commit>` SOURCE FORM WAS LATER DELETED FROM THAT GRAMMAR by the specification rebuild, so every row carries `<commit>:<path>` and the path is the path AS OF THAT COMMIT. The ground is Principle 5, Make illegal states unrepresentable: a `transcribed` row citing a bare commit cannot run the substring check that gives the mark its meaning.
+(3) THE BACKFILL'S PER-FIELD SOURCE REFERENCE AND `transcribed`/`paraphrased` MARK LIVE OUTSIDE THE PLAN, in a migration record the migration owns and the migration deletes, over adding them to the `[[step]]` schema, receipt `q_id:"Q-78-backfillrecord"`. The ground is the pass's own: migration bookkeeping must not outlive the migration, which is the same argument that refuses a `[meta]` exemption field for the same backfill. Folded into `step-intent-encoding`, whose rule 5 names the record's path, its columns and its source grammar, whose six batch increments append to it, and whose increment 3 deletes it. THE BARE `<commit>` SOURCE FORM WAS LATER DELETED FROM THAT GRAMMAR by the specification rebuild. A prose source is `<commit>:<path>` with the path as of that commit; a decision source is `<commit>:docs/metrics/workflow.jsonl#L<line>`, which identifies one exact receipt line rather than admitting the whole log. The ground is Principle 5, Make illegal states unrepresentable: a `transcribed` row whose source identifies no checkable blob or receipt cannot run the substring check that gives the mark its meaning.
 
 (4) `sidecar-status-opening-drift` WIDENS TO EVERY SIDECAR THAT OPENS WITH A STATUS TOKEN, over holding at the contradicting subset, receipt `q_id:"Q-78-statuswiden"`. `Q-78-statusform` set that step's scope, so the widening was the human's, and the ground is that a label which currently agrees is exactly what a contradicting one was before its step moved on, which is the ruling the 2026-07 plan-review loop's round 3 finding L1 already made. Folded into `sidecar-status-opening-drift`, whose selector now reports any token rather than a mismatched one. That step's own residual paragraph about the sidecars it left untouched is retired by this decision. THE SAME STEP THEN SPLIT, on the same day, receipt `q_id:"Q-78-driftsplit"`: the mechanical deletions stay in it and the openings needing an AUTHORED replacement become a successor step, measured before that step starts. THE MEASUREMENT IS MADE AND IT MOVES THE FIGURE THE DECISION NAMED: the split was decided against 28 files and the population is NINETEEN, because nine of the 28 open with the word `Deferred` used as an ordinary adjective rather than as a repeated status label, all nine are declared `deferred`, and the earlier selector cannot tell the two apart. The step now carries an anchored selector, the three commands that produce 36, 19 and 17, and a pointer to the successor step rather than a stub. THE CORRECTED FIGURE WENT BACK TO THE HUMAN AND THE SPLIT STANDS AT 19, receipt `q_id:"Q-78-driftsize"`.
 
-(5) `problem` AND `approach` ARE REQUIRED, IN THE SHIPPED PACK AS WELL AS HERE, over an optional field with a validation warning, receipt `q_id:"Q-78-requiredfields"`. The human rejected a third option, required here and optional in the pack. A round 1 triage ruled that the pass must STATE the scaffolded-project cost and that the human must WEIGH it. The pass states it, in the design pass under "What this costs a scaffolded project" and in `step-intent-encoding` increment 3, and the human weighed that statement. After the flip, adding a step to any scaffolded plan needs two prose sentences before the plan parses, and for an exploratory step the problem statement is often the thing the step exists to find out. The pack template must ship placeholder values, because a required `String` needs one, so every scaffolded plan validates on day one carrying placeholder intent, which makes ABSENCE unrepresentable and leaves MEANINGLESSNESS fully representable and indistinguishable from real intent. THAT RESIDUAL IS ACCEPTED RATHER THAN CLOSED, and `title` carries the same property today. A `validate` rule rejecting the shipped placeholder strings IS REJECTED, because it collides with the same step's criterion that `scaffold` into an empty directory produces a plan that validates, which is correct under Principle 3, Safe on existing projects, and Principle 4, Idempotent. THE 2026-08-21 ESCALATION DID NOT CARRY THIS DECISION TO THE HUMAN. A later pass found the gap and put the options. Folded into `step-intent-encoding` increment 3, which now waits on the review alone.
+(5) `problem` AND `approach` ARE REQUIRED, IN THE SHIPPED PACK AS WELL AS HERE, over an optional field with a validation warning, receipt `q_id:"Q-78-requiredfields"`. The human rejected a third option, required here and optional in the pack. A round 1 triage ruled that the pass must STATE the scaffolded-project cost and that the human must WEIGH it. The pass states it, in the design pass under "What this costs a scaffolded project" and in `step-intent-encoding` increment 3, and the human weighed that statement. After the flip, adding a step to any scaffolded plan needs two non-empty prose values before the plan parses; each value may contain one or more paragraphs, and for an exploratory step the problem statement is often the thing the step exists to find out. The pack template must ship placeholder values, because a required `String` needs one, so every scaffolded plan validates on day one carrying placeholder intent, which makes ABSENCE unrepresentable and leaves MEANINGLESSNESS fully representable and indistinguishable from real intent. THAT RESIDUAL IS ACCEPTED RATHER THAN CLOSED, and `title` carries the same property today. A `validate` rule rejecting the shipped placeholder strings IS REJECTED, because it collides with the same step's criterion that `scaffold` into an empty directory produces a plan that validates, which is correct under Principle 3, Safe on existing projects, and Principle 4, Idempotent. THE 2026-08-21 ESCALATION DID NOT CARRY THIS DECISION TO THE HUMAN. A later pass found the gap and put the options. Folded into `step-intent-encoding` increment 3, which now waits on the review alone.
 
 (6) THE LEDGER'S NUMBERED STEP CITATIONS BECOME THEIR OWN STEP, over keeping them inside `plan-order-array-position` increment 2 and over leaving them alone, receipt `q_id:"Q-78-ledgersplit"`. THE GROUND IS ORACLE COVERAGE. That increment's oracle is an enumerated diff against the rendered plan, and `render` never inlines `docs/plans/agent-scaffold.ledger.md`, because the ledger is not a sidecar and does not appear in `[meta.sidecars]`. MEASURED at the time of the split, 96 of 122 drifting citations sat in the ledger, so the increment would have claimed a coverage it could not deliver over four fifths of its own scope. Principle 6, Ground decisions in evidence, decides it. THE 96 AND THE 122 ARE DATED: the same commands against the tree the split was authored on print 116 in the ledger and 35 in the sidecars, and both rise with every appended review round, so the steps carry the commands and no criterion states either figure as a pass condition. Folded into `ledger-order-citation-currency`, which annotates rather than rewrites, on the measured ground that the plan's order-to-slug mapping is append-only and stable, so a resolution taken from today's plan is the resolution each historical entry meant.
 
@@ -2284,15 +2404,15 @@ ONE PRODUCT DEFECT WAS FOUND WHILE THE REBUILT CRITERIA WERE MEASURED, and it is
 
 A REORDER OF COMPLETED WORK IS NOT PUT AS A REQUIRED DECISION, and the withdrawal is recorded rather than silent. The first draft put one, at the scope "the 15 steps at rendered positions 13 to 27". That scope was wrong, because it measured which umbrellas make a FALSE CLAIM rather than which would VIOLATE the proposed rule, and it existed only as a consequence of a contiguity rule the pass then rejected. What survives is an OPTIONAL readability tidy-up, which left with the umbrella subject and which `Q-79` prices.
 
-FOUR STEPS ARE AUTHORED AND ALL FOUR ARE `not-started`. Three are CONDITIONAL ON THE REVIEW and the fourth is not. `plan-order-array-position` holds the `order` deletion and the prose-currency sweep it forces, in two increments, both `risky`. `step-intent-encoding` holds the two fields, the projections and the cited backfill, in eight increments, all eight `risky`, and it is BLOCKED BY the other, because both rewrite every `[[step]]` block of the same file and deleting a field before adding two is the cheaper order. `ledger-order-citation-currency` holds the ledger's own numbered citations in one `risky` increment, and IT IS BLOCKED BY NOTHING: an earlier draft blocked it on `plan-order-array-position` for the same file-collision reason, and the human removed that edge on 2026-08-21 (receipt `q_id:"Q-78-ledgeredge"`) because the two steps share no file by either step's own changed-path criterion, so the stated ground was false (Principle 6, Ground decisions in evidence) and the edge forced the more expensive order (Principle 2, Minimal by default). `validate-missing-source-exit` holds a product defect the specification rebuild measured, in one `risky` increment, and it is conditional on nothing and blocks nothing. A FIFTH STEP, `sidecar-status-opening-drift`, PREDATES THIS PASS AND IS NOT CONDITIONAL ON IT; the human split it on 2026-08-21 and it now declares one `risky` increment, whose ground its sidecar states.
+THE ORIGINAL DESIGN PASS AUTHORED FOUR STEPS, all `not-started`: three conditional on its review and one independent defect repair. `plan-order-array-position` holds the `order` deletion and the prose-currency sweep it forces, in two increments, both `risky`. `step-intent-encoding` holds the two fields, the projections and the cited backfill, in eight increments, all eight `risky`, and it is BLOCKED BY the other, because both rewrite every `[[step]]` block of the same file and deleting a field before adding two is the cheaper order. `ledger-order-citation-currency` holds the ledger's own numbered citations in one `risky` increment, and IT IS BLOCKED BY NOTHING: an earlier draft blocked it on `plan-order-array-position` for the same file-collision reason, and the human removed that edge on 2026-08-21 (receipt `q_id:"Q-78-ledgeredge"`) because the two steps share no file by either step's own changed-path criterion, so the stated ground was false (Principle 6, Ground decisions in evidence) and the edge forced the more expensive order (Principle 2, Minimal by default). `validate-missing-source-exit` holds a product defect the specification rebuild measured, in one `risky` increment, and it is conditional on nothing and blocks nothing. A FIFTH STEP, `sidecar-status-opening-drift`, PREDATES THIS PASS AND IS NOT CONDITIONAL ON IT; the human split it on 2026-08-21 and it now declares one `risky` increment, whose ground its sidecar states. THE ACCEPTANCE REPAIR NOW AUTHORS THE PROMISED SUCCESSOR as `sidecar-status-authored-openings`, blocked on that mechanical predecessor. It also gives separate Roadmap ownership to `structured-risk-class-source`, `review-loop-class-inheritance` and `review-loop-foreclosure-enforcement`, in that dependency order, for the previously recorded class-source, Q-80 and foreclosure/cap decisions. These focused successors do not change the original five steps or any converged increment identity.
 
 THE BACKFILL SPLIT FROM ONE INCREMENT INTO SIX, `step-intent-encoding-inc2a` to `-inc2f`. THE GROUND IS ARITHMETIC AND NOT TASTE: one increment covering every step needs six review batches inside one loop against a round cap of five, which guarantees either a forced escalation with a batch unreviewed or a convergence certified while a batch is still owed. Each batch is now its own increment with its own loop and its own record. The batch count follows a rule over a MEASURED step count rather than a snapshot: K is the smallest batch count whose batch size is 20 or less. The rule yields six for any step count from 101 to 120, so the count survives the plan growing.
 
 Each sidecar states its increments, which are also declared as `[[step.increment]]` entries with their risk classes, its acceptance criteria and what it waits on. THE GROUND FOR EACH CLASS LIVES IN THE SIDECAR AND NOT IN THE TOML, because `[[step.increment]]` carries `id` and `risk_class` alone under `deny_unknown_fields`, so the schema has nowhere to put one. AN EARLIER DRAFT CLASSED TWO OF THEM `low_risk` AND GROUNDED NONE OF THEM. Both were corrected against the `AGENTS.md` risk test after a review round measured the inversion, and no review loop had opened on any of the increments, so nothing was reclassified mid-loop. NO STEP THIS PASS AUTHORED CITES `Q-78` IN `[step.provenance].decisions` while `Q-78` stands `open`: `provenance` records the decisions that JUSTIFY a step, and a citation resolving to an undecided question asserts a justification that does not exist. The schema permits it today, and a `validate` rule requiring a `decisions` entry to name a `decided` question is right under Principle 5 and is its own step, not this pass's work. NONE OF THE RECEIPTS ABOVE IS IN `decisions` EITHER, AND NONE CAN BE: `decisions` resolves fail-closed to a registered `[[question]]` id of `Q-<n>` shape, and a `Q-78-<suffix>` sub-decision id parses to none, which is the `Q-55-<suffix>` convention `sidecar-status-opening-drift` records in full.
 
-THE ACCEPTANCE CRITERIA WERE REBUILT RATHER THAN REPAIRED A FIFTH TIME. Four review rounds found no defect in WHAT the design decides and repeated defects in HOW the decision was to be proved. The pass reached the round cap of 5, escalated, and the human directed a rebuild. A specification writer that was structurally prevented from reading the criteria it replaced then rewrote them from the frozen design, and measured every criterion group against a named wrong implementation on a throwaway copy of the repository rather than predicting what each would catch. THE ROUND COUNT RESETS FOR THE REBUILT ARTEFACT, which is an orchestrator RULING that this pass operated under and not a rule of the project. `Q-80` registers it, records that `AGENTS.md:57` reaches the same count by two independent routes, and puts the genuinely unsettled part, whether a re-opened loop on a rebuilt artefact inherits the retired loop's risk class, to the human. The pass stays `risky` and still owes two consecutive clean rounds.
+THE ACCEPTANCE CRITERIA WERE REBUILT RATHER THAN REPAIRED A FIFTH TIME. Four review rounds found no defect in WHAT the design decides and repeated defects in HOW the decision was to be proved. The pass reached the round cap of 5, escalated, and the human directed a rebuild. A specification writer that was structurally prevented from reading the criteria it replaced then rewrote them from the frozen design, and measured every criterion group against a named wrong implementation on a throwaway copy of the repository rather than predicting what each would catch. THE ROUND COUNT RESETS FOR THE REBUILT ARTEFACT, which began as the orchestrator ruling this pass operated under. `Q-80` records that `AGENTS.md:57` reaches the same count by two independent routes and is now DECIDED from the existing `Q-78-classinherit` choice: a reopened loop inherits the retired loop's risk class unless the rebuild narrowed scope. `review-loop-class-inheritance` owns the fold, and the `Q-80` receipt aliases the existing choice rather than inventing one. The pass stays `risky` and still owes two consecutive clean rounds.
 
-THE COMPLETE ACCEPTED-RESIDUAL SET HAS ONE HOME: `docs/plans/agent-scaffold.steps/step-intent-encoding.md`, under the heading "THE RESIDUALS THIS STEP ACCEPTS RATHER THAN CLOSES". That section defines all four numbered items: intent-prose staleness, meaninglessness under a required field, a citation that proves a date rather than a derivation, and successful `next`/`status` reporting on a plan the required-field flip makes unparsable. This paragraph points to the whole four-item set rather than maintaining another copy. The eventual decision receipt must point to or cover all four, and none blocks the current review.
+THE COMPLETE DESIGN-RESIDUAL SET HAS ONE HOME: `docs/plans/agent-scaffold.steps/step-intent-encoding.md`, under the heading "THE RESIDUALS THIS STEP ACCEPTS RATHER THAN CLOSES". That section defines all four design residuals: intent-prose staleness, meaninglessness under a required field, a citation that proves a date rather than a derivation, and successful `next`/`status` reporting on a plan the required-field flip makes unparsable. Other accepted review residuals remain at their own named owners. This paragraph points to the whole four-item design set rather than claiming to inventory every accepted residual in the pass. The eventual decision receipt must point to or cover all four, and none blocks the current review.
 
 NO RECEIPT CLOSES THIS QUESTION YET, AND THE W4 WEAKNESS THAT BEARS ON THE ONE THAT WILL IS HANDLED HERE RATHER THAN LEFT AS A NOTE. Every receipt above is a sub-decision under the `Q-78-<suffix>` convention, and none of them decides this question as a whole, because each decides one part of it and the review is still running. THE WEAKNESS: this item carries `receipt = "Q-78"` for the ROUTE decision, and W4 (`w4_problems`, `src/workflow.rs:309`) joins a decided item to a receipt on `d.q_id == question.id`, so a later flip to `decided` would be satisfied by the route receipt, which decided something else. AN EARLIER DRAFT RECOMMENDED `q_id:"Q-78-encoding"` FOR THE CLOSING RECEIPT. THAT IS WRONG AND IT IS WITHDRAWN, AND THE MECHANISM IS THE JOIN RATHER THAN THE PARSER. `parse_decisions` (`src/metrics.rs:732`) projects every `type:"decision"` record that carries a `q_id` string and applies no shape filter, so W4 DOES see a suffixed receipt. The join rejects it: `w4_problems` matches on `d.q_id == question.id` (`src/workflow.rs:337`), an exact string comparison. `question_id_index` (`src/metrics.rs:427`) reaches only the question's own id (`src/workflow.rs:326`) and the `[meta].w4_baseline` cutoff (`src/workflow.rs:279`), never a decision's `q_id`. So `Q-78-encoding` would sit unmatched in the decision set, and the route receipt would remain the only receipt that satisfies the join. THE RULING: the receipt that closes this question carries `q_id:"Q-78"`, so W4's join lands on a receipt that DID decide it, and a reader tells the two apart by their `ts` and their `chosen`, which the log already carries. THE RESIDUAL, recorded because the ruling does not close it: W4 still cannot detect the ABSENCE of the closing receipt while the route receipt exists, so the join is weaker than it reads. That is a defect in the rule rather than in this item, and it owes its own question rather than a naming convention here. The `receipt` field itself is unchanged, because the schema requires a `Q-<n>` shape (`src/plan/source.rs`) and a suffixed id fails `validate --source`.
 
@@ -2321,7 +2441,9 @@ NO DECISION RECEIPT IS OWED WHILE THIS ITEM IS `exploring`. W4 requires one only
 
 [[question]]
 id = "Q-80"
-status = "open"
+status = "decided"
+folded_into = "review-loop-class-inheritance"
+receipt = "Q-80"
 ask = """whether a human-directed REBUILD of a reviewed artefact resets its round counters, and whether the artefact's risk class is re-derived when the rebuilt artefact enters review. `AGENTS.md` settles the number by two independent routes and settles the class by neither, so this item exists for the class and for the naming of the branch, not for the count.
 
 THE ORCHESTRATOR RULED, AND THIS RECORDS THE RULING RATHER THAN A RULE. The `Q-78` specification pass reached the round cap of 5, escalated, and the human directed a REBUILD rather than a fifth repair. The orchestrator ruled that the round count RESETS for the rebuilt specification, on the ground that the artefact under review is not the artefact the four rounds judged, and that the pass stays `risky` and still owes two consecutive clean rounds. The pass operated under that ruling. A ruling is what an orchestrator applies to keep moving. A rule is what `AGENTS.md` states and every future loop inherits, and only the human can promote the first into the second.
@@ -2332,9 +2454,9 @@ THE PROJECT HAS ALREADY DONE THIS ONCE, WITH A RECORD. The `step-intent-fold` lo
 
 WHAT IS GENUINELY UNSETTLED, AND IT IS THE RISK CLASS. `AGENTS.md:56` says "Classify the artifact once, when its review loop opens". Under the second branch above, the rebuilt artefact opens a NEW loop, so the classification is formally taken afresh at that open and nothing binds it to the retired loop's class. The orchestrator asserted that the class carries over. That assertion is right on the merits, because the rebuilt specification still governs a plan-schema deletion, a new CLI surface and a pack change, but `AGENTS.md` gives it no mechanical warrant, and a future orchestrator could re-derive a lower class at a rebuild and shorten the streak it owes. THAT is the hole worth closing.
 
-THE OPTIONS, FOR THE HUMAN. (a) Name the rebuild branch explicitly in `AGENTS.md:57` as a loop-closing decision, and add to `AGENTS.md:56` that a re-opened loop on a rebuilt artefact INHERITS the retired loop's class unless the rebuild narrowed the artefact's scope. Recommended, under Principle 5, Make illegal states unrepresentable, because it removes the state where a rebuild silently buys a cheaper convergence bar, and under Principle 6, Ground decisions in evidence, because the inheritance is what the two precedents already did. (b) Say nothing and let each orchestrator rule, which is today's position and which this item shows produces a defensible answer by an undocumented route. (c) Treat a rebuild as a continuation and do NOT reset, which no reading of `AGENTS.md:57` supports and which would have forced this pass to escalate again on its first round.
+THE OPTIONS PRESENTED. (a) `Name the rebuild branch in AGENTS.md and make a re-opened loop inherit the retired loop's class`: name the rebuild branch explicitly as a loop-closing decision, and state that the reopened loop inherits the retired loop's class unless the rebuild narrowed scope. (b) `Say nothing and let each orchestrator rule`, which preserves today's undocumented route. (c) `Treat a rebuild as a continuation and do not reset the counters`, which no reading of the reset rule supports.
 
-NO DECISION RECEIPT IS OWED WHILE THIS ITEM IS `open`. W4 requires one only for a `decided` item past the `[meta].w4_baseline` cutoff."""
+DECIDED (human, 2026-08-22): option (a), exactly as recorded by the existing `Q-78-classinherit` receipt. The recommendation and chosen value are both `Name the rebuild branch in AGENTS.md and make a re-opened loop inherit the retired loop's class`. Principle 5, Make illegal states unrepresentable, removes the state where a rebuild silently buys a cheaper convergence bar; Principle 6, Ground decisions in evidence, supports the inheritance the two precedents already used. Folded into `review-loop-class-inheritance`. The `Q-80` decision receipt is an explicit W4 alias of `Q-78-classinherit`: it repeats that receipt's exact options, recommendation and chosen value and records no new human choice."""
 
 [[question]]
 id = "Q-81"
@@ -2348,6 +2470,19 @@ ask = """whether reset round 1's CLEAN outcomes count through the paragraph-valu
 3. `Add a structured scope-reset event`. Keep the ids but extend the round model with an explicit event that resets the streak at the scope boundary. TRADE-OFF: this is the most explicit general model if scope resets become a recurring workflow concept, but it adds schema, validation, instrumentation and documentation work for one event, and no current tool consumes such a state.
 
 RECOMMENDATION AND DECISION (human, 2026-08-24): `Count round 1 through the scope change`. Principle 6, Ground decisions in evidence, supports retaining the structured outcomes that actually occurred while stating the limitation rather than treating them as same-scope review. Principle 8, Structured data first, project for humans, supports using the existing `changed_since_prev` and streak fields as their current schema defines them instead of inventing an unconsumed prose or event layer. Principle 2, Minimal by default, rejects an eight-id migration or a new event type for a one-boundary case. The accepted cost is explicit: only reset round 2 reviewed paragraph values. Keep every existing increment id, add no scope-reset event, and fold this decision into `step-intent-encoding`."""
+
+[[question]]
+id = "Q-82"
+status = "decided"
+folded_into = "workflow-loop-visibility"
+receipt = "Q-82"
+ask = """how to repair `next` after a current run emitted 727754 bytes and projected one lowest-order `in-progress` step as the active review loop even though that step was in exploration and other loops were active. THREE OPTIONS WERE PRESENTED.
+
+1. `Schedule visibility and scheduling in stages`. First repair phase correctness and multi-loop visibility while preserving one selected next action. In later reviewed steps, build the typed per-unit fleet and then the read-only ready-frontier scheduler using the existing `workflow-driver` Stage 2 and Stage 3 architecture.
+2. `Schedule visibility and phase correctness only`. Repair the immediate false review projection and hidden-loop output, but leave fleet and scheduler authority behind the prior evidence gate.
+3. `Schedule one combined driver overhaul`. Build phase typing, multi-loop projection, the typed fleet and scheduling authority as one change.
+
+RECOMMENDATION AND DECISION (human, 2026-08-25): `Schedule visibility and scheduling in stages`. Principle 1, Prefer the cleaner long-term architecture over the smallest diff, supports completing the already-decided driver architecture; Principle 2, Minimal by default, requires the correctness and visibility repair to land independently of scheduler authority; Principle 6, Ground decisions in evidence, uses the 727754-byte output and hidden active loops as the evidence for doing the first stage now. `workflow-loop-visibility` owns the first stage. `workflow-driver-typed-fleet` then reuses Stage 2, and `workflow-ready-frontier-scheduler` follows it as Stage 3. The dependencies make the sequence durable; no scheduler authority enters the first stage. Decision receipt `type:"decision"` `q_id:"Q-82"` in `docs/metrics/workflow.jsonl`."""
 
 [[principle]]
 n = 1
