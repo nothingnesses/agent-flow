@@ -73,7 +73,7 @@ D1-D5 reuse the shipped `next`, `WorkflowSpec`, render/pack, and W3 arithmetic; 
 ### Evidence-gated later (the FSM path, Q-51 Stages 2+)
 
 - Stage 2 (gated on Q-58 structuring decision + Stage-1 adoption evidence): extract the shared `reconstruct_loop` (sec 4), type the `ReviewLoop`/step/task fleet (r2-architecture sec 3.2), and fill the `awaiting`/`diff`/`artifact` slots from the structured Q-58 transient. Delivers the full per-unit sub-state and makes complete-without-convergence unrepresentable by construction (P5).
-- Stage 3+ (gated as Q-51 already sets): `blocked_by` ready-frontier scheduler (gate: real parallelism), `record-*` write-path (gate: advisory-adoption evidence + reopening Q-24), authoritative/blocking driving (gate: measured residual drift). Unchanged from the Q-51 decision; delivery does not move these gates.
+- Stage 3+ (retained Q-51 staging, with one bounded Q-82 supersession): Q-82 schedules the typed fleet and lifts the former real-parallelism gate for the read-only `blocked_by` ready-frontier scheduler alone; `docs/plans/agent-scaffold.steps/workflow-ready-frontier-scheduler.md` is its current implementation authority. The `record-*` write-path still waits on advisory-adoption evidence plus reopening Q-24, and authoritative/blocking driving still waits on measured residual drift/a low override rate. Q-64 delivery moves neither of those gates.
 
 ### Escape hatches (the driver must not become a cage)
 

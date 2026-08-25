@@ -1646,7 +1646,7 @@ risk_class = "risky"
 
 [[step]]
 slug = "structured-risk-class-source"
-title = "make the plan increment declaration the authoritative review-loop risk-class source"
+title = "make plan declarations the authoritative review-loop risk-class source"
 status = "not-started"
 order = 109
 blocked_by = []
@@ -1717,7 +1717,7 @@ risk_class = "risky"
 
 [[step]]
 slug = "workflow-loop-visibility"
-title = "give `next` a legal typed phase carrier and project every active unit while selecting one action (`Q-82`)"
+title = "extend `next`'s legal typed phase carrier and project every active unit while selecting one action (`Q-82`)"
 status = "not-started"
 order = 114
 blocked_by = ["structured-risk-class-source"]
