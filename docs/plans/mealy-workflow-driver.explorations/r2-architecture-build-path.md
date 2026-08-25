@@ -4,7 +4,7 @@ Lens: the concrete Rust ARCHITECTURE for the FULL driver (the human's target, Op
 
 Numbering note: "Principle N" below is the plan's numbered Project Principles (1 cleaner-long-term-architecture, 2 minimal-by-default, 3 safe-on-existing-projects, 4 idempotent, 5 illegal-states-unrepresentable, 6 evidence-first, 7 reproducible, 8 structured-data-first). Where I mean an AGENTS.md workflow principle (for example small-and-reviewable changes) I say "Workflow Principle".
 
-Grounding (files this design reuses or extends): `src/plan/source.rs` (the `PlanToml` / `Step` / `Increment` / `StepStatus` schema, `step_views` / `question_views`, the typed `blocked_by` DAG); `src/plan/render.rs` (the render closure: `render_plan`, `assemble`, and the already-working generated fragments `vocabulary_section` / `status_line` / `principles_section`, plus the `render --check` byte-compare); `src/metrics.rs` (`RiskClass::required_streak` returning 1/2, `Round` / `RoundOutcome` / `Escalation` / `Decision` / `Waiver`, `parse_rounds`); `src/workflow.rs` (the W3/W4/W5 checker and the streak arithmetic in `round_log_consistency_problems` / `w3_problems`); `src/main.rs` (the clap subcommand surface: `validate`, `status`, `render`, `checks`, `scaffold`); `src/manifest.rs` + `src/main.rs::build_assets` (the pack `{{...}}` slot mechanism that generates `AGENTS.md` at scaffold time).
+Grounding (files this design reuses or extends): `src/plan/source.rs` (the `PlanToml` / `Step` / `Increment` / `StepStatus` schema, the authoritative `[[step.increment]].risk_class` declarations, `step_views` / `question_views`, and the typed `blocked_by` DAG); `src/plan/render.rs` (the render closure: `render_plan`, `assemble`, and the already-working generated fragments `vocabulary_section` / `status_line` / `principles_section`, plus the `render --check` byte-compare); `src/metrics.rs` (`RiskClass`, the auditable `Round.risk_class` snapshot, `RoundOutcome` / `Escalation` / `Decision` / `Waiver`, `parse_rounds`); `src/workflow.rs` (the W3/W4/W5 checker and the streak arithmetic in `round_log_consistency_problems` / `w3_problems`); `src/main.rs` (the clap subcommand surface: `validate`, `status`, `render`, `checks`, `scaffold`); `src/manifest.rs` + `src/main.rs::build_assets` (the pack `{{...}}` slot mechanism that generates `AGENTS.md` at scaffold time). Q-83 supersedes this retained design's earlier first-round-authority assumption: the plan increment declaration is made at loop open, every round snapshot must match, and missing declarations fail closed.
 
 ## 1. The load-bearing architectural facts
 
@@ -87,7 +87,7 @@ src/workflow.rs            existing W3/W4/W5 checker; Stage 2 extracts its strea
 src/workflow/spec.rs       NEW (Stage 0): WorkflowSpec parse + accessors; the single source of the control constants
 src/driver/mod.rs          NEW (Stage 1+): the `next` entry; output types (JSON + human); stateless recompute orchestration
 src/driver/reconstruct.rs  NEW (Stage 2): build the per-unit fleet from PlanToml + round log + ledger + spec
-src/driver/fsm.rs          NEW (Stage 2): the ReviewLoop Mealy machine (state/input/output + total transition function); StepMachine; TaskMachine
+src/driver/fsm.rs          NEW (Stage 2): the ReviewLoop Mealy machine (state/input/output + total transition function); TaskMachine; QuestionMachine; StepMachine
 src/driver/schedule.rs     NEW (Stage 3): the ready-frontier scheduler over blocked_by
 src/driver/emit.rs         NEW (Stage 2): fill the next-instruction prompt from the spec's role/path templates
 src/driver/record.rs       NEW (Stage 5): the guarded, transition-validating record-* write-path
@@ -105,7 +105,7 @@ The heart is one reusable machine, instantiated at three sites (plan review, eac
 struct ReviewLoop {
     id: LoopId,                    // (phase, increment-or-artifact); reuses plan/metrics ids
     phase: Phase,                  // PlanReview | WorkReview | Acceptance | Review
-    risk_class: RiskClass,         // reuses metrics::RiskClass; fixed at loop-open
+    risk_class: RiskClass,         // read from the authoritative plan increment declaration fixed at loop-open
     round: u32,
     consecutive_clean: u32,
     awaiting: Await,               // the field that makes the machine total and advanceability computable
@@ -116,7 +116,7 @@ enum LoopStatus { Running, Converged, Escalated, Retired }
 
 // Sigma_in: JUDGMENT inputs the tool CONSUMES; never produced by the engine
 enum Input {
-    Open { risk_class: RiskClass },
+    Open { declared_risk_class: RiskClass }, // supplied by the resolving plan increment, never inferred from a round
     RoundResult { outcome: RoundOutcome, top_dismissed: Severity },  // reuses metrics::RoundOutcome
     RecheckResult(RecheckResult),                                    // reuses metrics::RecheckResult
     HumanDecision(HumanDecision),                                    // reuses metrics::HumanDecision
@@ -134,31 +134,35 @@ fn step(loop_: &ReviewLoop, input: Input, spec: &WorkflowSpec) -> (ReviewLoop, O
 The step and task machines nest the loop rather than duplicating it:
 
 ```rust
-struct StepMachine { slug: String, status: StepStatus, review: Option<ReviewLoop> }  // status reuses plan::StepStatus
-struct TaskMachine { phase: Phase, plan_review: Option<ReviewLoop>, acceptance: Option<ReviewLoop> }
+struct TaskMachine { phase: Phase, review: Option<ReviewLoop> }
+struct QuestionMachine { id: QuestionId, status: QuestionStatus, phase: Exploration }
+struct StepMachine { slug: String, status: StepStatus, phase: Option<StepPhase>, review: Option<ReviewLoop> }
 ```
 
-`StepMachine::status == Complete` is reachable in the reconstruction ONLY through an embedded `review` loop that reached `Converged` (or a covering waiver), so "complete without convergence" stays unrepresentable by construction, the same invariant W3 checks post-hoc (Principle 5, 8).
+These are the three legal active-work scopes established by `workflow-loop-visibility`: task review phases, question-scoped exploration independent of any Roadmap step, and step exploration/implementation/work review. `StepMachine::status == Complete` is reachable in the reconstruction ONLY through an embedded `review` loop that reached `Converged` (or a covering waiver), so "complete without convergence" stays unrepresentable by construction, the same invariant W3 checks post-hoc (Principle 5, 8).
 
 ### 3.3 The state-reconstruction layer
 
 ```rust
 // driver/reconstruct.rs
-struct Fleet { task: TaskMachine, steps: Vec<StepMachine>, loops: Vec<ReviewLoop> }
+struct Fleet { tasks: Vec<TaskMachine>, questions: Vec<QuestionMachine>, steps: Vec<StepMachine>, loops: Vec<ReviewLoop> }
 fn reconstruct(plan: &PlanToml, log: &str, ledger: Option<&str>, spec: &WorkflowSpec) -> Fleet;
 ```
 
-`reconstruct` is stateless: it re-derives every instance each call from the durable files, exactly as `workflow.rs` re-derives convergence today (no `.fsm-state` file; Principle 4, 7; survives compaction). It reads `[[step]].status` for the step machines, groups `metrics::parse_rounds(log)` by increment and folds each group forward through `step` (or, better, through the shared reconstructor extracted from `round_log_consistency_problems`; see Stage 2) to land each loop in its current `(round, consecutive_clean, status)`, and reads the ledger's `## RESUME STATE` block for the transient the log alone cannot give: which artifact/round is OPEN and the `awaiting` field (a round can be logged but the next input not yet arrived). If the ledger and the log disagree, `reconstruct` REPORTS the disagreement (like validate) rather than silently choosing one.
+`reconstruct` is stateless: it re-derives every instance each call from the durable files, exactly as `workflow.rs` re-derives convergence today (no `.fsm-state` file; Principle 4, 7; survives compaction). It reads `[[step]].status` and each declared increment id/class for the step machines, groups `metrics::parse_rounds(log)` by increment, rejects a missing declaration or a round snapshot that differs from it, and folds each valid group forward through `step` (or, better, through the shared reconstructor extracted from `round_log_consistency_problems`; see Stage 2) to land each loop in its current `(round, consecutive_clean, status)`. Before round one the declaration still constructs the loop with its class and required streak. The selected Q-58 carrier supplies the transient the log alone cannot give: which artifact/round is open and the `awaiting` field (a round can be logged but the next input not yet arrived). If the durable sources disagree, `reconstruct` REPORTS the disagreement (like validate) rather than silently choosing one.
 
 ### 3.4 The dependency scheduler
+
+The focused `docs/plans/agent-scaffold.steps/workflow-ready-frontier-scheduler.md` sidecar is the Stage-3 implementation authority; this architecture records the aligned shape and does not define a competing function.
 
 ```rust
 // driver/schedule.rs
 fn ready_frontier(steps: &[StepMachine]) -> Vec<&StepMachine>;
-// a step is schedulable iff every slug in its blocked_by is Complete or Skipped
+// candidates are exactly NotStarted/Next Roadmap steps;
+// a blocker is satisfied exactly when its status is Complete or Skipped.
 ```
 
-A pure function over the typed `Step.blocked_by` DAG (already validated non-self-referential and pointing at real steps by `validate_source`). It returns the antichain of `NotStarted`/`Next` steps whose dependencies are satisfied, which the orchestrator may run in parallel, capped by its own isolation budget (the tool proposes; the orchestrator decides fan-out; isolation is orthogonal). Step granularity only: increments carry no `blocked_by`, so no increment-level scheduling (fsm lens's YAGNI line).
+The pure function operates over one domain: declaration-ordered `NotStarted`/`Next` steps whose typed `blocked_by` targets are all `Complete` or `Skipped`. `Optional`, `Deferred`, `InProgress`, `NotStarted` and `Next` blockers remain unsatisfied. Task-scoped plan review/acceptance/review, question-scoped exploration and in-progress step actions sit outside this step frontier. An explicit active-unit action takes selected-action precedence and the ready frontier is reported beside it as advisory parallel work; only when no explicit unit is actionable does the first frontier member replace the Stage-1 pending fallback as the serial selection. Therefore selected-action membership is conditional on selection origin, not universal. The tool proposes; the orchestrator decides fan-out against its isolation budget. Step granularity only: increments carry no `blocked_by`, so no increment-level scheduling.
 
 ### 3.5 The instruction-emission layer
 
@@ -200,8 +204,8 @@ Each stage is a reviewable increment that ships value and de-risks the next. The
 - Stage 0a: the spec + single-sourced constants. Add `src/workflow/spec.rs` (`WorkflowSpec` + `builtin()`), the `.agents/workflow.toml` pack asset, and `--workflow-spec` on `validate`; replace `RiskClass::required_streak`'s hardcoded `match` with a spec lookup and thread the spec into `w3_problems`; add the round cap as `spec.round_cap()`. Risk class: RISKY (touches the safety-relevant convergence bar and adds a scaffolded asset all downstream projects inherit), but the change is behaviour-preserving and guarded by the existing W3 tests plus the `builtin()`-equals-old-constant assertion. Deps: none (builds on shipped structured-skeleton + validate). Value even if the driver is never built: closes the live `required_streak`/AGENTS.md duplication.
 - Stage 0b: generate the AGENTS.md control fragment. Add a `{{workflow_control}}` slot to the pack guidance template and a `render_workflow_control(spec)` that emits the streak/cap/severity/tier/path fragment (constants only); guard it with the byte-compare check. Risk class: RISKY (the code-vs-prose closure; the generation-quality piece the skeptic flagged). Deps: 0a. Proves the generation approach on the smallest, highest-value content before it is widened (Stage 4).
 - Stage 1: the advisory `next` MVP (read-only). For the SINGLE active loop, forward-project the streak/cap arithmetic (reusing the W3 reconstruction) to emit current state + valid transitions + next-action + principle reminders, JSON + human. No typed fleet, no scheduler, no prompt-filling beyond naming the role and paths from the spec. This is largely the already-planned `state-queries` step (Q-28/Q-34) plus the next-action reminder. Risk class: LOW_RISK (read-only, no write path, reuses parsers). Deps: 0a (reads the spec). Value: the point-of-action reminder that captures most anti-drift value, and the evidence-gathering tier for every later gate.
-- Stage 2: the typed FSM engine. First EXTRACT the streak arithmetic out of `round_log_consistency_problems`/`w3_problems` into a shared `reconstruct_loop(rounds, spec) -> LoopState` that BOTH the checker and the driver call (the "one arithmetic, two directions" made literal code reuse; Principle 5, 8, 16). Then add `driver/fsm.rs` (`ReviewLoop` + total `step`, exhaustively table-tested), `driver/reconstruct.rs` (the full fleet incl. step/task machines), and `driver/emit.rs` (filled instruction prompts from the spec templates). `next` is now driven by the typed fleet and emits filled prompts. Risk class: RISKY (the core logic; must match the checker exactly). Deps: Stage 1 (the advisory surface), Stage 0a (the spec). Value: the full per-unit state model with illegal-state-unrepresentable transitions.
-- Stage 3: the dependency scheduler. Add `driver/schedule.rs`; `next` reports N ready units for parallel fan-out. Risk class: LOW_RISK (a pure graph function over typed `blocked_by`). Deps: Stage 2. GATE: build only when parallel multi-unit execution is actually exercised (the skeptic's YAGNI; today steps run one at a time).
+- Stage 2: the typed FSM engine. First EXTRACT the streak arithmetic out of `round_log_consistency_problems`/`w3_problems` into a shared `reconstruct_loop(rounds, spec) -> LoopState` that BOTH the checker and the driver call (the "one arithmetic, two directions" made literal code reuse; Principle 5, 8, 16). Then add `driver/fsm.rs` (`ReviewLoop` + total `step`, exhaustively table-tested), `driver/reconstruct.rs` (the full task/question/step fleet), and `driver/emit.rs` (filled instruction prompts from the spec templates). `next` is now driven by the typed fleet and emits filled prompts. Risk class: RISKY (the core logic; must match the checker exactly). Deps: Stage 1 (the advisory surface), Stage 0a (the spec). Value: the full per-unit state model with illegal-state-unrepresentable transitions.
+- Stage 3: the dependency scheduler. Add `driver/schedule.rs`; `next` reports the focused sidecar's step-only ready frontier beside any explicit task/question/step action, with explicit action precedence and the first frontier member as serial fallback only when no explicit action exists. Risk class: the scheduled focused increment declares `risky`; that declaration supersedes this retained design's earlier LOW_RISK estimate. Deps: Stage 2. Q-82 supersedes the former real-parallelism gate for this scheduler alone.
 - Stage 4: widen the AGENTS.md generation. Extend 0b from the constants to the sequencing/paths/tiers fragments. Risk class: RISKY (generation quality across more content). Deps: 0b proven. GATE: only after 0b shows the generated constant fragment is correct and readable.
 - Stage 5: the guarded write-path (`record-*`). Add `driver/record.rs`: transition-validating append subcommands. Risk class: RISKY (a runtime write dependency; deliberately reopens the Q-24 no-write-path stance). Deps: Stage 2 (needs `step` to validate transitions) + advisory-adoption evidence from Stage 1. GATE: only once agents demonstrably run `next` consistently and hand-writing JSONL is the remaining gap.
 - Stage 6: authoritative driving. Docs instruct agents to obey the tool; escape hatches (`record-override`) mandatory; measure the override rate. Risk class: RISKY. Deps: Stage 5 + MEASURED residual control-drift after the advisory tier. GATE: the skeptic's full evidence gate (measured drift, workflow stability, real concurrency, generation proven).
@@ -211,7 +215,7 @@ Ordering: 0a -> 0b -> 1 -> 2 -> {3, 4, 5} -> 6. The committed near-term path is 
 ## 6. Key risks and pitfalls in the build
 
 - State-reconstruction ambiguity. The round log gives completed rounds but not the `awaiting` field (waiting for the next round vs mid-recheck vs blocked on a human). Resolve via the ledger `## RESUME STATE` transient plus a TOTAL transition function so every replayed state is defined; if ledger and log disagree, REPORT it (do not silently pick one). Pitfall: inferring `awaiting` from the log alone would guess, and a wrong guess emits the wrong instruction.
-- The control/judgment boundary in code. The primary failure mode: the tool computing a verdict or a risk class. Enforce by TYPES: judgments are only ever `Input` variants supplied via `record-*`; `step` has no branch that produces an `outcome`/`risk_class`/`human_decision`. Test that every `Output` is reachable only from an `Input` carrying the corresponding judgment. Get this wrong permissively and the tool hallucinates decisions; restrictively and it straitjackets (the ask's exact warning).
+- The control/judgment boundary in code. The primary failure mode is the tool computing a verdict or risk class. Enforce by TYPES: the risk judgment reaches the engine only through the authoritative plan increment declaration supplied at `Open`, verdicts arrive as typed inputs, and `step` has no branch that invents an `outcome`/`risk_class`/`human_decision`. Every later round snapshot must match the declaration before it becomes an input. Test that every `Output` is reachable only from the corresponding supplied judgment. Get this wrong permissively and the tool hallucinates decisions; restrictively and it straitjackets.
 - Test strategy for a state machine. (a) Exhaustive transition-table tests: every `(state, input)` pair has a defined image (the function is total). (b) A DIFFERENTIAL test against the shipped checker: replaying a round log forward through `step`/`reconstruct_loop` must yield the SAME streak `round_log_consistency_problems` computes, so the driver and the validator provably cannot diverge (this is the highest-value test and the reason to extract the shared reconstructor in Stage 2). (c) Golden fixtures for `next` output (JSON and human), like the render golden compares. (d) A round-trip: `reconstruct -> emit` yields paths that match the spec templates.
 - Keeping it stateless. No persisted FSM store; recompute from plan + log + ledger + spec every call (Principle 4, 7; survives crash/compaction). Pitfall: any cache or `.fsm-state` file is a second source of truth that reintroduces the drift the initiative removes (Principle 8, 16).
 - Spec bootstrapping. The spec is the source, but Rust needs `WorkflowSpec::builtin()` when no `.agents/workflow.toml` is present; a compile-time / test assertion must pin `builtin()` to today's constants so an un-migrated project validates identically (Principle 3, 5).
@@ -235,7 +239,7 @@ Commit to the near-term path 0a -> 0b -> 1 -> 2 and hold 3/4/5/6 behind their ev
 
 - Build the `workflow.toml` spec and single-source the convergence constants FIRST (0a), then generate the AGENTS.md control fragment from it (0b). This closes the existing duplication, establishes the data-driven substrate the human asked for, and de-risks generation on the smallest content, all independently valuable even if the engine is never finished.
 - Build the advisory `next` MVP (1) on the spec + the W3 reconstruction; it is barely-new scope over the already-planned `state-queries` step and is the point-of-action anti-drift tier plus the evidence source for every later gate.
-- Build the typed FSM engine (2) by first extracting the shared reconstructor so the driver and the checker provably share the arithmetic, then adding the `ReviewLoop`/step/task machines and instruction emission. This realizes the full driver's core with illegal states unrepresentable.
+- Build the typed FSM engine (2) by first extracting the shared reconstructor so the driver and the checker provably share the arithmetic, then adding the `ReviewLoop` task/question/step machines and instruction emission. This realizes the full driver's core with illegal states unrepresentable.
 - Treat the driver as COMPLEMENTING the re-grounding step and Q-50, not subsuming them; un-gate those (Q-50 is a prerequisite if generation and prompt-filling are to be correct).
 
 This honours the human's "full driver as the target" while staging it so no stage hardens the still-evolving workflow (the workflow evolves by editing `workflow.toml`, not Rust), and so each increment ships value and de-risks the next.
@@ -248,6 +252,6 @@ This honours the human's "full driver as the target" while staging it so no stag
 - No general workflow DSL; `workflow.toml` holds THIS workflow's fixed constants/sequences/paths/tiers, not arbitrary process logic. A new transition KIND is a code change, not a spec field.
 - No judgment in the spec or in `step`; verdicts, risk classes, and human decisions are only ever `Input` variants supplied via `record-*`.
 - Do not generate the WHOLE AGENTS.md workflow section; generate only the control fragments and keep the rationale/role/contract prose hand-authored (0b/Stage 4 are the constant fragments, not the "why").
-- Do not build Stages 3-6 before their gates: parallel scale for the scheduler (3); the constant-fragment generation proven for the widening (4); measured advisory adoption for the write-path (5, which reopens Q-24 deliberately); measured residual drift + workflow stability for authoritative driving (6).
+- Do not build Stages 4-6 before their gates: the constant-fragment generation proven for the widening (4); measured advisory adoption for the write-path (5, which reopens Q-24 deliberately); measured residual drift + workflow stability for authoritative driving (6). Q-82 has already lifted the former Stage-3 parallel-scale gate under the focused scheduler contract.
 </content>
 </invoke>
