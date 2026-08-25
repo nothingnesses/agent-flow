@@ -6,7 +6,7 @@ Explorer lens: experiment designer. This record DESIGNS the ablation the human d
 
 Q-52 (the code-value audit) uses FALSIFIABLE DELETION: a line of CODE earns its keep iff deleting it produces an OBSERVABLE degradation (a test flips from pass to fail). If nothing observable changes, the line is dead weight and can go. Q-58 lifts the same test from code to the workflow driver's OUTPUT: a line of `next` output earns its keep iff removing it OBSERVABLY DEGRADES a resuming agent's next-action correctness, measured against a deterministic oracle. The oracle plays the role the failing test plays in Q-52: it is the observable that the deletion must move. If FULL and a reduced variant score the same, the deleted content earned nothing and the cheaper carrier wins.
 
-Concrete motivation (measured on this repo, pre-fix): `next` emitted 150145 bytes / 148 lines, of which the derived ACTIVE LOOP block was 799 bytes and the remaining ~149 KB was a VERBATIM echo of the ledger's `## RESUME STATE` (27 dated anchors, 1 live). A source-side fix landed (bound `## RESUME STATE` to the single live `##`-heading anchor via `extract_resume_state`, `src/next.rs:969-988`); the echo is now ~6 KB. The ablation resolves the deeper carrier mechanism empirically, and its finding must respect the Q-59 constraint that whichever carrier wins still carries a currency signal (checkpoint-commit / last-updated projected as "current / N commits stale / tree dirty").
+Concrete motivation (measured on this repo before the original design): `next` emitted 150145 bytes / 148 lines, of which the derived ACTIVE LOOP block was 799 bytes and the remaining ~149 KB was a VERBATIM echo of the ledger's `## RESUME STATE` (27 dated anchors, 1 live). A source-side fix then landed (bound `## RESUME STATE` to the single live `##`-heading anchor via `extract_resume_state`, `src/next.rs:969-988`), and at design time the echo was ~6 KB. That is historical context, not the live baseline; the reopening measurement below and the mandatory fresh pre-run measurement supersede it as current evidence. The ablation resolves the deeper carrier mechanism empirically, and its finding must respect the Q-59 constraint that whichever carrier wins still carries a currency signal (checkpoint-commit / last-updated projected as "current / N commits stale / tree dirty").
 
 What `next` emits, as the substrate the variants slice (`render_human`, `src/next.rs:1017-1043`):
 1. A header: `task` / `source` / `metrics` (`src/next.rs:1019-1024`).
@@ -14,9 +14,22 @@ What `next` emits, as the substrate the variants slice (`render_human`, `src/nex
 3. The verbatim RESUME STATE echo (`src/next.rs:1036-1041`), appended only when the ledger carries a `## RESUME STATE` section.
 The `--json` form (`NextProjection`, `src/next.rs:98-118`; emitted at `src/main.rs:1203-1205`) is the same content as a typed projection, with `resume_state` as a single string field (`src/next.rs:113`).
 
+### Reopening measurement provenance (the one exact historical source)
+
+The measurement that reopened this design was taken from the repository root at main commit `3ad7b2b`. The command and inputs were:
+
+```bash
+capture=$(mktemp)
+cargo run -- next --source docs/plans/agent-scaffold.plan.toml --metrics docs/metrics/workflow.jsonl --isolation-tier container > "$capture"
+wc -l -w -c "$capture"
+rm "$capture"
+```
+
+The captured human output measured 1434 lines, 113409 words and 727754 bytes. These are historical measurements of that commit, not a current pass condition; path/content growth makes a later run differ. Every other Q-58/Q-82 source refers here or describes the datum only as roughly 728 KB. The live ablation still performs and retains a fresh pre-run measurement on its own source commit before any trial.
+
 ## 1. Output variants to ablate
 
-Each variant is defined precisely by what it INCLUDES / EXCLUDES from the substrate above. All variants are produced by SLICING the shipped `next` output and `--json`, never by changing product code (see the harness in section 5). Byte/token sizes are the current post-source-fix figures on this repo; the harness also measures a WORST-CASE (27-anchor) ledger to expose the knee the source fix already partly walked back.
+Each variant is defined precisely by what it INCLUDES / EXCLUDES from the substrate above. All variants are produced by SLICING the shipped `next` output and `--json`, never by changing product code (see the harness in section 5). Byte/token sizes written in the original variant bullets are historical post-source-fix estimates; the live harness remeasures every arm and also measures a retained worst-case ledger to expose the knee.
 
 - V0 FULL (the shipped output). Header + full ACTIVE LOOP block + verbatim RESUME STATE echo (`src/next.rs:1017-1043`, including the `resume_state` tail at `1036-1041`). This is `next` as run today. Cost: header + ~799 B block + ~6 KB echo (pre-fix ~149 KB echo).
 - V1 ACTIVE-LOOP-ONLY. Header + ACTIVE LOOP block, and NO RESUME STATE echo (equivalent to `resume_state == None`, i.e. skip `src/next.rs:1036-1041`; reachable in the product by an absent ledger section, `extract_resume_state` returning `None` at `src/next.rs:983-987`). Isolates whether the DERIVED block alone (the `LoopState` projection) preserves next-action correctness. Cost: ~799 B.
@@ -59,12 +72,27 @@ Confound controls:
 - N replicate trials per cell to average agent variance; report mean and variance, not a single draw.
 - The gist/Tier-B judge is BLIND to which variant produced the answer.
 
-## 4. Token-cost / task-success KNEE
+## 4. Mandatory committed pre-run protocol and token-cost / task-success knee
 
-- X-axis: OUTPUT token cost per variant, measured by tokenizing the emitted bytes of each variant on each sampled state (so V0's cost tracks the real echo size, which is state-dependent; measure both the post-fix ~6 KB ledger and a synthetic worst-case 27-anchor ledger).
-- Y-axis: mean oracle score (task-success) for that variant, averaged over states x trials, reported per model.
-- Plot success vs cost as a Pareto frontier. The KNEE is the minimal-cost variant whose mean score is statistically INDISTINGUISHABLE from V0 FULL (score >= V0 - epsilon with overlapping confidence intervals). The winning carrier is the cheapest variant on that success plateau that ALSO carries the Q-59 currency signal (which, by construction, favors V3 structured-only, whose typed currency field is cheap; V1/V2 would need the signal added).
-- Falsifiable-deletion reading of the plot: the per-state delta (V0 score minus reduced-variant score) IS the value the deleted content earned. If the delta's confidence interval includes 0, the deleted content did not earn its keep and the reduced carrier wins for that state class. Expect the interesting signal in the mid-round Tier-B states: if V1 drops below V0 there but V2 (live anchor) recovers it, the LIVE anchor earns its keep and the superseded anchors do not; if V3 matches V2 at a fraction of the tokens, structured-only wins the knee.
+Before any consuming-agent result is generated or read, commit `docs/plans/code-value-audit.explorations/Q-58-ablation-protocol.md`. The protocol is the run's frozen statistical contract, not a result narrative. It must contain exact, non-placeholder values for all of these degrees of freedom:
+
+- the state ids and strata, the trial count per cell, the model classes/versions and the randomisation scheme;
+- the normalized-score non-inferiority or equivalence margin (`epsilon`) against V0, with its domain justification;
+- the confidence level and the exact interval or hypothesis-test method, including pairing/resampling unit, tail and multiple-comparison treatment;
+- how replicate scores become a state aggregate, how states/strata are weighted, how missing/invalid trials are handled, and weights that sum to the declared total;
+- how per-model aggregates are combined or kept separate, the model weights if pooling is used, and how output-token costs from model-specific tokenizers are aggregated;
+- the model-disagreement rule, including what happens when a carrier clears the margin for one model class but not another;
+- deterministic tie-breaking among carriers that clear the rule, including the Q-59 currency requirement; and
+- the retained aggregate schema plus the exact analysis command/script version that maps those aggregates and this protocol to the plateau, Pareto frontier and selected carrier.
+
+The protocol commit id is recorded in the result. Once any trial output has been observed, changing one of these fields invalidates that run: the result must say so and restart under a new pre-run protocol rather than silently revising the rule. Interval overlap alone is not evidence of equivalence or non-inferiority. The protocol may choose an appropriate paired interval/test, but it must fix that choice and its margin before results exist.
+
+The retained aggregate data contains, for every variant x state x model cell, its trial count, score estimate, uncertainty inputs/interval and token cost, plus the declared state/model weights. A checked-in analysis script or equally mechanical command reads only that aggregate file and the frozen protocol and reproduces the reported classification and tie-break; changing the margin or weights demonstrably changes that generated classification rather than relying on prose judgment.
+
+- X-axis: output token cost per variant under the protocol's declared state/model weighting, measured by tokenizing each sampled state's emitted bytes (so V0's cost tracks the real state-dependent echo). Measure the current live ledger and the retained synthetic worst case; do not reuse the old ~6 KB figure as current.
+- Y-axis: the protocol-defined oracle-score aggregate, with the required per-model views retained rather than hidden by a pooled mean.
+- Plot success vs cost as a Pareto frontier. The plateau is exactly the set the pre-run non-inferiority/equivalence rule admits against V0; the winning carrier is the deterministic cheapest/tie-broken member that also carries Q-59's currency signal. If model classes disagree, apply the frozen disagreement rule rather than selecting post hoc.
+- Falsifiable-deletion reading of the plot: the per-state delta (V0 score minus reduced-variant score) is the value the deleted content earned. Interpret that delta through the frozen interval/test, not by confidence-interval overlap. Expect the interesting signal in the mid-round Tier-B states: if V1 drops below V0 there but V2 recovers it, the live anchor earns its keep; if V3 clears the frozen rule at lower cost, structured-only reaches the plateau.
 
 ## 5. Harness sketch (throwaway experiment scaffolding)
 

@@ -23,4 +23,4 @@ ACCEPTANCE.
 
 ### Documentation impact
 
-No shipped documentation changes. This step makes existing plan prose comply with `agent-scaffold.documentation-protocol.md`; it changes neither that rule nor the scaffolded template. Its only projection is the generated plan. The dynamic handover and review outcome are the durable documentation of which openings moved.
+No shipped documentation changes. Authoring this step made the predecessor's future-tense handover stale, so the planning fold updates `sidecar-status-opening-drift` to name this slug while preserving why an early stub was refused. The implementation step itself makes existing plan prose comply with `agent-scaffold.documentation-protocol.md`; it changes neither that rule nor the scaffolded template. Its only projection is the generated plan. The dynamic handover and review outcome are the durable documentation of which openings moved.

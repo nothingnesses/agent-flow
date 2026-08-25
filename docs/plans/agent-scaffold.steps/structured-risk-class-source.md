@@ -22,7 +22,7 @@ ACCEPTANCE.
 1. A fixed-string sweep over `pack/AGENTS.md`, `AGENTS.md`, `.agents/AGENTS.reference.md`, both orchestrator prompts and both ledger templates finds no instruction to record the risk class or required clean count in the ledger narrative.
 2. The same surfaces state that every loop-opening `round` record carries the classification and later records for that loop must agree. No text implies that a missing structured class may be recovered from prose.
 3. Existing strict metrics validation still rejects a round with no `risk_class`, and W3/`next` still reject inconsistent classes. Red controls delete the first class and mutate a later one; both remain red.
-4. The committed pack/render pairs stay current through the repository's existing drift guards. The changed-path set is exactly the eight guidance/template files named above plus `CHANGELOG.md`; no product source changes are needed unless a failing test demonstrates that a supposedly structured reader still reads prose, in which case the source path is added with that evidence and reviewed as scope expansion.
+4. The committed pack/render pairs stay current through the repository's existing drift guards. The changed-path set is exactly the seven guidance/template files named above plus `CHANGELOG.md`, eight paths total; no product source changes are needed unless a failing test demonstrates that a supposedly structured reader still reads prose, in which case the source path is added with that evidence and reviewed as scope expansion.
 5. Both validation modes, strict render, tests, Clippy, diff checks and ASCII checks pass.
 
 ### Documentation impact

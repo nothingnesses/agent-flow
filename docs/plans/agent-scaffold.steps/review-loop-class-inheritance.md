@@ -12,7 +12,7 @@ RISK CLASS `risky` (two consecutive clean review rounds). The change governs whe
 
 WHAT CHANGES.
 
-Update the canonical convergence rule in `pack/AGENTS.md`, its committed renders, the canonical orchestrator prompt and its committed copy, and the ledger template pair after `structured-risk-class-source` has removed the duplicate prose class. Record the Q-80 decision in `CHANGELOG.md` under `## [Unreleased]`. Do not add a new event type or alter counter arithmetic; the existing escalation record is the durable boundary.
+Update the canonical convergence rule in `pack/AGENTS.md`, its committed renders, the canonical orchestrator prompt and its committed copy, and the ledger template pair after `structured-risk-class-source` has removed the duplicate prose class and `toml-primary-waiver-guidance` has regenerated the overlapping committed guidance copies. Record the Q-80 decision in `CHANGELOG.md` under `## [Unreleased]`. Do not add a new event type or alter counter arithmetic; the existing escalation record is the durable boundary.
 
 ACCEPTANCE.
 
@@ -25,4 +25,4 @@ ACCEPTANCE.
 
 ### Documentation impact
 
-The workflow guidance, orchestrator prompts and ledger templates are the stale surfaces and move together. README's diagram says only that cap escalation returns to the workflow and carries no rebuild/class rule, so it stays current. The changelog records the inherited-class rule because scaffolded projects receive it.
+The workflow guidance, orchestrator prompts and ledger templates are the stale surfaces and move together. The Roadmap dependency on `toml-primary-waiver-guidance` serialises their overlapping generated copies so neither reviewed pack edit is silently lost. README's diagram says only that cap escalation returns to the workflow and carries no rebuild/class rule, so it stays current. The changelog records the inherited-class rule because scaffolded projects receive it.
