@@ -124,7 +124,7 @@ IN scope (the full driver target, staged S1 -> S3):
 - Next-instruction emission with filled role prompts, JSON + text, isolation-tier echo, cadenced reminders (FR-EMIT). (S1.)
 - The advisory deviation hatch, abandonment, accept-at-escalation (FR-ESC-2..4). (S1.)
 - Human-input CONTROL: await-state detection, contract-prompt emission, receipt consumption, queue reporting (FR-HUMAN-1..3). (S1.)
-- The per-unit FSM fleet and the `blocked_by` ready-frontier scheduler (FR-FLEET, FR-SCHED). (S2, gated on real parallelism.)
+- The per-unit FSM fleet and the `blocked_by` ready-frontier scheduler (FR-FLEET, FR-SCHED). (Retained S2 label. Q-82 later schedules the typed fleet and supersedes the former real-parallelism gate for the read-only scheduler alone; `docs/plans/agent-scaffold.steps/workflow-ready-frontier-scheduler.md` is the current Stage-3 authority. This bounded supersession does not lift the separate advisory-adoption/Q-24 gate on the write path or the measured-override gate on authoritative driving.)
 - The guarded `record-*` write-path with transition validation and preserved degradation (FR-REC-W, FR-ESC-1 override). (S2, gated on advisory evidence + reopening Q-24.)
 - Generation of the AGENTS.md control-constant fragments via `render --check` (FR-GEN). (S3, gated on the smallest-fragment proof.)
 - Authoritative-blocking driving (the tool refuses to advance without the recorded event). (S3, gated on measured advisory adoption.)
@@ -167,7 +167,7 @@ Adopt the staged IN/OUT lines in section 13, with three load-bearing commitments
 2. Keep the tool READ-ONLY by default with a strictly guarded, opt-in, append-only write-path (NFR-AUTH), and keep authoritative-blocking and the write-path behind the round-1 advisory-evidence gate. This preserves Q-24's degradation guarantee and the least-authority invariant while still reaching the full driver's enforcement power. (AGENTS.md WP-18, P3, P6.)
 3. Stage generation LAST and prove it on the smallest fragment (the convergence constants) before widening. (P6.)
 
-The recommended scope line for "the full driver" is therefore: everything in section 13's IN list is the TARGET, but the build order is S1 (advisory MVP on the spec, the natural `state-queries` increment) -> S2 (fleet + scheduler + guarded write-path, gated on real parallelism and advisory-adoption evidence, and on reopening Q-24) -> S3 (fragment generation + authoritative-blocking, gated on the generation proof and the measured override rate). The scope is the full driver; the GATES are what keep each large, less-reversible stage honest against P6.
+The recommended scope line for "the full driver" was therefore: everything in section 13's IN list is the TARGET, but the build order is S1 (advisory MVP on the spec, the natural `state-queries` increment) -> S2 (fleet + scheduler + guarded write-path, then described as gated on real parallelism and advisory-adoption evidence, and on reopening Q-24) -> S3 (fragment generation + authoritative-blocking, gated on the generation proof and the measured override rate). Q-82 is a bounded later supersession of that sentence: it schedules the typed fleet and lifts the real-parallelism gate for the read-only Stage-3 scheduler only. The guarded write path still waits on advisory-adoption evidence and the Q-24 reopening, and authoritative driving still waits on its measured-override gate. The scope remains the full driver; the surviving gates keep the write/authority stages honest against P6.
 
 ## 16. YAGNI boundary
 
