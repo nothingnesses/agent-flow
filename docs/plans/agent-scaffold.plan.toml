@@ -1658,11 +1658,24 @@ id = "structured-risk-class-source-inc1"
 risk_class = "risky"
 
 [[step]]
-slug = "review-loop-class-inheritance"
-title = "make a rebuilt artefact's reopened loop inherit the retired loop's risk class (`Q-80`)"
+slug = "toml-primary-waiver-guidance"
+title = "make the shipped waiver instructions follow the active plan substrate"
 status = "not-started"
 order = 110
 blocked_by = ["structured-risk-class-source"]
+folds = []
+waiver = []
+
+[[step.increment]]
+id = "toml-primary-waiver-guidance-inc1"
+risk_class = "risky"
+
+[[step]]
+slug = "review-loop-class-inheritance"
+title = "make a rebuilt artefact's reopened loop inherit the retired loop's risk class (`Q-80`)"
+status = "not-started"
+order = 111
+blocked_by = ["structured-risk-class-source", "toml-primary-waiver-guidance"]
 folds = []
 waiver = []
 
@@ -1677,7 +1690,7 @@ risk_class = "risky"
 slug = "review-loop-foreclosure-enforcement"
 title = "report and enforce review-loop foreclosure and the total-round cap"
 status = "not-started"
-order = 111
+order = 112
 blocked_by = ["review-loop-class-inheritance"]
 folds = []
 waiver = []
@@ -1690,7 +1703,7 @@ risk_class = "risky"
 slug = "sidecar-status-authored-openings"
 title = "author phase-neutral openings for the handover left by `sidecar-status-opening-drift`"
 status = "not-started"
-order = 112
+order = 113
 blocked_by = ["sidecar-status-opening-drift"]
 folds = []
 waiver = []
@@ -1701,9 +1714,9 @@ risk_class = "risky"
 
 [[step]]
 slug = "workflow-loop-visibility"
-title = "make `next` distinguish exploration from review and project every active loop while selecting one next action (`Q-82`)"
+title = "give `next` a legal typed phase carrier and project every active unit while selecting one action (`Q-82`)"
 status = "not-started"
-order = 113
+order = 114
 blocked_by = []
 folds = []
 waiver = []
@@ -1719,8 +1732,8 @@ risk_class = "risky"
 slug = "workflow-driver-typed-fleet"
 title = "build the workflow driver's typed per-unit fleet on the compact Q-58 carrier (`Q-82`, Stage 2)"
 status = "not-started"
-order = 114
-blocked_by = ["workflow-loop-visibility", "resume-state-currency-signal"]
+order = 115
+blocked_by = ["workflow-loop-visibility", "resume-state-currency-signal", "review-loop-foreclosure-enforcement"]
 folds = []
 waiver = []
 
@@ -1736,7 +1749,7 @@ risk_class = "risky"
 slug = "workflow-ready-frontier-scheduler"
 title = "add the workflow driver's read-only ready-frontier scheduler after the typed fleet (`Q-82`, Stage 3)"
 status = "not-started"
-order = 115
+order = 116
 blocked_by = ["workflow-driver-typed-fleet"]
 folds = []
 waiver = []
@@ -2130,13 +2143,13 @@ ask = """the treefmt / stash hygiene decision: every `scaffold-self` / `nix fmt`
 [[question]]
 id = "Q-58"
 status = "exploring"
-ask = """whether `agent-scaffold next` (the driver's Stage-1 forward projection, `Q-51`) should PROJECT the current transient resume-state rather than VERBATIM-ECHO the ledger's `## RESUME STATE` section, and what output content best serves a resuming agent. It is meant to be a token-efficient resume aid but echoes that section verbatim: measured on this repo the output was 150145 bytes / 148 lines, of which the DERIVED ACTIVE LOOP block was only 799 bytes and the rest (~149 KB) was the verbatim echo of 27 dated `CURRENT TRANSIENT STATE` anchors, only 1 of which is live. A cheap SOURCE-side fix already landed (bound the `## RESUME STATE` section to the single live anchor via a `##` boundary heading, so the echo is now ~6 KB; the orchestrator keeps exactly one live anchor going forward). The deeper open decision (candidates, not pre-decided): (1) have the TOOL project only the current transient rather than echo whatever sits under the heading, so it is robust to source drift and not reliant on ledger discipline, which needs either the bounded source or the Stage-2 reconstructor; (2) make the transient resume-state STRUCTURED rather than human prose so the tool can project it drift-free (Principle 8, the restate-by-generation direction), noting the A-b Stage-1 decision deliberately chose verbatim-echo to avoid heuristic prose parsing; (3) determine the OPTIMAL output content EMPIRICALLY via an ablation: emit output variants (full; ACTIVE-LOOP-only; +current-anchor; structured-only), score a fresh consuming agent's stated next-action/constraints against a deterministic next-action oracle (derivable from the workflow rules, as the ACTIVE LOOP already is), and find the token-cost / task-success knee. This is `Q-52`'s falsifiable-deletion method applied to output CONTENT, so it composes with the `Q-52` code-value research. Do not build until decided.
+ask = """whether `agent-scaffold next` (the driver's Stage-1 forward projection, `Q-51`) should PROJECT the current transient resume-state rather than VERBATIM-ECHO the ledger's `## RESUME STATE` section, and what output content best serves a resuming agent. It is meant to be a token-efficient resume aid but echoes that section verbatim: at the original intake the output was 150145 bytes / 148 lines, of which the DERIVED ACTIVE LOOP block was only 799 bytes and the rest (~149 KB) was the verbatim echo of 27 dated `CURRENT TRANSIENT STATE` anchors, only 1 of which was live. A cheap SOURCE-side fix then landed (bound the `## RESUME STATE` section to the single live anchor via a `##` boundary heading), which held the echo near 6 KB at that time; the orchestrator's intended discipline remains exactly one live anchor. The deeper open decision (candidates, not pre-decided): (1) have the TOOL project only the current transient rather than echo whatever sits under the heading, so it is robust to source drift and not reliant on ledger discipline, which needs either the bounded source or the Stage-2 reconstructor; (2) make the transient resume-state STRUCTURED rather than human prose so the tool can project it drift-free (Principle 8, the restate-by-generation direction), noting the A-b Stage-1 decision deliberately chose verbatim-echo to avoid heuristic prose parsing; (3) determine the OPTIMAL output content EMPIRICALLY via an ablation: emit output variants (full; ACTIVE-LOOP-only; +current-anchor; structured-only), score a fresh consuming agent's stated next-action/constraints against a deterministic next-action oracle (derivable from the workflow rules, as the ACTIVE LOOP already is), and find the token-cost / task-success knee. This is `Q-52`'s falsifiable-deletion method applied to output CONTENT, so it composes with the `Q-52` code-value research. Do not build until decided.
 
 DECISION (human, 2026-07-24): resolve the carrier mechanism EMPIRICALLY. Fold candidate (3)'s output-content ablation into the owed `Q-52` design pass (emit `next` output variants full / active-loop-only / +current-anchor / structured-only, score a fresh consuming agent's stated next-action and constraints against the deterministic next-action oracle the ACTIVE LOOP already derives, find the token-cost / task-success knee), and let that evidence choose between candidate (1) prose plus tool-side projection and candidate (2) the structured transient. Build NOTHING tool-side until the ablation reports; the landed source-side fix (the `##`-bounded single live anchor, ~6 KB echo) holds the line meanwhile. Chosen over committing to the structured carrier now (rejected: pre-empts the ablation that would prove structured-only wins the knee, and cuts against the fresh `Q-59` minimal-currency-signal precedent; Minimal by default, Ground decisions in evidence) and over projection-discipline-only now (rejected: leaves the transient prose and the real content question unanswered; Structured data first, project for humans). Grounds the mechanism in measurement not taste (Ground decisions in evidence), merges two owed research arcs into one (Minimal by default; Prefer the cleaner long-term architecture over the smallest diff, revealed by the ablation rather than asserted). Fresh datum feeding the ablation: this session's self-contradictory prose anchor, corrected at commit `a949f34`. Status -> `exploring`: the ablation is the owed design pass that will resolve the carrier, composed into `Q-52`'s falsifiable-deletion research (design record `docs/plans/code-value-audit.explorations/`). The `Q-59` currency signal (checkpoint-commit / last-updated projected as current / N-commits-stale / tree-dirty) remains a required property of whichever carrier the ablation selects. Decision receipt `type:"decision"` `q_id:"Q-58"` in `docs/metrics/workflow.jsonl`.
 
 HISTORICAL RUN DECISION (human, 2026-07-24, after the design pass): the ablation was shelved while the source-side fix held the echo near 6 KB. The retained rationale was that the acute problem had gone and Tier A's oracle circularity bounds what the experiment can prove. That premise no longer governs the live work.
 
-REOPENED RUN DECISION (human, 2026-08-25): `Reopen Q-58 and run the ablation`, chosen over `Schedule a compact projection directly` and `Keep Q-58 deferred`, and also recommended. A current `next` run emits 727754 bytes, so resume-output cost has recurred beyond the condition that shelved the design. `q58-output-ablation` now owns the owed run of the existing design at `docs/plans/code-value-audit.explorations/Q-58-ablation-design.md`; it refreshes the design's current measurements without weakening its oracle-circularity caveat. The experiment must identify the compact carrier and the human must decide that carrier before any product implementation of the Q-58 transient begins. Q-58 remains `exploring` until that experiment produces the option set; the current prose carrier is an interim state, not the selected end state. Decision receipt `type:"decision"` `q_id:"Q-58"` in `docs/metrics/workflow.jsonl`."""
+REOPENED RUN DECISION (human, 2026-08-25): `Reopen Q-58 and run the ablation`, chosen over `Schedule a compact projection directly` and `Keep Q-58 deferred`, and also recommended. A historically retained intake run was roughly 728 KB, so resume-output cost had recurred beyond the condition that shelved the design; its exact source commit, command and `wc` result have one source under `Reopening measurement provenance` in `docs/plans/code-value-audit.explorations/Q-58-ablation-design.md`. `q58-output-ablation` now owns the owed run of that existing design; it takes a mandatory fresh pre-run measurement and commits the statistical protocol before any trial result is observed, without weakening the design's oracle-circularity caveat. The experiment must identify the compact carrier mechanically from retained aggregates and the frozen protocol, and the human must decide that carrier before any product implementation of the Q-58 transient begins. Q-58 remains `exploring` until that experiment produces the option set; the current prose carrier is an interim state, not the selected end state. Decision receipt `type:"decision"` `q_id:"Q-58"` in `docs/metrics/workflow.jsonl`."""
 
 [[question]]
 id = "Q-59"
@@ -2404,7 +2417,7 @@ ONE PRODUCT DEFECT WAS FOUND WHILE THE REBUILT CRITERIA WERE MEASURED, and it is
 
 A REORDER OF COMPLETED WORK IS NOT PUT AS A REQUIRED DECISION, and the withdrawal is recorded rather than silent. The first draft put one, at the scope "the 15 steps at rendered positions 13 to 27". That scope was wrong, because it measured which umbrellas make a FALSE CLAIM rather than which would VIOLATE the proposed rule, and it existed only as a consequence of a contiguity rule the pass then rejected. What survives is an OPTIONAL readability tidy-up, which left with the umbrella subject and which `Q-79` prices.
 
-THE ORIGINAL DESIGN PASS AUTHORED FOUR STEPS, all `not-started`: three conditional on its review and one independent defect repair. `plan-order-array-position` holds the `order` deletion and the prose-currency sweep it forces, in two increments, both `risky`. `step-intent-encoding` holds the two fields, the projections and the cited backfill, in eight increments, all eight `risky`, and it is BLOCKED BY the other, because both rewrite every `[[step]]` block of the same file and deleting a field before adding two is the cheaper order. `ledger-order-citation-currency` holds the ledger's own numbered citations in one `risky` increment, and IT IS BLOCKED BY NOTHING: an earlier draft blocked it on `plan-order-array-position` for the same file-collision reason, and the human removed that edge on 2026-08-21 (receipt `q_id:"Q-78-ledgeredge"`) because the two steps share no file by either step's own changed-path criterion, so the stated ground was false (Principle 6, Ground decisions in evidence) and the edge forced the more expensive order (Principle 2, Minimal by default). `validate-missing-source-exit` holds a product defect the specification rebuild measured, in one `risky` increment, and it is conditional on nothing and blocks nothing. A FIFTH STEP, `sidecar-status-opening-drift`, PREDATES THIS PASS AND IS NOT CONDITIONAL ON IT; the human split it on 2026-08-21 and it now declares one `risky` increment, whose ground its sidecar states. THE ACCEPTANCE REPAIR NOW AUTHORS THE PROMISED SUCCESSOR as `sidecar-status-authored-openings`, blocked on that mechanical predecessor. It also gives separate Roadmap ownership to `structured-risk-class-source`, `review-loop-class-inheritance` and `review-loop-foreclosure-enforcement`, in that dependency order, for the previously recorded class-source, Q-80 and foreclosure/cap decisions. These focused successors do not change the original five steps or any converged increment identity.
+THE ORIGINAL DESIGN PASS AUTHORED FOUR STEPS, all `not-started`: three conditional on its review and one independent defect repair. `plan-order-array-position` holds the `order` deletion and the prose-currency sweep it forces, in two increments, both `risky`. `step-intent-encoding` holds the two fields, the projections and the cited backfill, in eight increments, all eight `risky`, and it is BLOCKED BY the other, because both rewrite every `[[step]]` block of the same file and deleting a field before adding two is the cheaper order. `ledger-order-citation-currency` holds the ledger's own numbered citations in one `risky` increment, and IT IS BLOCKED BY NOTHING: an earlier draft blocked it on `plan-order-array-position` for the same file-collision reason, and the human removed that edge on 2026-08-21 (receipt `q_id:"Q-78-ledgeredge"`) because the two steps share no file by either step's own changed-path criterion, so the stated ground was false (Principle 6, Ground decisions in evidence) and the edge forced the more expensive order (Principle 2, Minimal by default). `validate-missing-source-exit` holds a product defect the specification rebuild measured, in one `risky` increment, and it is conditional on nothing and blocks nothing. A FIFTH STEP, `sidecar-status-opening-drift`, PREDATES THIS PASS AND IS NOT CONDITIONAL ON IT; the human split it on 2026-08-21 and it now declares one `risky` increment, whose ground its sidecar states. THE ACCEPTANCE REPAIR NOW AUTHORS THE PROMISED SUCCESSOR as `sidecar-status-authored-openings`, blocked on that mechanical predecessor. It also gives separate Roadmap ownership to `structured-risk-class-source`, `review-loop-class-inheritance` and `review-loop-foreclosure-enforcement`, in that dependency order, for the previously recorded class-source, Q-80 and foreclosure/cap decisions. The second acceptance repair inserts `toml-primary-waiver-guidance` after the class-source step and before class-inheritance work, so the canonical instrumentation guidance and generated copies correct the reusable TOML-waiver cause without editing the pack during planning. These focused successors do not change the original five steps or any converged increment identity.
 
 THE BACKFILL SPLIT FROM ONE INCREMENT INTO SIX, `step-intent-encoding-inc2a` to `-inc2f`. THE GROUND IS ARITHMETIC AND NOT TASTE: one increment covering every step needs six review batches inside one loop against a round cap of five, which guarantees either a forced escalation with a batch unreviewed or a convergence certified while a batch is still owed. Each batch is now its own increment with its own loop and its own record. The batch count follows a rule over a MEASURED step count rather than a snapshot: K is the smallest batch count whose batch size is 20 or less. The rule yields six for any step count from 101 to 120, so the count survives the plan growing.
 
@@ -2476,13 +2489,13 @@ id = "Q-82"
 status = "decided"
 folded_into = "workflow-loop-visibility"
 receipt = "Q-82"
-ask = """how to repair `next` after a current run emitted 727754 bytes and projected one lowest-order `in-progress` step as the active review loop even though that step was in exploration and other loops were active. THREE OPTIONS WERE PRESENTED.
+ask = """how to repair `next` after a historically retained roughly 728 KB run projected one lowest-order `in-progress` step as the active review loop even though that step was in exploration and other loops were active. The exact historical source commit, command and output count have one source under `Reopening measurement provenance` in `docs/plans/code-value-audit.explorations/Q-58-ablation-design.md`. THREE OPTIONS WERE PRESENTED.
 
 1. `Schedule visibility and scheduling in stages`. First repair phase correctness and multi-loop visibility while preserving one selected next action. In later reviewed steps, build the typed per-unit fleet and then the read-only ready-frontier scheduler using the existing `workflow-driver` Stage 2 and Stage 3 architecture.
 2. `Schedule visibility and phase correctness only`. Repair the immediate false review projection and hidden-loop output, but leave fleet and scheduler authority behind the prior evidence gate.
 3. `Schedule one combined driver overhaul`. Build phase typing, multi-loop projection, the typed fleet and scheduling authority as one change.
 
-RECOMMENDATION AND DECISION (human, 2026-08-25): `Schedule visibility and scheduling in stages`. Principle 1, Prefer the cleaner long-term architecture over the smallest diff, supports completing the already-decided driver architecture; Principle 2, Minimal by default, requires the correctness and visibility repair to land independently of scheduler authority; Principle 6, Ground decisions in evidence, uses the 727754-byte output and hidden active loops as the evidence for doing the first stage now. `workflow-loop-visibility` owns the first stage. `workflow-driver-typed-fleet` then reuses Stage 2, and `workflow-ready-frontier-scheduler` follows it as Stage 3. The dependencies make the sequence durable; no scheduler authority enters the first stage. Decision receipt `type:"decision"` `q_id:"Q-82"` in `docs/metrics/workflow.jsonl`."""
+RECOMMENDATION AND DECISION (human, 2026-08-25): `Schedule visibility and scheduling in stages`. Principle 1, Prefer the cleaner long-term architecture over the smallest diff, supports completing the already-decided driver architecture; Principle 2, Minimal by default, requires the correctness and visibility repair to land independently of scheduler authority; Principle 6, Ground decisions in evidence, uses the canonical roughly 728 KB historical output and hidden active work as the evidence for doing the first stage now. `workflow-loop-visibility` owns the first stage. `workflow-driver-typed-fleet` then reuses Stage 2 after the shared foreclosure/cap reconstruction, and `workflow-ready-frontier-scheduler` follows it as Stage 3. The dependencies make the sequence durable; no scheduler authority enters the first stage. Decision receipt `type:"decision"` `q_id:"Q-82"` in `docs/metrics/workflow.jsonl`."""
 
 [[principle]]
 n = 1
