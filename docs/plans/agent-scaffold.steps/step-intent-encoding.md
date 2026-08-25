@@ -32,13 +32,15 @@ RULE 3, AN EMPTY VALUE IS ABSENCE SPELLED DIFFERENTLY, AND `validate` REJECTS IT
 
 RULE 4, TRANSCRIBE BEFORE YOU PARAPHRASE. The problem and the approach for most steps are already written down, in the sidecar prose, by the person who had the context. The first source for each step is its own sidecar, and git history supplies the citation for that prose rather than a fresh derivation of it. A transcribed field may move one paragraph or several.
 
-RULE 5, NAME THE SOURCE FOR EVERY FIELD, AND MARK HOW IT WAS TAKEN, OUTSIDE THE PLAN. The migration record is `docs/plans/step-intent-encoding.migration.tsv`. It is a tab-separated file with a header line and one row per FIELD, not per step. Its columns are `slug`, `field`, `mark`, `source`. `field` is `problem` or `approach`. `mark` is `transcribed` or `paraphrased`. `source` is `<commit>:<path>` and nothing else, where `<path>` is the path AS OF THAT COMMIT. The record lives outside the schema because migration bookkeeping must not outlive the migration, and increment 3 deletes it.
+RULE 5, NAME THE SOURCE FOR EVERY FIELD, AND MARK HOW IT WAS TAKEN, OUTSIDE THE PLAN. The migration record is `docs/plans/step-intent-encoding.migration.tsv`. It is a tab-separated file with a header line and one row per FIELD, not per step. Its columns are `slug`, `field`, `mark`, `source`. `field` is `problem` or `approach`. `mark` is `transcribed` or `paraphrased`. A prose source is `<commit>:<path>`, where `<path>` is the path AS OF THAT COMMIT. A decision-receipt source is `<commit>:docs/metrics/workflow.jsonl#L<line>`, where `<line>` is the positive one-based line number of one exact JSONL record in that named commit. No other fragment form is admissible, and the unqualified metrics-log path is not a source. The record lives outside the schema because migration bookkeeping must not outlive the migration, and increment 3 deletes it.
 
-THE BARE `<commit>` SOURCE FORM IS DELETED FROM THE GRAMMAR. A `transcribed` row that cites a bare commit cannot run the substring check that makes `transcribed` mean anything, and the transcribed count does not reveal it. Every row carries `<commit>:<path>`, `paraphrased` included. A decision receipt is reachable as `<commit>:docs/metrics/workflow.jsonl`, so the bare form buys nothing. Principle 5, Make illegal states unrepresentable, decides it: a format that cannot express the unprovable row beats a check that hunts for it. The human decided on 2026-08-21 (`q_id:"Q-78-backfillrecord"`) that the source reference and the mark do NOT enter the `[[step]]` schema, and this record is where they live instead.
+THE BARE `<commit>` SOURCE FORM IS DELETED FROM THE GRAMMAR. A `transcribed` row that cites a bare commit cannot run the substring check that makes `transcribed` mean anything, and the transcribed count does not reveal it. Every row identifies either one prose blob or one exact decision receipt, `paraphrased` included. Principle 5, Make illegal states unrepresentable, decides it: a format that cannot express the unprovable row beats a check that hunts for it. The human decided on 2026-08-21 (`q_id:"Q-78-backfillrecord"`) that the source reference and the mark do NOT enter the `[[step]]` schema, and this record is where they live instead.
 
 THE CITED PATH IS THE PATH AT THAT COMMIT, NOT TODAY'S PATH. This is measured. The step sidecar tree did not exist until `0fadd90` (2026-07-19). For `ledger-template` the earliest commit that holds its opening prose is `5e7ee58` (2026-07-14), and at that commit the prose lives in `docs/plans/agent-scaffold.md` alone. A row that cites `5e7ee58:docs/plans/agent-scaffold.steps/ledger-template.md` fails `git show`, and criterion 4 of the batch block reports it as `UNRESOLVED SOURCE`. Most transcribed rows for the older steps will therefore cite `<commit>:docs/plans/agent-scaffold.md`.
 
-RULE 6, THE SOURCE IS THE EARLIEST COMMIT THAT HOLDS THE VALUE. Any commit that contains a value satisfies a naive citation check, and the latest such commit is usually the tip, which proves nothing. `git log --oneline --reverse -S'<value>' -- .` accepts a search string containing newlines and returns the earliest across renames. MEASURED, the earliest commit for two live sidecar values is `5e7ee58` (2026-07-14) and `c44d8d1` (2026-07-28), and at `5e7ee58` the only file that holds the prose is `docs/plans/agent-scaffold.md`, because the sidecar tree did not exist until `0fadd90` on 2026-07-19.
+A DECISION RECEIPT IS ONE RECORD, NOT THE WHOLE METRICS LOG. R2 strips the `#L<line>` selector before `git show`, reads exactly that line from the blob, requires a schema-valid `type:"decision"` object whose `task` equals the migration row's `slug`, and exposes only the receipt's string-valued `chosen`, `recommendation` and `options` as the source text. The exact line is the receipt identity; the `task == slug` predicate is the bounded relevance oracle. A receipt for another step and the unqualified `docs/metrics/workflow.jsonl` blob both fail even when some unrelated line in the log contains the value.
+
+RULE 6, THE SOURCE IS THE EARLIEST COMMIT THAT HOLDS THE VALUE OR THE IDENTIFIED RECEIPT. Any later commit that contains a prose value satisfies a naive citation check, and the latest such commit is usually the tip, which proves nothing. For a prose source, `git log --oneline --reverse -S'<value>' -- .` accepts a search string containing newlines and returns the earliest across renames. For a decision source, the search needle is the exact selected JSONL line and the path is `docs/metrics/workflow.jsonl`, so the cited commit is the earliest commit carrying that receipt rather than a later commit that happens to retain it. MEASURED, the earliest commit for two live sidecar values is `5e7ee58` (2026-07-14) and `c44d8d1` (2026-07-28), and at `5e7ee58` the only file that holds the prose is `docs/plans/agent-scaffold.md`, because the sidecar tree did not exist until `0fadd90` on 2026-07-19.
 
 RULE 7, THE PARAPHRASE ROUTE IS AN OPT-OUT, SO IT IS BOUNDED AND MEASURED. A faithful paraphrase may trim, join, split or reorganise paragraphs, so an exact substring test fails on correct work, and that test is therefore not applied to a `paraphrased` field. Each batch reports its transcribed and paraphrased counts, so an implementation that marks every field `paraphrased` is visible rather than silently compliant.
 
@@ -588,6 +590,9 @@ while IFS=$'\t' read -r slug field mark source; do
   case "$field" in problem|approach) ;; *) echo "BAD FIELD row $rows: $field"; bad=$((bad+1));; esac
   case "$mark" in transcribed|paraphrased) ;; *) echo "BAD MARK row $rows: $mark"; bad=$((bad+1));; esac
   case "$source" in
+    [0-9a-f]*:docs/metrics/workflow.jsonl) echo "BAD SOURCE row $rows: receipt source needs #L<line>"; bad=$((bad+1));;
+    [0-9a-f]*:docs/metrics/workflow.jsonl#L*) ;;
+    [0-9a-f]*:*#*) echo "BAD SOURCE row $rows: unsupported source fragment $source"; bad=$((bad+1));;
     [0-9a-f]*:?*) ;;
     *) echo "BAD SOURCE row $rows: $source"; bad=$((bad+1));;
   esac
@@ -618,11 +623,11 @@ MEASURED against four defective records:
 - A `transcribed` row that cites a bare commit prints `BAD SOURCE row 1: 5e7ee58` and `bad=1`. One row failing one check gives one, and an earlier draft stated `bad=2`.
 - A filled field with no row prints `rows=2 filled=4 dupes=0 bad=0`, which fails on `rows != filled` rather than on `bad`. Every clause of the pass condition is therefore load-carrying and every one is stated.
 
-4. EVERY SOURCE RESOLVES, EVERY COMPLETE TRANSCRIBED VALUE IS AT ITS SOURCE, AND THAT SOURCE IS THE EARLIEST COMMIT THAT HOLDS IT. Run:
+4. EVERY SOURCE RESOLVES, EVERY COMPLETE TRANSCRIBED VALUE IS AT ITS SOURCE, AND THE CITED COMMIT IS THE EARLIEST ONE THAT HOLDS THE VALUE OR THE EXACT RECEIPT. Run:
 
 ```
 #!/usr/bin/env bash
-# R2: source resolution, source relevance, the multiline transcribed-value test, and the earliest-commit rule.
+# R2: source resolution, bounded source relevance, the multiline transcribed-value test, and the earliest-commit rule.
 REC="$1"; PLAN="$2"; AF="$3"
 rows=0; tr=0; pa=0; bad=0
 if [ "$(head -1 "$REC" 2>/dev/null)" != "$(printf 'slug\tfield\tmark\tsource')" ]; then
@@ -630,14 +635,54 @@ if [ "$(head -1 "$REC" 2>/dev/null)" != "$(printf 'slug\tfield\tmark\tsource')" 
 fi
 while IFS=$'\t' read -r slug field mark source; do
   rows=$((rows+1))
-  if ! git show "$source" > /dev/null 2>&1; then
-    echo "UNRESOLVED SOURCE row $rows: $slug $field $source"; bad=$((bad+1)); continue
-  fi
-  path=${source#*:}
-  case "$path" in
-    docs/plans/agent-scaffold.md) ;;
-    docs/plans/agent-scaffold.steps/"$slug".md) ;;
-    *) echo "SOURCE NOT THIS STEP row $rows: $slug $field $path"; bad=$((bad+1)); continue;;
+  commit=${source%%:*}
+  locator=${source#*:}
+  receipt=0; receipt_record=""
+  case "$locator" in
+    docs/metrics/workflow.jsonl#L*)
+      receipt=1
+      path=${locator%#L*}
+      line=${locator##*#L}
+      if [[ ! "$line" =~ ^[1-9][0-9]*$ ]]; then
+        echo "BAD RECEIPT LINE row $rows: $slug $field $source"; bad=$((bad+1)); continue
+      fi
+      object="$commit:$path"
+      full_blob=$({ git show "$object" 2>/dev/null; printf '\034'; })
+      if [ "$full_blob" = $'\034' ]; then
+        echo "UNRESOLVED SOURCE row $rows: $slug $field $source"; bad=$((bad+1)); continue
+      fi
+      full_blob=${full_blob%$'\034'}
+      receipt_record=$(printf '%s\n' "$full_blob" | sed -n "${line}p")
+      if [ -z "$receipt_record" ]; then
+        echo "UNRESOLVED RECEIPT LINE row $rows: $slug $field $source"; bad=$((bad+1)); continue
+      fi
+      if ! printf '%s' "$receipt_record" | jq -e --arg slug "$slug" \
+        '.chosen as $chosen | .type == "decision" and .task == $slug and (.q_id | type == "string") and (.recommendation | type == "string") and ($chosen | type == "string") and (.options | type == "array") and all(.options[]; type == "string") and (.options | index($chosen) != null)' > /dev/null 2>&1; then
+        echo "RECEIPT NOT THIS STEP row $rows: $slug $field $source"; bad=$((bad+1)); continue
+      fi
+      source_blob=$({ printf '%s' "$receipt_record" | jq -jr '[.chosen, .recommendation, .options[]?] | map(select(type == "string")) | join("\n")'; printf '\034'; })
+      source_blob=${source_blob%$'\034'}
+      ;;
+    docs/metrics/workflow.jsonl)
+      echo "RECEIPT LINE REQUIRED row $rows: $slug $field $source"; bad=$((bad+1)); continue
+      ;;
+    *#*)
+      echo "UNSUPPORTED SOURCE FRAGMENT row $rows: $slug $field $source"; bad=$((bad+1)); continue
+      ;;
+    *)
+      path=$locator
+      object="$commit:$path"
+      case "$path" in
+        docs/plans/agent-scaffold.md) ;;
+        docs/plans/agent-scaffold.steps/"$slug".md) ;;
+        *) echo "SOURCE NOT THIS STEP row $rows: $slug $field $path"; bad=$((bad+1)); continue;;
+      esac
+      source_blob=$({ git show "$object" 2>/dev/null; printf '\034'; })
+      if [ "$source_blob" = $'\034' ]; then
+        echo "UNRESOLVED SOURCE row $rows: $slug $field $source"; bad=$((bad+1)); continue
+      fi
+      source_blob=${source_blob%$'\034'}
+      ;;
   esac
   value=$({ "$AF" status --source "$PLAN" --step "$slug" --json | jq -j --arg field "$field" '.[$field] // empty'; printf '\034'; })
   value=${value%$'\034'}
@@ -645,13 +690,15 @@ while IFS=$'\t' read -r slug field mark source; do
     paraphrased) pa=$((pa+1)) ;;
     transcribed)
       tr=$((tr+1))
-      source_blob=$({ git show "$source"; printf '\034'; })
-      source_blob=${source_blob%$'\034'}
       if [[ "$source_blob" != *"$value"* ]]; then
         echo "VALUE NOT AT SOURCE row $rows: $slug $field $source"; bad=$((bad+1)); continue
       fi
-      earliest=$(git log --reverse --format=%H -S"$value" -- . | head -1)
-      cited=$(git rev-parse "${source%%:*}^{commit}" 2>/dev/null)
+      if [ "$receipt" -eq 1 ]; then
+        earliest=$(git log --reverse --format=%H -S"$receipt_record" -- docs/metrics/workflow.jsonl | head -1)
+      else
+        earliest=$(git log --reverse --format=%H -S"$value" -- . | head -1)
+      fi
+      cited=$(git rev-parse "${commit}^{commit}" 2>/dev/null)
       if [ "$earliest" != "$cited" ]; then
         echo "NOT THE EARLIEST row $rows: $slug $field cited $cited, earliest $earliest"; bad=$((bad+1))
       fi
@@ -663,13 +710,16 @@ printf 'rows=%d transcribed=%d paraphrased=%d bad=%d\n' "$rows" "$tr" "$pa" "$ba
 
 Pass: the printed line ends `bad=0`, its `rows` equals criterion 3's `rows`, and `rows` is GREATER THAN ZERO. The `rows > 0` clause is here for the same reason it is in criterion 3: this loop over an empty record prints `rows=0 transcribed=0 paraphrased=0 bad=0`, which reads as a clean run. The header check is here so that a record with the wrong columns is reported by R2 as well as by R1, rather than being read as four unnamed fields. The full commit hashes are compared through `git rev-parse`, because the abbreviated `%h` width varies with repository size.
 
-THE SOURCE-RELEVANCE ARM IS WHAT MAKES RULE 5's ADMISSIBLE SET EXECUTABLE. Rule 4 makes the step's own sidecar the first source and rule 5's path-at-that-commit paragraph makes `docs/plans/agent-scaffold.md` the source for the older steps, so the admissible set is already written down. Without this arm an intent value transcribed from `README.md`, cited to the earliest commit holding that prose, satisfies every other mechanical check in this block: R1 checks shape and coverage, the multiline substring test passes because the complete value really is there, the earliest-commit test passes because the commit really is the earliest, and R3 looks in the step's own sidecar, which an unrelated source does not reach. A row that genuinely needs another path is reported as `SOURCE NOT THIS STEP` and becomes a visible exception the outcome disposes of under criterion 8.
+THE SOURCE-RELEVANCE ARM IS WHAT MAKES RULE 5's ADMISSIBLE SET EXECUTABLE. Rule 4 makes the step's own sidecar the first source and rule 5's path-at-that-commit paragraph makes `docs/plans/agent-scaffold.md` the source for the older steps. A decision source is a third bounded route: one exact `#L<line>` record whose parsed type is `decision` and whose `task` equals this row's slug. The whole metrics log is never relevant as a blob. Without the prose-path arm an intent value transcribed from `README.md`, cited to the earliest commit holding that prose, satisfies every other mechanical check in this block. Without the receipt identity and task predicate, any unrelated decision anywhere in the append-only log can do the same. A prose row that genuinely needs another path is reported as `SOURCE NOT THIS STEP`; a receipt mismatch is reported as `RECEIPT NOT THIS STEP`; criterion 8 disposes of either visible exception.
 
-MEASURED against three defective citations:
+MEASURED controls required in every batch that uses a receipt source:
 
-- A commit that DOES hold the complete value but is not the earliest prints `NOT THE EARLIEST row 1: ledger-template problem cited 0fadd90fc1703cc1df1c03b1486ca3bf2d39b1bf, earliest 5e7ee58aa0954ee77492227a7ac9a7c4d7bb5f0e`.
-- A commit and path that do not hold the complete value, including its paragraph breaks, print `VALUE NOT AT SOURCE`.
-- Today's sidecar path against a commit that predates the sidecar tree prints `UNRESOLVED SOURCE`, which is the path-at-that-commit case rule 5 states.
+- Remove `#L<line>` while retaining the metrics path. R2 prints `RECEIPT LINE REQUIRED`; it never searches the whole log for a convenient value.
+- Point the selector at a valid decision receipt whose `task` names another step. R2 prints `RECEIPT NOT THIS STEP` even if that record's strings contain the complete field value.
+- Point the selector at a non-decision line or an absent line. R2 prints `RECEIPT NOT THIS STEP` or `UNRESOLVED RECEIPT LINE` respectively.
+- Restore the exact relevant line. A transcribed value must occur in the selected receipt's decoded `chosen`, `recommendation` or `options`, and the earliest-receipt check must pass.
+
+The existing prose controls remain: a commit that holds the complete value but is not the earliest prints `NOT THE EARLIEST`; a commit and path that do not hold the complete value, including its paragraph breaks, print `VALUE NOT AT SOURCE`; and today's sidecar path against a commit that predates the sidecar tree prints `UNRESOLVED SOURCE`.
 
 5. THE TRANSCRIBED AND PARAPHRASED COUNTS ARE REPORTED PER BATCH. Criterion 4's printed line carries them. The outcome records the pair for this batch and the running total across batches. This is what makes the paraphrase opt-out visible rather than silently compliant.
 
@@ -764,7 +814,7 @@ WHY THE COUNT IS TAKEN IN THE SOURCE AND ONLY RECONCILED IN THE PROJECTION. `ren
 
 The eight named sidecars are the front and tail sidecars from `[meta.sidecars]`. Question sidecars are included too: `Q-78.md` now carries decision 26, so treating the whole directory as empty would under-count an exact intent-label quotation added there later.
 
-8. EVERY PARAPHRASED FIELD, AND EVERY EXCEPTIONAL SOURCE, IS DISPOSED OF IN THE OUTCOME. This is NOT a pass-or-fail oracle and it is a bounded worklist. For every row this batch marks `paraphrased`, the outcome names the row's `source` and quotes the source prose and the complete recorded value side by side, preserving paragraph boundaries in both. For every row R2 reports as `SOURCE NOT THIS STEP`, the outcome quotes the source prose and states why no admissible path holds it. A row left without its pair, or a reported row left without its reason, is the batch not finished.
+8. EVERY PARAPHRASED FIELD, EVERY DECISION-RECEIPT SOURCE, AND EVERY EXCEPTIONAL SOURCE IS DISPOSED OF IN THE OUTCOME. This is NOT a pass-or-fail oracle and it is a bounded worklist. For every row this batch marks `paraphrased`, the outcome names the row's `source` and quotes the source prose and the complete recorded value side by side, preserving paragraph boundaries in both. For every decision source, transcribed or paraphrased, it records the `<commit>:docs/metrics/workflow.jsonl#L<line>` identity, the selected `q_id` and `task`, and the complete field value, so a reviewer can see the bounded relevance predicate's subject. For every row R2 reports as `SOURCE NOT THIS STEP` or `RECEIPT NOT THIS STEP`, the outcome quotes the selected source and states why no admissible source holds it. A row left without its pair, or a reported row left without its reason, is the batch not finished.
 
 The criterion exists because no command can test a paraphrase, criterion 4 deliberately exempts it, and a batch that marks every field `paraphrased` otherwise satisfies every mechanical check in this block. On a `paraphrased` row the `source` column proves only that the blob exists and that its path belongs to this step, which rule 7 records, so the side-by-side is the only thing that reads it. Read the count against the sizing sample recorded in batch a.
 
@@ -1022,7 +1072,7 @@ THE PACK GUIDANCE THE FLIP MAKES STALE IS NOT LEFT TO THIS SECTION, because it i
 
 ### THE RESIDUALS THIS STEP ACCEPTS RATHER THAN CLOSES
 
-Four. Each is recorded so a later review round does not file it as a fresh finding, and each belongs in the eventual decision receipt. This is their single home; the structured `Q-78` item and the design exploration point to this complete four-item set rather than maintaining another copy, and the eventual receipt must cover all four.
+Four DESIGN residuals. Each is recorded so a later review round does not file it as a fresh finding, and each belongs in the eventual decision receipt. This is their single home; the structured `Q-78` item and the design exploration point to this complete four-item design set rather than maintaining another copy or claiming it inventories the separately owned review residuals, and the eventual receipt must cover all four.
 
 RESIDUAL 1, INTENT-PROSE STALENESS. Nothing closes the case where the recorded intent is no longer what the step is for, and no check can. Prose in a TOML string goes stale exactly as prose in Markdown does. What the field removes is the SECOND copy, not the staleness.
 
