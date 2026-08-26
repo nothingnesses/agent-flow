@@ -617,7 +617,7 @@ The scenarios above reveal the following missing requirements and awkward seams 
 
 **Gap 7 (findings file paths pre-computed by the driver).** The driver should pre-compute the full set of expected findings file paths for the current round (reviewers plus triager plus optional recheck triager), using the `<step>-<role>-<disambiguator>.md` convention from AGENTS.md, and include them in the `next` output before the round starts. This removes the transcription step where the orchestrator invents these paths and risks a naming collision. Reviewers are given the correct path directly from the driver's output.
 
-**Gap 8 (risk class conservatism), superseded by Q-83 and its acceptance repairs.** No `record-step-start` default is legal. The orchestrator authors/selects the applicable Roadmap-increment or task-plan declaration before round one; exact-step plan review is migration-only digest-pinned history; the driver reads that class and fails closed if it is missing, ambiguous, or contradicted by a round snapshot. Acceptance/standalone review are disjoint single passes and receive no class.
+**Gap 8 (risk class conservatism), superseded by Q-83 and its acceptance repairs.** No `record-step-start` default is legal. The orchestrator authors/selects the applicable live Roadmap-increment or task-plan declaration before round one; Q-81 Roadmap-increment and exact-step plan review are migration-only digest-pinned history; the driver reads the live declaration's class and fails closed if it is missing, ambiguous, or contradicted by a live round snapshot. Acceptance/standalone review are disjoint single passes and receive no class.
 
 ## 11. Recommendation: the interaction model
 
