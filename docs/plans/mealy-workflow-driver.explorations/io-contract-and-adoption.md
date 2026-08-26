@@ -46,12 +46,27 @@ agent-scaffold record-round
   --outcome <clean|new_valid>
   --risk-class <low_risk|risky>
   --artifact <description>
-  --phase <plan_review|work_review|acceptance|review>
+  --phase <plan_review|work_review>
   [--valid-findings <n>]
   [--severities <s1,s2,...>]
   [--consecutive-clean <n>]
   --task <task-name>
 ```
+
+Acceptance/standalone review use a disjoint sibling command, not fake convergence fields:
+
+```
+agent-scaffold record-pass
+  --source docs/plans/<task>.plan.toml
+  --metrics docs/metrics/workflow.jsonl
+  --task <task-name>
+  --phase <acceptance|review>
+  --result <met|shortfall>
+  [--valid-findings <n>]
+  [--severities <s1,s2,...>]
+```
+
+`record-pass` has no risk-class, streak, foreclosure, or cap parameters; both commands may route a high/critical dismissal through `record-recheck`.
 
 The command validates the transition is legal from the current state before appending. If the step is not in-review state, or the required consecutive-clean count is already reached, it exits non-zero and prints the actual current state.
 
