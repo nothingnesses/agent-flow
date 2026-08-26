@@ -18,7 +18,9 @@ orphan_tasks = [
   "q65-capture",
   "q66-q67-fold",
   "q70-capture",
+  "q77-fold",
   "q78-design-pass",
+  "step-intent-fold",
   "uniform-isolation",
   "vc-step-fold",
   "workflow-hardening",
@@ -1259,6 +1261,10 @@ waiver = []
 id = "decision-folder-currency-inc1"
 risk_class = "low_risk"
 
+[[step.increment]]
+id = "decision-folder-currency-fold"
+risk_class = "low_risk"
+
 [step.provenance]
 decisions = ["Q-67"]
 
@@ -1523,7 +1529,7 @@ commits = ["a5bb7ee"]
 
 [[step]]
 slug = "sidecar-status-opening-drift"
-title = "DELETE the duplicated status label from every selected step sidecar whose opening strips to prose, and HAND THE REST to a successor step (`Q-78-statusdrift`, `Q-78-statusform`, `Q-78-statuswiden`, `Q-78-driftsplit`, `Q-78-driftsize`)"
+title = "DELETE the duplicated status label from every selected step sidecar whose opening strips to prose, and HAND THE REST to a successor step (`Q-78-statusdrift`, `Q-78-statusform`, `Q-78-statuswiden`, `Q-78-driftsplit`, `Q-78-driftsize`, `Q-84`)"
 status = "not-started"
 order = 103
 blocked_by = []
@@ -1531,6 +1537,7 @@ folds = []
 waiver = []
 
 [step.provenance]
+decisions = ["Q-84"]
 commits = ["e8b2992", "5ca89bb"]
 
 [[step.increment]]
@@ -2512,6 +2519,19 @@ ask = """which structured risk-class value is authoritative when the plan increm
 3. `Add an authoritative loop-open event`.
 
 RECOMMENDATION AND DECISION (human, 2026-08-25): `Make the plan increment authoritative`. `[[step.increment]].risk_class` is declared at loop open and is authoritative. `round.risk_class` remains an auditable event snapshot. Every round must match its declared increment class, and missing declarations or mismatches fail closed. `next` reads the declared class before round one. This refines the earlier choice to retire the ledger prose duplicate. Principle 5, Make illegal states unrepresentable, rejects the state where a risky declaration and a cheaper snapshot can both validate; Principle 8, Structured data first, project for humans, prefers the plan value that exists at loop open over a first-round inference; Principle 6, Ground decisions in evidence, is served by the reproduced false green and pre-first-round null. Folded into `structured-risk-class-source`; decision receipt `type:"decision"` `q_id:"Q-83"` in `docs/metrics/workflow.jsonl`."""
+
+[[question]]
+id = "Q-84"
+status = "decided"
+folded_into = "sidecar-status-opening-drift"
+receipt = "Q-84"
+ask = """whether the status-opening drift split should continue after the dynamic selectors remeasured the authored-replacement handover at 18 rather than the 19 confirmed by `Q-78-driftsize`. THREE OPTIONS WERE PRESENTED.
+
+1. `Continue with the measured set of 18`. Preserve the selector-defined split and proceed against the set at implementation time. TRADE-OFF: the dated evidence changes by one, but no obsolete member or replacement work is retained.
+2. `Retain the original set of 19`. Keep the prior measured size as the controlling set. TRADE-OFF: this preserves the old number but would reintroduce `workflow-driver`, whose opening is already phase-neutral and no longer selected.
+3. `Reopen the drift design`. Reconsider the selector, split, or successor boundary. TRADE-OFF: this permits a different design but reopens a settled dynamic handover without evidence that its selector or boundary is wrong.
+
+RECOMMENDATION AND DECISION (human, 2026-08-26): `Continue with the measured set of 18`. The current commands reproduce 44 relaxed selections, 35 anchored selections, 27 relaxed stripped openings needing authoring, and 18 anchored handover openings; `workflow-driver` is the one member removed by its phase-neutral opening. Q-84 preserves the dynamic selectors as implementation authority, so these dated counts remain evidence and never become acceptance conditions. Principle 6, Ground decisions in evidence, favours the current reproducible measurement; Principle 8, Structured data first, project for humans, favours the selector-defined set over a stale copied count; Principle 1, Prefer the cleaner long-term architecture over the smallest diff, rejects reopening the design when its mechanism still works. Folded into `sidecar-status-opening-drift`; decision receipt `type:"decision"` `q_id:"Q-84"` in `docs/metrics/workflow.jsonl`."""
 
 [[principle]]
 n = 1
