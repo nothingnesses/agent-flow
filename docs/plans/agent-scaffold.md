@@ -3412,7 +3412,7 @@ THE SHIPPED PACK PROSE IS A FILE EDIT AND NOT A NOTE, so it is stated in increme
 - TYPED UMBRELLA MEMBERSHIP. It left this step on 2026-08-21 and `Q-79` owns it. Nothing here waits on it, and nothing here is made harder by it.
 - THE GENERATED STEP HEADING. `render` could own the `### <slug>: <title>` heading and every sidecar could lose its own. The design pass declines to schedule it, because it rewrites every sidecar and collides with the backfill in `step-intent-encoding`.
 - THE SIDECAR STATUS OPENINGS. `sidecar-status-opening-drift` carries them, widened by the human on 2026-08-21 to every sidecar that opens with a status token.
-- THE SIDECAR EXISTENCE CONTRACT. `render` treats a missing step or question sidecar as a hard failure, which is why every question sidecar is 0 bytes. That fix is its own step.
+- THE SIDECAR EXISTENCE CONTRACT. `render` treats a missing step or question sidecar as a hard failure, so question sidecars must exist and most are empty. Reproduce the current non-empty set with `find docs/plans/agent-scaffold.questions -type f -size +0`, and treat its path output rather than a count as the sole authority for that set. That fix is its own step.
 - THE `next` EXPLORATION-PHASE DEFECT, `Q-78` item (h). This increment leaves it exactly as it stands, because `workflow-calibration` sits at order 35 and at position 35 alike.
 - THE TWO INTENT FIELDS. They belong to `step-intent-encoding`, which is BLOCKED BY this step.
 
