@@ -480,6 +480,9 @@ folds = []
 increment = []
 waiver = []
 
+[step.provenance]
+decisions = ["Q-85"]
+
 [[step]]
 slug = "instrument-flag"
 title = "Opt-in workflow instrumentation"
@@ -1529,7 +1532,7 @@ commits = ["a5bb7ee"]
 
 [[step]]
 slug = "sidecar-status-opening-drift"
-title = "DELETE the duplicated status label from every selected step sidecar whose opening strips to prose, and HAND THE REST to a successor step (`Q-78-statusdrift`, `Q-78-statusform`, `Q-78-statuswiden`, `Q-78-driftsplit`, `Q-78-driftsize`, `Q-84`)"
+title = "DELETE the duplicated status label from every selected step sidecar whose opening strips to prose, and HAND THE REST to a successor step (`Q-78-statusdrift`, `Q-78-statusform`, `Q-78-statuswiden`, `Q-78-driftsplit`, `Q-78-driftsize`, `Q-84`, `Q-87`)"
 status = "not-started"
 order = 103
 blocked_by = []
@@ -1537,7 +1540,7 @@ folds = []
 waiver = []
 
 [step.provenance]
-decisions = ["Q-84"]
+decisions = ["Q-84", "Q-87"]
 commits = ["e8b2992", "5ca89bb"]
 
 [[step.increment]]
@@ -2531,7 +2534,7 @@ ask = """whether the status-opening drift split should continue after the dynami
 2. `Retain the original set of 19`. Keep the prior measured size as the controlling set. TRADE-OFF: this preserves the old number but would reintroduce `workflow-driver`, whose opening is already phase-neutral and no longer selected.
 3. `Reopen the drift design`. Reconsider the selector, split, or successor boundary. TRADE-OFF: this permits a different design but reopens a settled dynamic handover without evidence that its selector or boundary is wrong.
 
-RECOMMENDATION AND DECISION (human, 2026-08-26): `Continue with the measured set of 18`. The current commands reproduce 44 relaxed selections, 35 anchored selections, 27 relaxed stripped openings needing authoring, and 18 anchored handover openings; `workflow-driver` is the one member removed by its phase-neutral opening. Q-84 preserves the dynamic selectors as implementation authority, so these dated counts remain evidence and never become acceptance conditions. Principle 6, Ground decisions in evidence, favours the current reproducible measurement; Principle 8, Structured data first, project for humans, favours the selector-defined set over a stale copied count; Principle 1, Prefer the cleaner long-term architecture over the smallest diff, rejects reopening the design when its mechanism still works. Folded into `sidecar-status-opening-drift`; decision receipt `type:"decision"` `q_id:"Q-84"` in `docs/metrics/workflow.jsonl`."""
+RECOMMENDATION AND DECISION (human, 2026-08-26): `Continue with the measured set of 18`. At the time of the Q-84 decision, the commands reproduced 44 relaxed selections, 35 anchored selections, 27 relaxed stripped openings needing authoring, and 18 anchored handover openings; `workflow-driver` was the one member removed by its phase-neutral opening. Q-84 preserves the dynamic selectors as implementation authority, so this accurate 18-member snapshot remains dated historical evidence and never becomes an acceptance condition. Principle 6, Ground decisions in evidence, favours the reproducible measurement at the decision point; Principle 8, Structured data first, project for humans, favours the selector-defined set over a stale copied count; Principle 1, Prefer the cleaner long-term architecture over the smallest diff, rejects reopening the design when its mechanism still works. Folded into `sidecar-status-opening-drift`; decision receipt `type:"decision"` `q_id:"Q-84"` in `docs/metrics/workflow.jsonl`."""
 
 [[question]]
 id = "Q-85"
@@ -2549,7 +2552,20 @@ RECOMMENDATION AND DECISION (human): `Add a design pass to workflow-calibration`
 [[question]]
 id = "Q-86"
 status = "exploring"
-ask = """which bounded convergence mechanism should constrain the current repeated per-artifact cap windows and uncapped sequence of later acceptance passes without concealing unresolved critical findings. A DESIGN PASS IS OWED. Its tracked brief is `docs/plans/workflow-calibration.explorations/Q-86-convergence-mechanism-brief.md`; later explorers author separate `Q-86-<disambiguator>.md` proposals beside it. The pass must compare viable mechanisms, test their stopping properties against reproducible local evidence and the external experiment, price them against all eight Project Principles, and return a recommendation, migration/enforcement plan, and YAGNI boundary. The orchestrator then synthesises the proposals, moves Q-86 to `open`, and puts the options to the human. No mechanism is decided and no current cap, acceptance, reset, pack, or code behavior changes in this fold."""
+ask = """which bounded convergence mechanism should constrain the current repeated per-artifact cap windows and uncapped sequence of later acceptance passes without concealing unresolved critical findings. A DESIGN PASS IS OWED. Its tracked brief is `docs/plans/workflow-calibration.explorations/Q-86-convergence-mechanism-brief.md`; later explorers author separate `Q-86-<disambiguator>.md` proposals beside it. The pass must retain the current mechanism as a required, explicitly non-admissible comparison baseline and demonstrate its unbounded repeated-resume and later-acceptance counterexamples, then compare more than one viable bounded mechanism against reproducible local evidence and the external experiment. Only viable bounded mechanisms receive the finite-bound or exact-terminal-event proof, red controls, and recommendation eligibility. Price them against all eight Project Principles and return a recommendation, migration/enforcement plan, and YAGNI boundary. The orchestrator then synthesises the proposals, moves Q-86 to `open`, and puts the options to the human. No mechanism is decided and no current cap, acceptance, reset, pack, or code behavior changes in this fold."""
+
+[[question]]
+id = "Q-87"
+status = "decided"
+folded_into = "sidecar-status-opening-drift"
+receipt = "Q-87"
+ask = """whether the selector-defined status-opening worklist follows expected membership movement automatically after already-approved edits, or whether each changed snapshot reopens the prior size decision. THREE OPTIONS WERE PRESENTED.
+
+1. `Follow the selector automatically`. Keep the selector and ownership split authoritative, so expected membership movement caused by already-approved edits needs no further human decision. TRADE-OFF: the dated headcount can move, but no stale copied set overrides the executable selector.
+2. `Pin the previous set of 18`. Keep Q-84's 18-member snapshot as the live worklist. TRADE-OFF: this preserves that number but overrides the selector and retains work for an opening that is now token-free.
+3. `Reopen the cleanup design`. Reconsider the selector or ownership split. TRADE-OFF: this permits a new design, but spends another design cycle without evidence that the selector or split is wrong.
+
+RECOMMENDATION AND DECISION (human, 2026-08-26): `Follow the selector automatically`. The selector-defined worklist follows the selector without another human decision when already-approved edits cause expected membership movement. At this dated Q-87 snapshot, the commands reproduce 43 relaxed selections, 34 anchored selections, 26 relaxed stripped openings and 17 anchored handover openings. Q-84 remains the accurate historical 18-member snapshot at the time of that decision rather than being rewritten as 17. The two membership movements are explicit: the token-free `workflow-driver` opening reduced the handover from 19 to 18, and the token-free `workflow-calibration` opening reduced it from 18 to 17. A new human decision is required only if the selector or ownership split changes, or evidence shows that an expected movement changes the design premise. Principle 6, Ground decisions in evidence, supports the reproduced current snapshot; Principle 8, Structured data first, project for humans, keeps the selector authoritative over copied counts; Principle 1, Prefer the cleaner long-term architecture over the smallest diff, rejects reopening a design whose premise still holds. Folded into `sidecar-status-opening-drift`; decision receipt `type:"decision"` `q_id:"Q-87"` in `docs/metrics/workflow.jsonl`."""
 
 [[principle]]
 n = 1
