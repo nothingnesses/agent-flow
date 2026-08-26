@@ -41,7 +41,7 @@ The driver reads the plan TOML (a fresh skeleton: no filled-in steps, no round r
   "task_phase": "planning",
   "ready_units": [
     {
-      "step": "__plan__",
+      "unit": "task-plan",
       "phase": "planning",
       "status": "not-started",
       "valid_transitions": ["spawn-planner"],
@@ -99,22 +99,21 @@ The driver reads the plan (now with defined steps), the log (has the `phase` rec
 
 ## 3. Scenario 2: Plan review loop driven to convergence
 
-The plan is drafted and the phase record says `plan_review`. The driver outputs "spawn reviewers."
+The plan is drafted, its exact `[[task_loop]]` declaration fixes `(my-task, plan_review, low_risk)`, and the task plan-review active row is selected. The driver outputs "spawn reviewers."
 
 **Round 1 (new_valid findings):**
 
 The orchestrator spawns two reviewers (different models). Reviewers write to:
-- `docs/plans/my-task.reviews/__plan__-reviewer-claude-sonnet-1.md`
-- `docs/plans/my-task.reviews/__plan__-reviewer-claude-opus-1.md`
+- `docs/plans/my-task.reviews/plan-review-reviewer-claude-sonnet-1.md`
+- `docs/plans/my-task.reviews/plan-review-reviewer-claude-opus-1.md`
 
-The orchestrator spawns a separate triager, who writes to `docs/plans/my-task.reviews/__plan__-triage.md`. The triager confirms 2 valid findings.
+The orchestrator spawns a separate triager, who writes to `docs/plans/my-task.reviews/plan-review-triage.md`. The triager confirms 2 valid findings.
 
 Orchestrator records:
 
 ```
 agent-scaffold record-round \
   --task my-task \
-  --step __plan__ \
   --phase plan_review \
   --outcome new_valid \
   --risk-class low_risk \
@@ -127,9 +126,9 @@ agent-scaffold record-round \
 The command validates the transition (plan_review running, new_valid is legal from streak=0), appends the JSONL record, and outputs:
 
 ```
-TRANSITION: __plan__ plan_review round 1: new_valid (streak stays 0, total rounds = 1)
+TRANSITION: my-task plan_review round 1: new_valid (streak stays 0, total rounds = 1)
 next: route_fix -> spawn planner to address 2 valid findings, then spawn reviewers (round 2)
-next_record_command: agent-scaffold record-round --task my-task --step __plan__ --phase plan_review --outcome <clean|new_valid> ...
+next_record_command: agent-scaffold record-round --task my-task --phase plan_review --outcome <clean|new_valid> ...
 ```
 
 The orchestrator spawns an implementer (planner role for plan revision). Planner addresses findings, re-renders, commits.
@@ -141,7 +140,6 @@ Orchestrator calls `next`. Driver: "spawn reviewers (round 2, fresh models)." Or
 ```
 agent-scaffold record-round \
   --task my-task \
-  --step __plan__ \
   --phase plan_review \
   --outcome clean \
   --risk-class low_risk \
@@ -154,15 +152,15 @@ agent-scaffold record-round \
 Command validates: plan_review, streak was 0, clean -> streak = 1. Required streak for low_risk = 1. 1 >= 1 -> CONVERGED. Output:
 
 ```
-CONVERGED (__plan__ / plan_review):
-  __plan__   plan_review, low_risk, streak 1/1 - CONVERGED (2 total rounds)
+CONVERGED (my-task / plan_review):
+  my-task   plan_review, low_risk, streak 1/1 - CONVERGED (2 total rounds)
   valid transitions: start-implementing
   next: plan review is complete; compute the ready frontier.
     action: call `agent-scaffold next` to see which Roadmap steps may start.
     cleanup: commit findings files, then delete as committed deletions:
-      docs/plans/my-task.reviews/__plan__-reviewer-claude-sonnet-1.md
-      docs/plans/my-task.reviews/__plan__-reviewer-claude-opus-1.md
-      docs/plans/my-task.reviews/__plan__-triage.md
+      docs/plans/my-task.reviews/plan-review-reviewer-claude-sonnet-1.md
+      docs/plans/my-task.reviews/plan-review-reviewer-claude-opus-1.md
+      docs/plans/my-task.reviews/plan-review-triage.md
 ```
 
 **Streak counting visible to the human:** at the step-boundary checkpoint after round 2, the orchestrator reports "plan review converged in 2 rounds (1 fix round, 1 clean round); moving to implementation." The human does not decide anything here.
@@ -190,7 +188,7 @@ READY (1 unit):
       plan_source = docs/plans/agent-scaffold.plan.toml
       ledger = docs/plans/agent-scaffold.ledger.md
     principle_reminders: ["P4 (small reviewable changes)", "P6 (verify: run it and test it)"]
-    next_record_command: "agent-scaffold record-step-start --task agent-scaffold --step state-queries --risk-class risky --metrics docs/metrics/workflow.jsonl"
+    next_record_command: "agent-scaffold record-step-start --task agent-scaffold --step state-queries --increment state-queries-inc1 --metrics docs/metrics/workflow.jsonl"
 ```
 
 **Orchestrator:** creates worktree, spawns implementer. Implementer makes changes and commits (in the worktree). Orchestrator records:
@@ -199,12 +197,12 @@ READY (1 unit):
 agent-scaffold record-step-start \
   --task agent-scaffold \
   --step state-queries \
-  --risk-class risky \
+  --increment state-queries-inc1 \
   --diff-base abc123 \
   --metrics docs/metrics/workflow.jsonl
 ```
 
-This appends a record noting the step has started, its risk class, and the diff base commit. The orchestrator updates the ledger with the in-flight state (step, diff_base), then calls `next`.
+This appends a record noting the exact declared increment has started and the diff-base commit; it does not duplicate class from the plan. The orchestrator updates the ledger with the in-flight state (step, diff_base), then calls `next`.
 
 **Driver output:**
 
@@ -225,14 +223,14 @@ IN REVIEW (state-queries):
       triage_file = docs/plans/agent-scaffold.reviews/state-queries-triage.md
     note: risky artifact; 2 consecutive clean rounds required; streak resets to 0 on any new_valid round.
     principle_reminders: ["P5 (independent adversarial review)", "P13 (illegal states unrepresentable)"]
-    next_record_command: "agent-scaffold record-round --task agent-scaffold --step state-queries --phase work_review --risk-class risky --outcome <clean|new_valid> --top-dismissed-severity <none|low|medium|high|critical>"
+    next_record_command: "agent-scaffold record-round --task agent-scaffold --step state-queries --increment state-queries-inc1 --phase work_review --risk-class risky --outcome <clean|new_valid> --top-dismissed-severity <none|low|medium|high|critical>"
 ```
 
 **Round 1 (new_valid):** reviewers find a bug. Triager confirms valid. Orchestrator:
 
 ```
 agent-scaffold record-round \
-  --task agent-scaffold --step state-queries --phase work_review \
+  --task agent-scaffold --step state-queries --increment state-queries-inc1 --phase work_review \
   --outcome new_valid --risk-class risky --valid-findings 1 --severities medium \
   --top-dismissed-severity none --metrics docs/metrics/workflow.jsonl
 ```
@@ -245,7 +243,7 @@ Implementer fixes. Orchestrator calls `next`. Driver: "spawn reviewers (round 2)
 
 ```
 agent-scaffold record-round \
-  --task agent-scaffold --step state-queries --phase work_review \
+  --task agent-scaffold --step state-queries --increment state-queries-inc1 --phase work_review \
   --outcome clean --risk-class risky --valid-findings 0 \
   --top-dismissed-severity high --metrics docs/metrics/workflow.jsonl
 ```
@@ -259,14 +257,14 @@ RECHECK REQUIRED (state-queries, round 2):
   valid transitions: record-recheck-upheld, record-recheck-overturned
   next: spawn a second independent triager (or a human) for the high-severity dismissal
     triage_file: docs/plans/agent-scaffold.reviews/state-queries-triage-recheck.md
-    next_record_command: "agent-scaffold record-recheck --task agent-scaffold --step state-queries --result <upheld|overturned>"
+    next_record_command: "agent-scaffold record-recheck --task agent-scaffold --step state-queries --increment state-queries-inc1 --phase work_review --result <upheld|overturned>"
 ```
 
 Second triager upholds the dismissal. Orchestrator:
 
 ```
 agent-scaffold record-recheck \
-  --task agent-scaffold --step state-queries --result upheld \
+  --task agent-scaffold --step state-queries --increment state-queries-inc1 --phase work_review --result upheld \
   --metrics docs/metrics/workflow.jsonl
 ```
 
@@ -276,7 +274,7 @@ Driver: dismissal upheld, round 2 counts as clean, streak=1. Required=2. 1 < 2 -
 
 ```
 agent-scaffold record-round \
-  --task agent-scaffold --step state-queries --phase work_review \
+  --task agent-scaffold --step state-queries --increment state-queries-inc1 --phase work_review \
   --outcome clean --risk-class risky --valid-findings 0 \
   --top-dismissed-severity none --metrics docs/metrics/workflow.jsonl
 ```
@@ -325,7 +323,7 @@ Driver computes the ready frontier (both steps meet the topological-readiness pr
         "role": "implementer",
         "worktree": ".claude/worktrees/state-queries",
         "filled_prompt_summary": "Spawn implementer for state-queries in worktree .claude/worktrees/state-queries.",
-        "next_record_command": "agent-scaffold record-step-start --task agent-scaffold --step state-queries --risk-class <low_risk|risky> ..."
+        "next_record_command": "agent-scaffold record-step-start --task agent-scaffold --step state-queries --increment <declared-increment> ..."
       }
     },
     {
@@ -337,7 +335,7 @@ Driver computes the ready frontier (both steps meet the topological-readiness pr
         "role": "implementer",
         "worktree": ".claude/worktrees/test-driven",
         "filled_prompt_summary": "Spawn implementer for test-driven in worktree .claude/worktrees/test-driven.",
-        "next_record_command": "agent-scaffold record-step-start --task agent-scaffold --step test-driven --risk-class <low_risk|risky> ..."
+        "next_record_command": "agent-scaffold record-step-start --task agent-scaffold --step test-driven --increment <declared-increment> ..."
       }
     }
   ],
@@ -348,8 +346,8 @@ Driver computes the ready frontier (both steps meet the topological-readiness pr
 **Orchestrator:** creates both worktrees in parallel, spawns two implementers. The driver does not control how many to fan out; it reports the full ready frontier. After both implementers start, the orchestrator calls `record-step-start` for each:
 
 ```
-agent-scaffold record-step-start --task agent-scaffold --step state-queries --risk-class low_risk ...
-agent-scaffold record-step-start --task agent-scaffold --step test-driven  --risk-class low_risk ...
+agent-scaffold record-step-start --task agent-scaffold --step state-queries --increment state-queries-inc1 ...
+agent-scaffold record-step-start --task agent-scaffold --step test-driven  --increment test-driven-inc1 ...
 ```
 
 When the orchestrator next calls `next`, the driver sees both steps in-progress (from the two step-start records) and outputs:
@@ -369,7 +367,7 @@ IN REVIEW (2 units):
   [both review loops are independent; a round in one does not affect the other]
 ```
 
-The orchestrator fans out two pairs of reviewers and triagers, tracking each via separate `record-round` calls with their respective `--step` flags.
+The orchestrator fans out two pairs of reviewers and triagers, tracking each via separate `record-round` calls with exact `--step`, `--increment`, and `--phase` flags.
 
 **Gap 3 (ledger schema for parallel units):** the ledger RESUME STATE was designed for one active step (it carries a single diff_base, single artifact, single streak). With two parallel units, the orchestrator must track two in-flight contexts. Either the ledger schema is extended to a list of in-flight unit entries (with one diff_base per unit), or the driver relies entirely on the JSONL log (via `record-step-start` events for each unit) and the `--ledger-fragment` flag provides only the per-unit diff-range information. The cleanest option: move diff_base and artifact into the JSONL log via `record-step-start`, and drop the dependency on the ledger for this information. The ledger then becomes the RESUME STATE narrative for the orchestrator, not a machine-readable state input. This is a design decision deferred to the architecture pass.
 
@@ -399,7 +397,7 @@ Orchestrator presents to the human per the human-input contract: options, trade-
 
 ```
 agent-scaffold record-round \
-  --task agent-scaffold --step state-queries --phase work_review \
+  --task agent-scaffold --step state-queries --increment state-queries-inc1 --phase work_review \
   --outcome new_valid --risk-class risky --valid-findings 1 --severities high \
   --top-dismissed-severity none --metrics docs/metrics/workflow.jsonl
 ```
@@ -430,7 +428,7 @@ ESCALATED (state-queries):
     more likely to converge than another fresh reviewer pass on an unchanged artifact.
     Principle references: P3 (ground decisions in evidence; 5 rounds of data available), P4 (small steps).
 
-    next_record_command: "agent-scaffold record-escalation-decision --task agent-scaffold --step state-queries --decision <resume|accept|send_back> --artifact src/main.rs --human-decision <resume|decision>"
+    next_record_command: "agent-scaffold record-escalation-decision --task agent-scaffold --step state-queries --increment state-queries-inc1 --phase work_review --decision <resume|accept|send_back> --artifact src/main.rs --human-decision <resume|decision>"
 ```
 
 **Human:** reviews the ledger narrative (rounds 1-5), picks option C.
@@ -441,6 +439,8 @@ ESCALATED (state-queries):
 agent-scaffold record-escalation-decision \
   --task agent-scaffold \
   --step state-queries \
+  --increment state-queries-inc1 \
+  --phase work_review \
   --decision send_back \
   --artifact "src/main.rs" \
   --human-decision decision \
@@ -480,7 +480,7 @@ agent-scaffold next \
 The driver recomputes entirely from the durable files:
 
 - From the JSONL log: state-queries had 2 rounds (round 1: new_valid, round 2: clean after upheld recheck) -> consecutive_clean=1.
-- From the `record-step-start` event: state-queries is in-progress, risk_class=risky.
+- From the `record-step-start` event: exact increment `state-queries-inc1` is in progress; its selected plan declaration supplies `risk_class=risky`.
 - From the ledger fragment: diff_base=abc123, artifact=src/main.rs.
 - From the plan TOML: state-queries status=not-started (still; the implementer's work is in the worktree, not yet merged).
 
@@ -500,7 +500,7 @@ IN REVIEW (state-queries):
       triage_file = docs/plans/agent-scaffold.reviews/state-queries-triage-3.md
     note: round 2 was clean (recheck upheld); this is round 3; risky artifact requires streak 2, currently 1.
     principle_reminders: ["P5 (fresh reviewer, independent of prior rounds)", "Workflow: do not re-raise settled findings without new evidence"]
-    next_record_command: "agent-scaffold record-round --task agent-scaffold --step state-queries --phase work_review --risk-class risky --outcome <clean|new_valid> ..."
+    next_record_command: "agent-scaffold record-round --task agent-scaffold --step state-queries --increment state-queries-inc1 --phase work_review --risk-class risky --outcome <clean|new_valid> ..."
 ```
 
 The new orchestrator agent resumes immediately. It does not need to re-read 5 round narratives; the driver has summarized the state. This is the compaction-survival property: stateless recompute from committed files reconstructs exactly where the workflow was.
@@ -565,18 +565,16 @@ ACCEPTANCE READY:
           backstop applies (any dismissed high or critical finding requires a recheck);
           if a shortfall is found, route back to planner or implementer, not to a new acceptance round.
     principle_reminders: ["P6 (verify: run it and test it)"]
-    next_record_command: "agent-scaffold record-round --task agent-scaffold --step __acceptance__ --phase acceptance --outcome <met|shortfall> ..."
+    next_record_command: "agent-scaffold record-pass --task agent-scaffold --phase acceptance --result <met|shortfall> ..."
 ```
 
 Reviewers confirm all criteria met. Triager confirms. No high or critical dismissals. Orchestrator records:
 
 ```
-agent-scaffold record-round \
+agent-scaffold record-pass \
   --task agent-scaffold \
-  --step __acceptance__ \
   --phase acceptance \
-  --outcome met \
-  --risk-class low_risk \
+  --result met \
   --valid-findings 0 \
   --metrics docs/metrics/workflow.jsonl
 ```
@@ -607,7 +605,7 @@ The scenarios above reveal the following missing requirements and awkward seams 
 
 **Gap 1 (bootstrap signal).** The driver cannot distinguish "plan template not yet filled" from "planner has run, plan review may start" using the TOML alone. A `type: "phase"` event record (or a `planning_complete` flag in the plan TOML) is required. The TOML flag is simpler (no new event type); the JSONL event is consistent with the rest of the log. Either closes the gap; the architecture pass should decide.
 
-**Gap 2 (`record-step-start` event type).** The driver needs to know when a step moves to in-progress in a worktree, before the plan TOML is updated on main. Without `record-step-start`, the driver re-emits "spawn implementer" on every `next` call while the implementer is already running. This event must carry the step slug, risk_class, diff_base commit, and worktree branch so the driver can reconstruct the in-flight state without the ledger.
+**Gap 2 (`record-step-start` event type).** The driver needs to know when a step moves to in-progress in a worktree, before the plan TOML is updated on main. Without `record-step-start`, the driver re-emits "spawn implementer" on every `next` call while the implementer is already running. This event would carry step slug, exact selected increment, diff-base commit, and worktree branch; class remains authoritative only in the selected plan declaration under Q-83, not duplicated here.
 
 **Gap 3 (parallel in-flight units and the ledger schema).** The ledger RESUME STATE carries one diff_base and one artifact. With parallel units, the orchestrator must track per-unit diff_base values. The cleanest resolution: move diff_base and artifact into `record-step-start` events in the JSONL log, making the ledger purely a human-readable narrative rather than a machine-readable state input. The `--ledger-fragment` flag would then be optional (for human context) rather than required for state reconstruction. This is a deliberate design decision: the JSONL log becomes the single machine-readable state source; the ledger is for the orchestrator and the human to read.
 
@@ -619,7 +617,7 @@ The scenarios above reveal the following missing requirements and awkward seams 
 
 **Gap 7 (findings file paths pre-computed by the driver).** The driver should pre-compute the full set of expected findings file paths for the current round (reviewers plus triager plus optional recheck triager), using the `<step>-<role>-<disambiguator>.md` convention from AGENTS.md, and include them in the `next` output before the round starts. This removes the transcription step where the orchestrator invents these paths and risks a naming collision. Reviewers are given the correct path directly from the driver's output.
 
-**Gap 8 (risk class conservatism).** The `risk_class` judgment must be supplied with `record-step-start` and cannot be inferred by the driver from the code. If the orchestrator omits it, the driver should default to `risky` (the conservative choice) and emit a warning, rather than silently defaulting to `low_risk`. A silent `low_risk` default would let a risky artifact converge with one clean round when two are required, which defeats the backstop.
+**Gap 8 (risk class conservatism), superseded by Q-83 and its acceptance repairs.** No `record-step-start` default is legal. The orchestrator authors/selects the applicable Roadmap-increment or task-plan declaration before round one; exact-step plan review is migration-only digest-pinned history; the driver reads that class and fails closed if it is missing, ambiguous, or contradicted by a round snapshot. Acceptance/standalone review are disjoint single passes and receive no class.
 
 ## 11. Recommendation: the interaction model
 

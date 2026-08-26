@@ -10,12 +10,12 @@ The load-bearing observation for this lens: the checker computes the convergence
 
 ## The review-loop Mealy machine (the core of the model)
 
-A Mealy machine is (S, s0, Sigma_in, Sigma_out, T: S x Sigma_in -> S, G: S x Sigma_in -> Sigma_out): the output depends on state AND input (which is why Mealy, not Moore: the same state emits `spawn another round` or `converged` depending on the incoming triage outcome). The review loop from AGENTS.md's Convergence section is this machine, and it is the reusable heart of the whole workflow (it runs in plan review, in every step's work review, and, degenerately, in acceptance).
+A Mealy machine is (S, s0, Sigma_in, Sigma_out, T: S x Sigma_in -> S, G: S x Sigma_in -> Sigma_out): the output depends on state AND input (which is why Mealy, not Moore: the same convergence state emits `spawn another round` or `converged` depending on the incoming triage outcome). The review core is a disjoint `ReviewProcess`: a reusable convergence machine for plan/work review and a separate single-pass machine for acceptance/standalone review. They share only the backstop re-check rule, not convergence state.
 
 State of one review-loop instance:
 
-- `phase` in {plan_review, work_review} (which artifact class the loop governs; acceptance/standalone review are the degenerate variant below).
-- `risk_class` in {low_risk, risky}, FIXED when the loop opens and recorded (AGENTS.md: classify once at loop-open). It sets `required = 1` (low_risk) or `required = 2` (risky).
+- `phase` in {plan_review, work_review}, carried as part of the exact Roadmap/task loop identity.
+- `risk_class` in {low_risk, risky}, FIXED by the authoritative phase-bearing plan declaration selected before round one. It sets `required = 1` (low_risk) or `required = 2` (risky); a round is only an auditable matching snapshot.
 - `round` (nat): total rounds so far, against the cap (default 5).
 - `consecutive_clean` (nat): the streak.
 - `awaiting` in {round, recheck, human, none}: which input the machine is blocked on. This is the crucial field that makes the machine total and makes "which units are advanceable now" computable (see Concurrency).
@@ -23,7 +23,7 @@ State of one review-loop instance:
 
 Input alphabet Sigma_in (all are JUDGMENT inputs the tool CONSUMES, plus two control triggers):
 
-- `open(risk_class)`: the loop opens on an artifact with its classification. (`risk_class` is a judgment; the tool may suggest a default but consumes the choice.)
+- `open(declaration)`: the loop opens only from the exact selected Roadmap-increment or task-plan declaration; the machine consumes its class and never defaults from a round.
 - `round_result(outcome in {clean, new_valid}, top_dismissed_severity in {none, low, medium, high, critical})`: the triager's verdict for the round, reduced to the two facts the machine needs: did the round yield new valid findings, and what is the highest severity among DISMISSED findings (for the backstop gate).
 - `recheck_result(upheld | overturned)`: the backstop second-triager outcome.
 - `human_decision(resume | accept | send_back)`: the human's ruling at an escalation.
@@ -49,19 +49,19 @@ Transition + output function (T and G together). Let `required = required(risk_c
 
 Every (state, input) pair has a defined image, so the machine is TOTAL. This matters for the escape hatches below and for Principle 5: an undefined transition is an illegal state, and a total function has none. Note the transition function is exactly the arithmetic in `w3_problems`/`round_log_consistency_problems` run forward: this machine is not new logic, it is the checker's relation with a next-move projection.
 
-## Acceptance and standalone review: a degenerate variant
+## Acceptance and standalone review: a disjoint single-pass machine
 
-Acceptance (phase 5) and the standalone review entry mode are NOT the consecutive-clean loop: AGENTS.md says acceptance is a single reviewers-then-triager pass, no round loop and no cap, but it KEEPS the high/critical dismissal re-check. Model this as a degenerate two-state machine: `open -> single_pass`, on `round_result`: if a high/critical finding was dismissed, `awaiting=recheck` first; then on the settled verdict, either `met` (output `done`/`report`) or `shortfall` (output `route_fix` back to planning or implementation, which re-enters the task machine rather than looping in place). Reusing the review-loop's input alphabet and its re-check sub-state, with the round/streak fields pinned unused, keeps this one definition rather than a second machine (Principle 16).
+Acceptance (phase 5) and standalone review are NOT the consecutive-clean loop: each is one reviewers-then-triager pass with no declaration/class, round/streak, foreclosure, cap, convergence, or escalation state, but it KEEPS the high/critical dismissal re-check. Model this as `SinglePassReview`: `open -> awaiting_pass`; on `pass_result`, a high/critical dismissal enters `awaiting_recheck`; otherwise the result settles as `met/report` or `shortfall/route_fix`. On re-check, `upheld` settles the original result and `overturned` routes the finding/shortfall as valid. `ReviewProcess::{Convergence(ReviewLoop), SinglePass(SinglePassReview)}` and separate typed inputs make every forbidden convergence field/call unconstructible on a single pass while single-sourcing the backstop threshold through `WorkflowSpec` (Principle 5, Principle 16).
 
 ## Phase sequencing: the task machine and the step machine (nested)
 
 Two granularities sit above the review loop, and they NEST.
 
-The TASK machine (one per plan): states {planning, plan_review, implementing, accepting, done, escalated}. `planning` (planner drafts) -> on plan drafted, open a plan_review review-loop instance -> on that instance's `converged`, enter `implementing` -> while any pending step remains, drive step machines (below) -> on no pending steps, enter `accepting` (the degenerate acceptance instance) -> on `met`, `done`; on `shortfall`, route back to `planning`/`implementing`.
+The TASK machine (one per plan): states {planning, plan_review, implementing, accepting, done, escalated}. `planning` (planner drafts) -> on plan drafted, open an exact plan-review `Convergence` process -> on its `converged`, enter `implementing` -> while any pending step remains, drive step machines (below) -> on no pending steps, enter `accepting` with `SinglePassReview` -> on `met`, `done`; on `shortfall`, route back to `planning`/`implementing`.
 
 The STEP machine (one per Roadmap step): states {not-started, next, in-progress, in-review, complete, skipped, abandoned}. These map directly onto the `StepStatus` enum the plan schema already defines (`not-started`, `in-progress`, `complete`, `skipped`, `next`, plus `optional`/`deferred` as not-yet-scheduled variants). `next/not-started -> in-progress` (spawn implementer) -> on commit, `in-review` which EMBEDS a work_review review-loop instance -> on that instance's `converged`, `complete`. `abandon` -> `abandoned` (worktree removed, branch deleted unmerged).
 
-The nesting is the important structural claim: the step machine's `in-review` state CONTAINS a review-loop FSM instance, and the task machine's `plan_review` and `accepting` states each contain one too. The review-loop machine is defined ONCE and instantiated in three sites. This is a hierarchical FSM (a state machine whose states can contain sub-machines), not a flat one, and not a single global machine. It keeps one definition of convergence (Principle 16) and makes the illegal cross-states (a step `complete` while its work-review loop is still `running`) unrepresentable by construction (Principle 5): `complete` is reachable only through the embedded instance's `converged`.
+The nesting is the important structural claim: a delivery step's `in-review` state contains a work-review `Convergence` process; task/Roadmap plan-review states contain plan-review `Convergence`; and task acceptance contains `SinglePassReview`. This is a hierarchical FSM, not a flat/global machine. It keeps one definition of convergence while keeping single-pass state disjoint, and makes both dangerous cross-states unrepresentable: a step cannot be `complete` while work review is running, and acceptance cannot acquire a streak/cap. `complete` is reachable only through embedded work-review convergence (Principle 5, Principle 16).
 
 ## Human-input points as one uniform await-state
 
@@ -71,7 +71,7 @@ AGENTS.md deliberately routes every human decision through ONE human-input contr
 
 The orchestrator runs parallel steps, increments, and reviewers, so a single sequential machine is wrong: a single machine is in exactly one state, and parallelism needs a PRODUCT of states, which explodes combinatorially. The correct model is a FLEET: a SET of independently-tracked FSM instances, each with an id, its current state, and its `awaiting` field.
 
-- The set: one task machine; one step machine per Roadmap step; one review-loop instance per active review loop (the plan review, each in-review step's work review, the acceptance pass). Instance ids reuse the plan's own identifiers: step slug, increment id (`Increment.id`), and a loop id derived from (phase, artifact).
+- The set: one task machine; one step machine per Roadmap step; one `ReviewProcess` per active review (task/Roadmap plan-review convergence, each work-review convergence, and acceptance/standalone single pass). Instance ids reuse exact plan identifiers plus phase.
 - Recompute, do not persist. Each invocation re-derives EVERY instance's state from `plan.toml` + `workflow.jsonl` (+ `git` for the tree/commit facts), exactly as `workflow.rs` already re-derives convergence state. There is no separate FSM-state file (see the design space: a second store would be a second source of truth that drifts, against Principles 8 and 16). This is what makes the driver survive a crash or compaction (Principle 9) and keeps it stateless.
 - Which units are advanceable now. A unit is READY iff (a) its machine's only outgoing transitions from its current state are CONTROL transitions the tool can take from state alone (then the tool advances it and emits the instruction), OR (b) it is `awaiting` a judgment input that has just been supplied (via a `record-*` subcommand). A unit is BLOCKED iff it is `awaiting` an input not yet available, or the scheduler says its predecessors are unfinished.
 - The dependency scheduler over `blocked_by`. The plan's `Step.blocked_by: Vec<String>` is a typed DAG (its edges are validated non-self-referential and pointing at real steps by `validate_source`). A step is SCHEDULABLE (may enter `in-progress` now) iff every slug in its `blocked_by` is `complete` or `skipped`. The scheduler computes the READY FRONTIER: the antichain of steps that are `not-started`/`next` with all dependencies satisfied. That frontier is what may run in parallel now, capped by the orchestrator's concurrency/worktree budget (the tool proposes the frontier; the orchestrator, which owns isolation, decides how many to actually spawn). This is a topological-readiness / workqueue scheduler, not a further FSM.
@@ -94,7 +94,7 @@ The tool OWNS (computable from state, deterministic control transitions):
 The tool CONSUMES but never PRODUCES (judgment inputs; determinism ends here):
 
 - The triager's per-finding verdict, and thus the round `outcome` (clean vs new_valid). The tool cannot decide whether a finding is valid.
-- The `risk_class` at loop-open (a judgment about blast radius; defaultable but not decidable by the tool).
+- The authoritative `risk_class` from the exact plan declaration selected before round one (the originating classification is judgment, but the driver neither defaults nor re-decides it).
 - The backstop `recheck_result`.
 - The human decision at any `awaiting=human` state, and the reasoning content of the human-input contract.
 - The acceptance judgment (does the artifact meet the Success Criteria).
@@ -126,7 +126,7 @@ Genuinely FSM-shaped (deterministic, tool-ownable), and thus the model's proper 
 Resists FSM modeling (judgment-shaped; must stay agent/human INPUTS, not states the tool computes):
 
 - Whether a finding is valid (the core triage judgment).
-- Risk classification (a blast-radius judgment; defaultable, not decidable).
+- Risk classification (a blast-radius judgment authored into the applicable declaration before review, never defaulted or decided by the driver).
 - Whether a change is "small and reviewable," and the "match ceremony to stakes" collapse-or-keep-roles call (AGENTS.md deliberately leaves these to judgment).
 - The CONTENT of a review (what to actually scrutinize) and the CONTENT of the human-input contract (the options and Principle-judged reasoning). The tool fills a template; it cannot author the substance.
 - Intake of a NOVEL human request (what it touches, whether it is trivial).
@@ -143,7 +143,7 @@ Topology options:
 
 - Option A: a single global monolithic FSM whose state is the entire workflow. Rejected. The state space is the product of every step's and every loop's state, which explodes combinatorially and is riddled with illegal combinations (Principle 5 violated: a single product type admits states that cannot occur). Worse, a single machine is in exactly one state, so concurrency (parallel steps) is UNREPRESENTABLE without the product. Fails Principle 1 (not the cleaner architecture) and Principle 5.
 - Option B: a flat fleet of independent per-unit FSMs, coordinated only by the scheduler reading `blocked_by`. Viable and simple; matches the reframing; each instance is small and analyzable (Principle 5). Weakness: the relationship between a step machine and the review-loop it contains is IMPLICIT (coordination via shared recomputed state), so nothing structurally prevents a `complete` step whose loop never converged; that invariant would live only in a check, not in the type. Partial Principle 5.
-- Option C: a HIERARCHICAL fleet (recommended). A task machine embeds step machines; each step's `in-review` and the task's `plan_review`/`accepting` embed a SINGLE reusable review-loop sub-machine; the scheduler over `blocked_by` picks the ready frontier of step machines. Strengths: one definition of the convergence loop instantiated three places (Principle 16, one source of truth; Principle 8, structured-first); the nesting makes `complete`-without-convergence unrepresentable by construction (Principle 5); the scheduler is a clean separate concern (Principle 1). Cost: marginally more modeling machinery than B (the nesting relation). Best against Principles 1, 5, 16, 8.
+- Option C: a HIERARCHICAL fleet (recommended). A task machine embeds step machines; review states embed `ReviewProcess`, whose convergence and single-pass variants are disjoint; the scheduler over `blocked_by` picks the ready frontier of step machines. Strengths: one convergence definition plus one single-pass definition sharing only backstop policy (Principle 16), no constructible acceptance streak/cap and no `complete`-without-work-convergence (Principle 5), and clean scheduler separation (Principle 1). Cost: marginally more modeling machinery than B. Best against Principles 1, 5, 16, 8.
 - Option D: a full Harel statechart with orthogonal regions (for concurrency) and history states (for resume). Expressive enough to hold everything in one formalism, but heavyweight: orthogonal-region signalling and history semantics are more than the workflow needs and awkward in plain Rust, and history states RETAIN machine state, which fights the stateless-recompute requirement that gives crash/compaction survival (Principle 9). The nested fleet (C) plus stateless recompute gets the same expressive power with less machinery. Rejected as over-general (Principle 2, minimal by default; YAGNI).
 
 State-source options:
@@ -155,10 +155,10 @@ State-source options:
 
 Model the driver as a HIERARCHICAL FLEET of per-unit Mealy machines, recomputed statelessly from the durable artifacts:
 
-- A single reusable REVIEW-LOOP Mealy machine with the state/input/output alphabets and total transition function specified above, whose transition function IS the convergence arithmetic `workflow.rs` already computes, run forward. Instantiate it in three sites: plan review, each step's work review, and (a degenerate single-pass variant) acceptance and standalone review.
-- One TASK machine and one STEP machine per Roadmap step (the step statuses reuse the existing `StepStatus` enum), with the review-loop instances NESTED inside their review states, so illegal cross-states (`complete` without convergence) are unrepresentable.
+- A disjoint `ReviewProcess`: reusable `Convergence(ReviewLoop)` whose total transition is the checker arithmetic run forward, and `SinglePass(SinglePassReview)` with no class/streak/foreclosure/cap but the same high/critical backstop threshold.
+- One TASK machine and one STEP machine per Roadmap step, with exact review processes nested inside their review states, so illegal cross-states (`complete` without work-review convergence, or acceptance with convergence arithmetic) are unrepresentable.
 - A DEPENDENCY SCHEDULER that computes the ready frontier over the plan's `blocked_by` DAG (a step is schedulable iff all its `blocked_by` are `complete`/`skipped`); the ready antichain is what may run in parallel now, capped by the orchestrator's isolation budget. The tool proposes the frontier; the orchestrator owns how many to spawn (isolation is orthogonal).
-- A hard CONTROL/JUDGMENT interface: the tool owns counting, sequencing, scheduling, gating, and prompt emission; it consumes triage outcome, risk class, recheck result, human decision, and commit as typed INPUTS via `record-*` subcommands that append the log and advance state atomically. The tool never manufactures a verdict.
+- A hard CONTROL/JUDGMENT interface: the tool owns counting, sequencing, scheduling, gating, and prompt emission; it reads risk only from the exact selected plan declaration and consumes triage outcome, re-check result, human decision, and commit as typed inputs. Later `record-*` subcommands may append those event judgments, but never duplicate/default class or manufacture a verdict.
 - ESCAPE HATCHES as recorded transitions: override, abandon, and accept-at-escalation are first-class logged transitions into the total transition function's defined states, so a forced move never leaves the fleet unrepresented or unaudited. Advisory-first adoption is the master hatch and the evidence source (Principle 6): the tool suggests, the agent may deviate, deviations are recorded and measured, and the override rate decides whether to deepen toward authoritative driving.
 
 Reasoning against the Principles: Option C + stateless recompute is the cleanest long-term architecture (Principle 1), keeps one definition of convergence and one source of state (Principles 16, 8), makes the dangerous illegal states unrepresentable (Principle 5), survives context loss (Principle 9), gives the tool least authority (Principle 18, it counts and sequences but never judges), and reuses a reconstruction that already ships and passes tests (Principle 6). It stays minimal against the over-general statechart (Principle 2).
@@ -167,7 +167,7 @@ Reasoning against the Principles: Option C + stateless recompute is the cleanest
 
 - Do NOT build a single global product FSM (Option A) or a full Harel statechart with history states (Option D). The nested fleet with stateless recompute has the needed power with less machinery.
 - Do NOT persist FSM state in a separate file. Recompute from `plan.toml` + `workflow.jsonl` + `git` every call; a second store is a second source of truth that reintroduces drift.
-- Do NOT let the tool make judgments: no auto-triage, no auto risk-classification beyond suggesting a default, no auto "small and reviewable," no auto ceremony-collapse, no auto acceptance. Determinism ends at the verdict; the tool consumes verdicts, it does not compute them.
+- Do NOT let the tool make judgments: no auto-triage, no auto/default risk-classification, no auto "small and reviewable," no auto ceremony-collapse, no auto acceptance. Determinism ends at the verdict; the tool consumes verdicts, it does not compute them.
 - Do NOT model the open-ended entry modes (design exploration, novel-request intake, the substance of a review or a human-input contract) as FSM states. Model only their CONTROL skeleton: the status transition (`exploring -> open`), the blocking await, and the required receipt. The thinking is an input, not a state.
 - Do NOT model increment-level DAG scheduling. Increments carry no `blocked_by` (the DAG is at the step level); keep the scheduler at step granularity and leave increment ordering to the orchestrator until evidence shows finer scheduling is needed.
 - Do NOT have the driver author or reconcile merges, run isolation, or hold any state that is not a projection of the files. Isolation is orthogonal: the tool instructs, the orchestrator isolates (that wiring is the I/O-contract lens's concern, not this model's).
