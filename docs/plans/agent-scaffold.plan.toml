@@ -2533,6 +2533,24 @@ ask = """whether the status-opening drift split should continue after the dynami
 
 RECOMMENDATION AND DECISION (human, 2026-08-26): `Continue with the measured set of 18`. The current commands reproduce 44 relaxed selections, 35 anchored selections, 27 relaxed stripped openings needing authoring, and 18 anchored handover openings; `workflow-driver` is the one member removed by its phase-neutral opening. Q-84 preserves the dynamic selectors as implementation authority, so these dated counts remain evidence and never become acceptance conditions. Principle 6, Ground decisions in evidence, favours the current reproducible measurement; Principle 8, Structured data first, project for humans, favours the selector-defined set over a stale copied count; Principle 1, Prefer the cleaner long-term architecture over the smallest diff, rejects reopening the design when its mechanism still works. Folded into `sidecar-status-opening-drift`; decision receipt `type:"decision"` `q_id:"Q-84"` in `docs/metrics/workflow.jsonl`."""
 
+[[question]]
+id = "Q-85"
+status = "decided"
+folded_into = "workflow-calibration"
+receipt = "Q-85"
+ask = """where to schedule the convergence-mechanism investigation prompted by the repeated Q-78 acceptance passes and the external review-loop experiment. THREE OPTIONS WERE PRESENTED.
+
+1. `Add a design pass to workflow-calibration`.
+2. `Create a standalone convergence redesign step`.
+3. `Implement a hard task-level cap now`.
+
+RECOMMENDATION AND DECISION (human): `Add a design pass to workflow-calibration`. The existing in-progress step already owns the measured round constants, sequential/survival analysis, severity-trajectory candidate, and audit evidence, so adding the design pass there preserves one owner and avoids a duplicate Roadmap step (Principle 1, Prefer the cleaner long-term architecture over the smallest diff; Principle 2, Minimal by default). The mechanism remains genuinely open, and Principle 6, Ground decisions in evidence, rejects implementing a hard cap before the local and external evidence has been turned into falsifiable options. Folded into `workflow-calibration`; decision receipt `type:"decision"` `q_id:"Q-85"` in `docs/metrics/workflow.jsonl`."""
+
+[[question]]
+id = "Q-86"
+status = "exploring"
+ask = """which bounded convergence mechanism should constrain the current repeated per-artifact cap windows and uncapped sequence of later acceptance passes without concealing unresolved critical findings. A DESIGN PASS IS OWED. Its tracked brief is `docs/plans/workflow-calibration.explorations/Q-86-convergence-mechanism-brief.md`; later explorers author separate `Q-86-<disambiguator>.md` proposals beside it. The pass must compare viable mechanisms, test their stopping properties against reproducible local evidence and the external experiment, price them against all eight Project Principles, and return a recommendation, migration/enforcement plan, and YAGNI boundary. The orchestrator then synthesises the proposals, moves Q-86 to `open`, and puts the options to the human. No mechanism is decided and no current cap, acceptance, reset, pack, or code behavior changes in this fold."""
+
 [[principle]]
 n = 1
 name = "Prefer the cleaner long-term architecture over the smallest diff"
