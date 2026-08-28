@@ -4,13 +4,15 @@
 
 Q-86 remains `open` for a human architecture decision and a serious terminal-floor decision. The five-round review loop on the earlier proof-before-choice synthesis ended at its cap with valid findings in every round. Q-88 records the human decision to narrow the proof scope rather than open a sixth ordinary review round.
 
-This is the new narrowed decision artefact. It retains three bounded architecture proposals and their algebraic finite bounds, but it does not present the executable controller or replay scripts as recommendation-eligibility proofs. Those scripts are adversarial prototypes that exposed proof obligations. The architecture the human later selects must receive a complete executable proof of concept before implementation. No current workflow rule, cap, reset behaviour, acceptance rule, metric, specification, pack file, prompt, template, README, changelog, generated plan, or Rust source changes in this pass.
+This is the new narrowed decision artefact. It retains three bounded architecture proposals and their algebraic finite bounds, but it does not present the executable controller or replay scripts as recommendation-eligibility proofs. Those scripts are adversarial prototypes that exposed proof obligations. The architecture the human later selects must receive a complete executable proof of concept before implementation. No workflow or production behaviour changes in this pass. It appends exactly one `type: "decision"` event for Q-88 to the metrics log without changing the metrics schema or behaviour. The generated plan changes only as the required projection of the Q-86 and Q-88 planning sources.
 
 The architecture options remain:
 
 - `A - Sealed phase budget`.
 - `B - Frozen obligations with sealed phase campaigns`.
 - `C - Fixed-depth verification protocol`.
+
+The source proposal labels map as follows. Option A maps to state-machine Candidate A in `Q-86-state-machine.md` and safety M1 in `Q-86-safety-process.md`. Option B maps to safety M2 plus the state-machine proposal's sealed authority envelope. Option C maps to state-machine Candidate B. Safety M3 remains excluded. These proposals remain design inputs under the prototype caveats below, and this provenance map does not revive any proof or recommendation-eligibility claim.
 
 No architecture, serious terminal floor, or controller constant has been selected. Q-85 authorised the design pass. Q-88 changed only the proof timing and gate.
 
@@ -141,7 +143,7 @@ R_C = 4(m + 2)
 I_C = 15(m + 2)
 ```
 
-The clean whole-family minimum is `c_plan + sum(c_work_q) + 2`, where each plan or work `c` is one at low risk and two at risky. The selected-option proof of concept must establish phase typing, every forward transition, both repair generations, mandatory acceptance blind closure, arbitrary finite finding products, scope and dismissal products, terminal floors, and all delivery blocks.
+For a risky plan or work phase and for acceptance, the proposed minimum is a Discovery batch with two reviewers plus a BlindClosure batch with one reviewer, hence two review batches and three reviewer calls. The clean whole-family minimum is `c_plan + sum(c_work_q) + 2`, where each plan or work `c` is one at low risk and two at risky. The selected-option proof of concept must establish phase typing, every forward transition, both repair generations, mandatory acceptance blind closure, arbitrary finite finding products, scope and dismissal products, terminal floors, and all delivery blocks.
 
 ### Trade-off
 
