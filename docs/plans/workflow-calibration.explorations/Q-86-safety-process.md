@@ -1,8 +1,12 @@
 # Q-86: a safe bounded review process
 
-Explorer proposal for `Q-86`, written under a safety, human-process, finding-lineage and reviewer-allocation lens. Advisory design notes only. This document changes no workflow rule, no constant, no status and no code, and implementation remains blocked on the later human decision that section 12 sets out.
+## Prototype status after the capped synthesis review
 
-The original exploration ran in worktree `.agents/worktrees/q86-explorer-safety`, branch `explore/q86-safety`, from `05142309`. The corrected proof no longer depends on that scratch directory. Appendix A points to the durable controller and replay artifacts and gives exact reproduction commands and outputs.
+Q-88 supersedes this proposal's proof-before-choice boundary. The architecture descriptions and algebraic bounds remain design inputs, but the executable controller and replay scripts are adversarial prototypes rather than recommendation-eligibility proofs. Every later statement that calls the checker corrected or exhaustive, reports zero violations, or treats a run as establishing a safety property records the prototype's historical self-assessment and is not a current assurance claim. The round-5 triage at `docs/plans/agent-scaffold.reviews/q86-synthesis-r5-triage.md` demonstrates unsound arbitrary-finite composition, cross-family serious carry, scope and dismissal products, global family identity, and fresh-evidence handling. A complete executable proof is required only if the human later selects the corresponding architecture, and it must close every applicable Q-86 triage finding before implementation.
+
+Explorer proposal for `Q-86`, written under a safety, human-process, finding-lineage and reviewer-allocation lens. Advisory design notes only. This document changes no workflow rule, no constant, no status and no code, and implementation remains blocked on the later human decision.
+
+The original exploration ran in worktree `.agents/worktrees/q86-explorer-safety`, branch `explore/q86-safety`, from `05142309`. The retained prototype no longer depends on that scratch directory. Appendix A points to the durable controller and replay artefacts and gives exact reproduction commands and historical outputs.
 
 Evidence and recommendation are kept apart on purpose. Sections 1 and 2 are measurement. Sections 3 to 9 are design. Section 10 is the only place a recommendation is made.
 
@@ -221,7 +225,7 @@ A **review unit** is debited **once per review round or acceptance pass opened**
 
 **Phase sub-budgets.** The task budget is a strict partition `B = (Bp, Bw, Ba)` over plan review, work review and acceptance, with **no transfer between phases**, so one phase cannot consume the whole allowance accidentally. The human may re-partition once at a checkpoint, and a re-partition may never increase the total, so the bound is invariant under it.
 
-**Non-resettability, and the anti-laundering rule.** No human resume, rename, new artefact identity, replan, or narrowing replenishes authority in a live family. The corrected controllers have no active transition named resume. Resume reconstructs the same state. Replan is a terminal non-delivery disposition and a materially different successor requires a new human receipt.
+**Non-resettability, and the anti-laundering rule.** No human resume, rename, new artefact identity, replan, or narrowing replenishes authority in a live family. The proposed controllers have no active transition named resume. Resume reconstructs the same state. Replan is a terminal non-delivery disposition and a materially different successor requires a new human receipt.
 
 Section 3.4 handles the harder version of this question, which is whether the terminal choices smuggle the unbounded work back in.
 
@@ -331,7 +335,7 @@ R_M2 = 7 + sum(4n_q + 1)
      = 4|O| + m + 8
 ```
 
-This corrected bound replaces `2|O| + 8`. One grouped repair per attempt leaves at most six plan repairs and at most two repairs per obligation, so the safe automated-agent upper bound remains `18|O| + 4m + 38`.
+This proposed algebraic bound replaces `2|O| + 8`. One grouped repair per attempt leaves at most six plan repairs and at most two repairs per obligation, so the safe automated-agent upper bound remains `18|O| + 4m + 38`.
 
 A clean post-freeze phase has the unavoidable minimum `n_q + 1`, one clean primary initial attempt per obligation plus blind closure. If `r_plan` is the inherited M1-controller plan-review minimum, the whole-family minimum is `r_plan + |O| + p = r_plan + |O| + m + 1` review batches and twice that number of reviewer calls. A and C have cardinality-independent phase minima of one or two batches. `|O|` is a future frozen-row count, not a current prose-bullet count.
 
@@ -353,11 +357,11 @@ Terminate when, for `k` consecutive passes, the maximum severity of **novel in-s
 
 ---
 
-## 7. EVIDENCE: stopping proofs and red controls
+## 7. EVIDENCE: proposed stopping bounds and adversarial prototype controls
 
 ### 7.1 Replay over the live Q-78 acceptance sequence
 
-The selector in section 1.1 derives the sequence from the append-only log. The M1 and M3 tables apply their stated arithmetic to that selected sequence. The corrected M2 replay has its own durable command below because its scope-digest transitions are load-bearing.
+The selector in section 1.1 derives the sequence from the append-only log. The M1 and M3 tables apply their stated arithmetic to that selected sequence. The retained M2 replay has its own durable command below because its scope-digest assumptions are decision-material.
 
 **M1, a pure count budget, at every acceptance sub-budget `Ba`:**
 
@@ -390,19 +394,19 @@ The reading is unfavourable to a pure count budget and is stated plainly. **Any 
 
 Two red controls fall out. At `T = medium, k = 1` the gate fires on **pass 1**, before all four high-bearing passes, because passes 1 and 2 both had a maximum of `medium`. At `T = high, k = 2` it fires on **pass 6**, a pass that itself carried a high. At `T = low` it never fires while a high is outstanding. The calibration is therefore not a matter of taste: **`T` must sit strictly below the severity that would not be shipped, and `k` must be at least 2.**
 
-### 7.2 Corrected exhaustive transition check
+### 7.2 Adversarial transition prototype
 
-The prior `statemachine.awk` result is withdrawn. Its M2 branch was a four-unit proxy without initial-attempt, repair, verification, reopen, phase, or blind-closure state. It did not derive the claimed bound. The corrected durable proof is `docs/plans/workflow-calibration.explorations/q86-controller-proof.py`.
+The prior `statemachine.awk` result is withdrawn. Its M2 branch was a four-unit proxy without initial-attempt, repair, verification, reopen, phase, or blind-closure state. It did not derive the claimed bound. The retained adversarial prototype is `docs/plans/workflow-calibration.explorations/q86-controller-proof.py`.
 
 Mode B is the actual post-freeze `FrozenObligationCampaign` in section 5. It keeps immutable phase identity, obligation stages, review spend, and a complete finite stable finding map. Mode A and mode C use the same map. One B batch is an atomic finite owner map plus unowned set. The sweep reaches same-owner and cross-owner low plus critical, mixed owned and unowned findings, and a parent plus fix-induced child. Joint repair and verification operate on the complete selected key set. Delivery universally quantifies over the map and obligations. The owner-state check is bidirectional, so no owned outstanding finding can coexist with a closed or untested owner and no special obligation state can lose its matching finding.
 
-Run the exact all-mode and B-sweep commands and compare their complete outputs with `Q-86-synthesis.md` under `Corrected proof and red controls`. The checker reports zero delivery, unverified-delivery, critical-clear, bound, mixed-disposition-preservation, mixed-exhaustion, scope-spend, scope-identity, scope-delivery, upheld-streak, upheld-unlock, foreclosure, owner-state, unowned-critical-delivery, generation-one-before-initial, deferred-identity, acceptance-blind-bypass, legacy-adoption, and successor-control violations at both floors. Its typed scope routes are inside every controller graph. Its SHA-256 is `d0dabe6da04fde2009a2baf22d0a3d9fabdfbd6bc96d2859d26043531aff579a`.
+Run the all-mode and B-sweep commands as adversarial evidence about the retained prototype. The output reports zero for the counters the prototype implements at both floors, but round 5 demonstrated that those counters omit required state products and cross-family behaviour. Its SHA-256 is `d0dabe6da04fde2009a2baf22d0a3d9fabdfbd6bc96d2859d26043531aff579a`.
 
-The finite sweep exhausts a complete-map cardinality of two. The arbitrary finite result follows over the product of obligation and finding state because reducers atomically union fresh ids and advance every affected owner, joint attempt operations take the complete finite selected set, and release is a universal conjunction over ids and obligation states. Adding an owner component cannot remove or rewrite another identity, close an unaffected obligation, increase phase spend, or make release easier. Induction first over finite owner-map cardinality and then over each finite finding submap preserves the lifecycle, owner-state, and delivery invariants. Cardinality two checks the cross-owner mixed-floor and parent-child interactions that a singleton proof cannot expose.
+The finite sweep caps the complete retained finding map at cardinality two. The earlier arbitrary-finite extension argument is withdrawn. Settled identities consume that cap and remove later fresh-finding, reopen, scope, and delivery transitions, so adding a component can make completion easier. A selected-option proof must separate finite batch-interaction coverage from arbitrary persistent history or establish another sound quotient and induction.
 
-The checker establishes one post-freeze B phase. B plan review is mode A with the inherited values stated in section 5. The family bound is algebra rather than a multi-phase enumeration. Each obligation has at most four review-consuming transitions, each post-freeze phase has one blind-closure transition, exact ownership forbids transfer, and phase maxima sum to `4|O| + p`. One cross-owner batch can consume several owner attempts at once, so it can only reduce realised spend from that per-owner sum. Adding the seven-batch plan campaign gives `4|O| + m + 8`. The grouped multi-finding semantics leave the repair and call bounds unchanged.
+The proposed B family formula remains algebraic rather than a multi-phase enumeration. Each obligation is designed to have at most four review-consuming transitions, each post-freeze phase one blind-closure transition, and exact ownership no transfer. Under those unproved premises the post-freeze maxima sum to `4|O| + p`, and adding the proposed seven-batch plan campaign gives `4|O| + m + 8`. A selected B proof of concept must establish every premise before the formula can govern implementation.
 
-M1's corrected synthesis controller is mode A in the same proof. M3 is no longer claimed recommendation-eligible. Its conceptual bound still needs a disposition controller and trustworthy prospective trajectory data before it can return to the option set.
+M1's retained prototype controller is mode A in the same script. M3 remains outside the option set because its conceptual bound still needs a disposition controller and trustworthy prospective trajectory data.
 
 ### 7.3 Every required red-control path
 
@@ -424,7 +428,7 @@ M1's corrected synthesis controller is mode A in the same proof. M3 is no longer
 | **Unresolved critical at exhaustion** | Delivery is unconstructible for the complete map. | Delivery is unconstructible at both floors for the complete map. | Excluded. |
 | **Blind closure** | Every batch contains a blind seat. | Every phase owns one non-transferable closure seat, including an empty prospective phase. | Excluded. |
 
-M1 and corrected M2 have a finite bound or exact terminal event on every required path. M3 remains design input rather than a recommendation-eligible option after the proof correction.
+M1 and M2 retain proposed finite bounds or terminal events for every required path. The retained prototype does not establish all of them. M3 remains design input rather than an offered architecture because its trajectory data is not trustworthy.
 
 ---
 
@@ -438,7 +442,7 @@ M1 and corrected M2 have a finite bound or exact terminal event on every require
 | **Idempotent** | Resume reconstructs monotone spend. | Phase, obligation, attempt, and spend replay deterministically. | A sealed ceiling prevents reset. |
 | **Make illegal states unrepresentable** | Complete finding maps remove scalar erasure. | Closed variants and `UnownedInScopeFinding` prevent unverified closure, second reopen, phase transfer, and post-terminal action. | Needs the same explicit disposition controller before returning to eligibility. |
 | **Ground decisions in evidence** | Preserves the measured five-round boundary, but reserve values are weakly calibrated. | Targets observed scope movement, while the conditional Q-78 scenario exposes four possible replans under stated digest assumptions. | The historical trajectory fields are not trustworthy enough for a gate. |
-| **Reproducible** | Fixed arithmetic and corrected cardinality-two mode-A graph. | The checker establishes each phase factor, and `4|O| + m + 8` follows by no-transfer summation. | The old proxy is withdrawn. |
+| **Reproducible** | Fixed arithmetic with an adversarial finite prototype whose limits are explicit. | `4|O| + m + 8` is an algebraic proposal requiring a complete selected-option proof. | The old proxy is withdrawn. |
 | **Structured data first, project for humans** | Accounts, findings, and receipts are structured. | Obligation rows, owners, attempts, findings, and receipts are structured. | Prospective finding and trajectory state would need structure. |
 
 The baseline assessment remains at section 2.3.
@@ -461,7 +465,7 @@ Common surfaces move only after the human chooses. Advisory guidance describes j
 | Append-only history | No event is rewritten. A typed digest boundary separates legacy history. B adds `LegacyNoRubric`. | Enforced and fail-closed. |
 | Canonical and generated guidance | `pack/AGENTS.md`, `pack/instrument.md`, role prompts, ledger and plan templates, their dogfood copies, README, and changelog. | Advisory text generated or byte-guarded where applicable. |
 
-For corrected M2, validation enforces finite canonical obligation rows, exact source labels, one phase owner, `C_q = 4|O_q| + 1`, no transfer, all initial attempts before optional reopen work, deferred early finding identity, complete finding maps and triage disposition products, grouped repair before grouped verification, `UnownedInScopeFinding`, blind closure, typed scope-recheck state, scope-digest terminality, explicit legacy adoption, and critical legality. Successor validation binds the immutable terminal predecessor, its ordered ancestry registry, a successor id fresh against that registry, exact successor ancestry, both scope digests, every presented option, the chosen successor, predecessor spend, the complete carried finding map, and a non-empty structured obligation or exclusion delta attested as material. `next` reports the exact obligation and complete blind or informed brief permitted by state. It cannot prove that a reviewer was genuinely blind or that a human judgement was true.
+For a selected M2 implementation, validation would need to enforce finite canonical obligation rows, exact source labels, one phase owner, `C_q = 4|O_q| + 1`, no transfer, all initial attempts before optional reopen work, deferred early finding identity, complete finding maps and triage disposition products, grouped repair before grouped verification, `UnownedInScopeFinding`, blind closure, typed scope-recheck state, scope-digest terminality, explicit legacy adoption, and critical legality. Successor validation binds the immutable terminal predecessor, its ordered ancestry registry, a successor id fresh against that registry, exact successor ancestry, both scope digests, every presented option, the chosen successor, predecessor spend, the complete carried finding map, and a non-empty structured obligation or exclusion delta attested as material. `next` reports the exact obligation and complete blind or informed brief permitted by state. It cannot prove that a reviewer was genuinely blind or that a human judgement was true.
 
 The chosen work must land after `review-loop-foreclosure-enforcement` and reuse its typed reconstruction. Acceptance remains a campaign around disjoint `SinglePass` observations rather than adding convergence fields to a single pass.
 
@@ -469,14 +473,14 @@ The chosen work must land after `review-loop-foreclosure-enforcement` and reuse 
 
 ## 10. RECOMMENDATION
 
-**Recommended: corrected M2, frozen obligations with sealed phase campaigns, at medium to low confidence.**
+**Provisional recommendation: M2, frozen obligations with sealed phase campaigns, at low confidence.**
 
-The recommendation now rests on the corrected controller rather than the withdrawn 107-state proxy.
+The recommendation rests on the conceptual architecture rather than the broken prototype. M2 gives scope, ownership, disposition, phase authority, and completion one structured source. The recommendation is advice for the human choice and does not establish implementation eligibility.
 
 - It addresses prospective scope movement by making a changed structured scope digest terminal rather than silently enlarging the accepted target.
 - It completes from triage-backed obligation state and complete stable finding maps rather than broken historical outcome or severity arrays.
-- Its bound is derived from a closed finite `O` and exact phase owners: `4|O| + m + 8` review batches per family.
-- Its cardinality-two graph is acyclic and reports zero delivery, unverified-delivery, critical-clear, bound, mixed-disposition, scope-state, unowned-critical, legacy-adoption, initial-priority, ancestry, and successor-control violations for both terminal-floor values.
+- Its proposed algebraic bound follows from a closed finite `O`, exact phase owners, and no transfer: `4|O| + m + 8` review batches per family. Those premises remain to be proved for the selected controller.
+- Its prototype exposed concrete delivery, composition, scope, legacy, priority, ancestry, and successor proof obligations across five adversarial rounds. A selected B proof must close them before implementation.
 
 The recommendation has substantial costs.
 
@@ -486,7 +490,7 @@ The recommendation has substantial costs.
 - An incomplete obligation set is a new safety risk that mechanical cardinality cannot eliminate.
 - The one-reopen design and its operational adequacy have no prospective calibration.
 
-A focused schema and reconstruction proof of concept must show that obligation rows stay finite, precise, and non-duplicative, and that genuine uncited findings route through `UnownedInScopeFinding`. If it fails, the architecture decision returns to the human with M1 as the recommendation. It never selects M1 automatically.
+If the human selects M2, a complete executable proof of concept must close every applicable valid Q-86 synthesis finding, including arbitrary finite maps, cross-family serious carry, scope and dismissal products, global family identity, fresh evidence, legacy adoption, terminal floors, and every M2 transition and bound. If it fails, implementation remains blocked and the architecture decision returns to the human. No fallback architecture or floor is selected automatically.
 
 Evidence that would overturn M2 includes frozen-scope tasks that still need long repair sequences, systematic uncited genuine defects, any serious finding routed to backlog, or prospective evidence that M1 preserves materially more unique serious findings for acceptable cost. A change to the reopen count requires a new finite prospective value and cannot replenish a live campaign.
 
@@ -512,7 +516,7 @@ The synthesis presents only A, B, and C as viable bounded architectures. M3 is e
 
 **Architecture question.** Which architecture should Q-86 fold into `workflow-calibration`?
 
-**Architecture recommendation.** B, at medium to low confidence, with the costs and proof-of-concept gate in section 10.
+**Architecture recommendation.** B, at low confidence, with the conceptual reasoning, costs, and selected-option proof gate in section 10.
 
 **Serious-floor co-decision.** The human owns `F` whichever architecture is chosen.
 
@@ -526,11 +530,11 @@ At least one blind closure pass is structural in all three synthesised options, 
 
 ---
 
-## Appendix A: corrected proof and replay
+## Appendix A: retained adversarial prototype and replay
 
-### A.1 Controller proof
+### A.1 Controller prototype
 
-The durable proof is `docs/plans/workflow-calibration.explorations/q86-controller-proof.py`. Mode A checks M1. Mode B checks the corrected M2. Mode C checks the fixed-depth synthesis option. Run from the repository root:
+The retained adversarial prototype is `docs/plans/workflow-calibration.explorations/q86-controller-proof.py`. Mode A exercises M1. Mode B exercises the proposed M2. Mode C exercises the fixed-depth synthesis option. Run from the repository root:
 
 ```sh
 CHECKER=docs/plans/workflow-calibration.explorations/q86-controller-proof.py
@@ -548,7 +552,7 @@ done
 sha256sum "$CHECKER"
 ```
 
-The complete exact stdout for both all-mode runs, the inherited A-controller runs, the low-risk C acceptance run, and the B sweep is retained once in `Q-86-synthesis.md` under `Corrected proof and red controls`. That authoritative output includes the mixed-disposition products, explicit exhaustion boundary cases, typed scope routes, A's batch-five upheld-streak regression, B's deferred early findings in the three-obligation sweep, and all zero-valued red controls. The inherited plan-controller runs report minimums one and two at low and risky plan review, both with maximum seven. The explicit risky-work run reports `upheld_batch5_complete=1` and zero streak or foreclosure violations. Low-risk acceptance under C reports minimum two and zero blind-bypass, mixed-disposition, scope, delivery, and bound violations. The B sweep declares bounds `1`, `5`, `9`, and `13`, reaches cardinality-two maxima `1`, `5`, `9`, and `11`, and reports clean minimums `1`, `2`, `3`, and `4`. The per-phase algebra and arbitrary finite-map composition establish `4n_q + 1` beyond the finite interaction sweep. The checker SHA-256 is `d0dabe6da04fde2009a2baf22d0a3d9fabdfbd6bc96d2859d26043531aff579a`.
+The synthesis no longer retains a large exact stdout block. Run the commands below to reproduce the prototype's current output. Its zero-valued counters describe only implemented checks and do not show that all required controls passed. The B sweep declares design bounds `1`, `5`, `9`, and `13`, reaches smaller maxima under the retained-map cap in some cases, and reports clean minimums `1`, `2`, `3`, and `4`. The earlier arbitrary finite-map conclusion is withdrawn. The checker SHA-256 for this historical prototype is `d0dabe6da04fde2009a2baf22d0a3d9fabdfbd6bc96d2859d26043531aff579a`.
 
 ### A.2 Q-78 scope replay
 
@@ -573,7 +577,7 @@ The four distinct named fold identities are observed. The repeated Q-87 mention 
 
 ## Appendix B: documentation and prompt staleness the recommended mechanism would create
 
-This repair changes planning and proof artifacts only, so shipped product documentation is not stale now. Choosing B would require later implementation work across these surfaces:
+This repair changes planning and proof artefacts only, so shipped product documentation is not stale now. Choosing B would require later implementation work across these surfaces:
 
 - Update `pack/AGENTS.md`, `AGENTS.md`, and `.agents/AGENTS.reference.md` because convergence and acceptance would use sealed campaigns.
 - Update planner, orchestrator, reviewer, triager, and implementer prompts in canonical and generated locations for obligation authoring, phase ownership, scope rulings, repair verification, and terminal choices.
