@@ -2559,7 +2559,7 @@ RECOMMENDATION AND DECISION (human): `Add a design pass to workflow-calibration`
 [[question]]
 id = "Q-86"
 status = "open"
-ask = """which bounded convergence architecture should replace or constrain the current repeated per-artefact cap windows and uncapped sequence of later acceptance passes without concealing unresolved critical findings. The narrowed decision artefact is `docs/plans/workflow-calibration.explorations/Q-86-synthesis.md`. Q-88 ended the capped proof-before-choice artefact and moved the complete executable proof to a blocking gate for the architecture the human later selects.
+ask = """which bounded convergence architecture should replace or constrain the current repeated per-artefact cap windows and uncapped sequence of later acceptance passes without concealing unresolved critical findings. The narrowed decision artefact is `docs/plans/workflow-calibration.explorations/Q-86-synthesis.md`. Q-88 ended the capped proof-before-choice artefact and moved the complete executable proof to a blocking gate for the architecture the human later selects. Q-89 ended the capped narrowed artefact through two low fixes and one focused mixed-model verification; if that verification finds nothing new, the capped narrowed artefact closes, while any new valid finding returns to the human.
 
 ARCHITECTURE OPTIONS.
 1. `A - Sealed phase budget`. Declare non-resettable authority for plan review, each work loop, and acceptance; let `m` be the work-loop count. The proposed maximum is `7(m + 2)` review batches and `34(m + 2)` automated-agent calls. A stays closest to current streak semantics, but its five-normal-plus-two-reserve values are weakly calibrated. On the descriptive Q-78 replay it stops at pass seven and leaves three later low shortfalls undiscovered.
@@ -2577,9 +2577,9 @@ SERIOUS-FLOOR CO-DECISION.
 2. `critical`, the mandatory minimum. An open critical blocks those choices, while the human may accept a high as residual risk.
 3. `defer`, which requires a separate receipted floor decision before the selected proof of concept can close and before implementation.
 
-`high` is recommended under Make failure and absence explicit and Correctness before performance because making an open high non-deliverable keeps known serious risk explicit. Its cost under Ground decisions in evidence and Minimal by default is that Q-78 is descriptive rather than prospective evidence and the stricter floor removes residual-acceptance and narrowing choices on passes three through six. The recommendation accepts that evidence and minimality cost for the safer fail-closed boundary; it selects nothing.
+`high` is recommended under Make illegal states unrepresentable because an unresolved serious finding has no delivery state, and Safe on existing projects because the stricter boundary fails closed on adoption. Its cost under Ground decisions in evidence and Minimal by default is that Q-78 is descriptive rather than prospective evidence and the stricter floor removes residual-acceptance and narrowing choices on passes three through six. The recommendation accepts that evidence and minimality cost for the safer fail-closed boundary; it selects nothing.
 
-NO-DECISION BOUNDARY: the resettable baseline remains non-admissible comparison evidence, the severity-decay gate remains excluded, Q-85 authorised the design pass, and Q-88 authorised only the narrowed proof timing. No architecture, serious floor, controller constant, current cap, acceptance rule, reset behaviour, pack change, or code change is approved. Q-86 remains open until the human chooses an architecture and a floor or explicit deferral through the human-input contract. That choice authorises only the selected architecture's proof of concept, not implementation."""
+NO-DECISION BOUNDARY: the resettable baseline remains non-admissible comparison evidence, the severity-decay gate remains excluded, Q-85 authorised the design pass, Q-88 authorised only the narrowed proof timing, and Q-89 authorised only the two low repairs plus one focused mixed-model verification. No architecture, serious floor, controller constant, current cap, acceptance rule, reset behaviour, pack change, or code change is approved. Q-86 remains open until the human chooses an architecture and a floor or explicit deferral through the human-input contract. That choice authorises only the selected architecture's proof of concept, not implementation."""
 
 [[question]]
 id = "Q-87"
@@ -2613,6 +2613,25 @@ RECOMMENDATION AND DECISION (human, 2026-08-28): `Narrow the proof scope`. The r
 JUDGEMENT AGAINST ALL PROJECT PRINCIPLES. Prefer the cleaner long-term architecture over the smallest diff supports proving the chosen controller completely rather than retaining three broad but unsound proof claims. Minimal by default supports not completing production-grade proofs for two architectures the human rejects. Safe on existing projects supports leaving the current workflow and code unchanged while proof remains incomplete. Idempotent supports retiring the capped artefact and recording one durable route rather than repeatedly resetting the same proof loop. Make illegal states unrepresentable supports a blocking selected-option proof gate that gives failed proof no path into implementation. Ground decisions in evidence supports treating five rounds of adversarial findings as evidence that the prototypes expose obligations rather than establish safety. Reproducible supports retaining the scripts, triages, commands, and explicit known-limitations boundary so the selected proof can reproduce and close each defect. Structured data first, project for humans supports recording Q-88 and its exact receipt as the structured source, then projecting the narrowed decision into Q-86 and `workflow-calibration`.
 
 The capped proof-before-choice counters retire. Q-86 remains open. No architecture or serious floor is selected. The later human architecture choice authorises only a complete proof of concept for that selected architecture, and production implementation remains blocked until that proof closes every applicable valid Q-86 synthesis finding."""
+
+[[question]]
+id = "Q-89"
+status = "decided"
+folded_into = "workflow-calibration"
+receipt = "Q-89"
+ask = """how to close the capped narrowed Q-86 decision artefact after its fifth risky review round returned two valid low findings and the clean streak remained zero of two. FIVE OPTIONS WERE PRESENTED IN THIS ORDER.
+
+1. `Fix, verify once, then close`. Repair only the two round-5 low findings, run one focused mixed-model verification over those fixes and their direct residue, and close the capped narrowed artefact if that verification finds nothing new.
+2. `Resume the full review loop`. Reset the counters and return to the ordinary risky convergence requirement of two consecutive clean rounds.
+3. `Accept the current artifact`. Close immediately with the two valid low defects still present.
+4. `Revert the narrowed synthesis`. Discard the narrowed decision artefact and return Q-86 to exploration.
+5. `Abandon the redesign`. End the convergence investigation without selecting or implementing a replacement mechanism.
+
+RECOMMENDATION AND DECISION (human, 2026-08-28): `Fix, verify once, then close`. The recommendation and chosen value are both exactly `Fix, verify once, then close`. The capped narrowed counters retire rather than reset. The focused verification checks only the two fixes and their direct residue. If it finds nothing new, the capped narrowed artefact closes without a second clean round; any new valid finding returns to the human.
+
+JUDGEMENT AGAINST ALL PROJECT PRINCIPLES. Prefer the cleaner long-term architecture over the smallest diff supports repairing the two known defects rather than accepting an internally inconsistent decision artefact. Minimal by default supports one focused verification instead of reopening an unbounded full loop for two low documentation defects. Safe on existing projects supports a planning-only repair that leaves the current workflow and code unchanged. Idempotent supports retiring the capped counters once and using one durable closure decision rather than repeatedly resetting the same artefact. Make illegal states unrepresentable supports making closure conditional on a verification that finds nothing new and routing any new valid finding back to the human. Ground decisions in evidence supports correcting the two reproduced round-5 defects before closure. Reproducible supports a focused mixed-model check of the named fixes and their direct residue. Structured data first, project for humans supports recording Q-89 and its exact receipt as the structured decision source while the sidecar and owning step explain it to readers.
+
+Q-89 is `decided -> folded into workflow-calibration`. Q-86 remains `open`. This decision selects no architecture or serious terminal floor and authorises no workflow, pack, or code change."""
 
 [[principle]]
 n = 1
