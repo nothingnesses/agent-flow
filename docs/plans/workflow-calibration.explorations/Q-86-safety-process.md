@@ -2,7 +2,7 @@
 
 Explorer proposal for `Q-86`, written under a safety, human-process, finding-lineage and reviewer-allocation lens. Advisory design notes only. This document changes no workflow rule, no constant, no status and no code, and implementation remains blocked on the later human decision that section 12 sets out.
 
-Worktree `.agents/worktrees/q86-explorer-safety`, branch `explore/q86-safety`, from `05142309`. Scratch scripts in `/tmp/claude-1000/-home-jessea-Documents-projects-agent-scaffold/2fed83bd-4a13-402b-9e76-143356c0d130/scratchpad/q86-safety-process/`, reproduced in full in Appendix A so every count and every state-machine claim below can be re-derived without that directory.
+The original exploration ran in worktree `.agents/worktrees/q86-explorer-safety`, branch `explore/q86-safety`, from `05142309`. The corrected proof no longer depends on that scratch directory. Appendix A points to the durable controller and replay artifacts and gives exact reproduction commands and outputs.
 
 Evidence and recommendation are kept apart on purpose. Sections 1 and 2 are measurement. Sections 3 to 9 are design. Section 10 is the only place a recommendation is made.
 
@@ -144,12 +144,17 @@ What this licenses: pricing blind artifact-wide discovery separately from inform
 
 The current mechanism is a required comparison and is **not recommendation-eligible**. Per the brief, it is not subjected to eligibility criteria. Instead both counterexamples are demonstrated.
 
-The disproof is mechanical. `statemachine.awk` in Appendix A enumerates the entire reachable state set under the full input alphabet and looks for a cycle. Run:
+The disproof is parametric rather than sampled. Run:
 
 ```sh
-awk -v MECH=b0 -f statemachine.awk </dev/null
-awk -v MECH=b0acc -f statemachine.awk </dev/null
+for n in 1 2 10 100
+do
+    awk -v n="$n" 'BEGIN { print "resume_windows=" n, "review_rounds=" 5 * n, "state=active_after_resume" }'
+    awk -v n="$n" 'BEGIN { print "acceptance_passes=" n, "repairs=" n, "state=awaiting_later_acceptance" }'
+done
 ```
+
+The values demonstrate the construction. The proof accepts every positive integer `n`, so no finite upper value exists.
 
 ### 2.1 Counterexample one: repeated human resume
 
@@ -216,7 +221,7 @@ A **review unit** is debited **once per review round or acceptance pass opened**
 
 **Phase sub-budgets.** The task budget is a strict partition `B = (Bp, Bw, Ba)` over plan review, work review and acceptance, with **no transfer between phases**, so one phase cannot consume the whole allowance accidentally. The human may re-partition once at a checkpoint, and a re-partition may never increase the total, so the bound is invariant under it.
 
-**Non-resettability, and the anti-laundering rule.** No human resume, no rename, no new artifact identity, no replan and no narrowing replenishes a budget. In the state machine, `human_resume` is **not a legal input at any state** of any bounded mechanism, and the run reports it rejected 22 times for M1 and M3 and 56 times for M2. There are no counters to reset, so the transition does not exist rather than being a no-op that could quietly recur.
+**Non-resettability, and the anti-laundering rule.** No human resume, rename, new artefact identity, replan, or narrowing replenishes authority in a live family. The corrected controllers have no active transition named resume. Resume reconstructs the same state. Replan is a terminal non-delivery disposition and a materially different successor requires a new human receipt.
 
 Section 3.4 handles the harder version of this question, which is whether the terminal choices smuggle the unbounded work back in.
 
@@ -239,7 +244,7 @@ Four lineages, kept strictly separate from severity.
 
 **When it freezes.** The acceptance rubric freezes when the plan review converges, before the first implementation step begins.
 
-**Which durable artifacts define it.** Exactly three, and no others: the plan's Success Criteria sidecar (`docs/plans/<task>.success-criteria.md`), the plan's `[[principle]]` set, and each step sidecar's documentation-impact statement. All three are already committed, already single-sourced and already rendered, so the freeze adds a boundary rather than a new artifact.
+**Which durable sources define it.** The first implementation creates canonical finite `[[obligation]]` rows in the plan TOML. `O` is exactly those rows and is never inferred from prose. Each row has a stable id, one exact phase owner, a body reference or structured statement, and one source label from the closed enum `success_criterion`, `project_principle`, or `documentation_impact`. A principle label joins one numbered principle row. A documentation-impact label joins one Roadmap step. A success-criterion row is projected into the Success Criteria prose. Validation rejects duplicate ids, unknown labels, missing joins, missing owners, and digest changes after freeze. This restores the intended three-source boundary while making cardinality and membership mechanically enumerable.
 
 **The distinguishing test.** A finding is **in scope** if and only if the reviewer can cite a specific frozen obligation by its stable id **and** give `file:line` or command evidence that the artifact as frozen fails it. A finding is a **scope expansion** if the reviewer must first author a new criterion for the finding to be a violation at all. The test is mechanical in the sense that matters: it asks whether the obligation existed before the finding did.
 
@@ -290,7 +295,7 @@ Carrying forward the sequential and survival framing that `calibration-analysis.
 - **What updates confidence** is the joint distribution of the terminal predicate and the ceiling, not either alone. `calibration-analysis.md` showed that moving the bar from 2 to 1 cuts predicted escalation from 23.4 per cent to 2.9 per cent at the same cap, which is the same point in this setting: the terminal predicate moves the number that the ceiling is blamed for.
 - **What censoring remains** is unchanged and unfixable by design alone. Every mechanism here stops, and none observes what the pass it did not run would have found. Only the forward experiment that `calibration-analysis.md` specifies at item 5 addresses that, and it is out of scope for this question.
 
-**A correction to the already-raised severity-trajectory candidate.** The brief asks that it be compared rather than silently adopted. Comparing it exposes a defect that is easy to miss and that section 7.2 demonstrates mechanically: **a severity-trajectory predicate does not entail the unresolved-critical invariant.** The predicate is a statement about each pass's *novel* findings, whereas the invariant is a statement about the *open* finding set across passes. A critical raised at pass 3 and never fixed does not make pass 5's novel-severity predicate false. Without an explicit open-finding conjunct the gate accepts with an open critical, in 20 reachable ways. The conjunct is required, and the trajectory idea is safe only with it.
+**A correction to the already-raised severity-trajectory candidate.** A trajectory predicate describes each pass's novel findings, while the safety invariant describes the open finding set across passes. A critical opened on one pass and never repaired remains open even if later passes contain only lows or no novel findings. The old proxy's count of twenty witnesses is withdrawn with that proxy. The logical counterexample remains. Any future M3 controller must retain explicit finding dispositions and require an empty serious open set in addition to its trajectory predicate before it can return to recommendation eligibility.
 
 ---
 
@@ -306,19 +311,27 @@ A task opens with an authorised budget `B = (Bp, Bw, Ba)` in review units. Round
 
 ---
 
-## 5. Mechanism M2: the frozen-obligation ledger
+## 5. Mechanism M2: frozen obligations with sealed phase campaigns
 
-**Scope-bounded rather than count-bounded, and the mechanism that attacks the cause section 1.1 measured.**
+M2 is scope-bounded and count-bounded. Plan review has a sealed seven-batch maximum. At convergence it freezes the canonical finite `O`, the set `P` of post-freeze phase identities, and one owner in `P` for every obligation. `P` contains each declared work loop and acceptance, so `p = m + 1`.
 
-At plan-review convergence the rubric freezes into a finite enumerated obligation set `O` from the three sources in section 3.3, and `|O|` is recorded in the plan. Each obligation carries a disposition: `open`, `met`, or `residual-accepted`.
+Each phase has one `FrozenObligationCampaign(phase_id, scope_digest, obligations, closure, spend, terminal)`. An obligation has `Untested`, `OpenInitial`, `InitialRepairPendingVerification`, `Closed(reopen_unused)`, `OpenReopened`, `ReopenRepairPendingVerification`, and `Closed(reopen_used)` states. Initial review, initial verification, materially-new-evidence reopen discovery, and reopened verification each consume at most one review batch. Repair is explicit and consumes no review batch, but it never closes the finding. Only the named verification closes it. A failed verification enters the terminal decision or serious block instead of creating another automatic attempt. Relitigation without new evidence cannot reopen. A dismissed high or critical uses the attached independent re-check.
 
-**Termination.** The task is done when every obligation is `met` or `residual-accepted`, no obligation carries an open in-scope defect, no critical is open, and no high dismissal awaits its re-check. Stopping is a statement about **scope closure**, not about round outcomes, which matters because section 1.5 shows the round-outcome field disagrees with its own finding count 19 times.
+When every obligation in one phase is closed, its non-transferable blind-closure batch runs. A settled result completes the phase. A valid finding at closure is terminal and never creates another repair. A changed scope digest terminally replans the family, carries open findings, preserves old `O`, and requires a new human receipt, plan review, and freeze before a successor can review the expanded scope.
 
-**The bound is derived rather than chosen.** Each obligation may be reopened at most `r` times, so the total number of repair cycles is at most `|O| * (r + 1)` and the ceiling is `C2 = |O| * (r + 1) + 1`. This is the sharpest distinction from M1: M1's ceiling is a policy number that a human picks, and M2's is a function of the frozen rubric, so a larger task earns a proportionally larger allowance automatically and a small one cannot hide behind a generous constant.
+For `n_q` obligations owned by phase `q`, the sealed allocation is `C_q = 4n_q + 1`. The final one is a minimum blind review even when `n_q = 0`. Freeze rejects a missing owner, duplicate owner, owner outside `P`, or mismatched allocation. Summing the phase partitions and adding plan review gives:
 
-**Scope expansion routes to a backlog obligation set**, under the three anti-abuse rules of section 3.3.
+```text
+R_M2 = 7 + sum(4n_q + 1)
+     = 7 + 4|O| + p
+     = 4|O| + m + 8
+```
 
-**What it is good at.** It bounds the thing that actually grew. Passes 2, 4, 7 and 8 each enlarged the acceptance target, and under a frozen rubric each of those folds would have been a new task rather than an extension of the one under acceptance. It also converts the open-ended part of review, the part the external experiment found did not converge while the machine-checkable core did, into a named finite set. **What it is bad at** is that it depends on the obligation set being authored honestly and completely at freeze time, which is a new failure mode that does not exist today.
+This corrected bound replaces `2|O| + 8`. With two reviewer calls, at most one triage, and at most one re-check per review batch, at most six plan repairs, and at most two repairs per obligation, a safe automated-agent upper bound is `18|O| + 4m + 38`.
+
+An active legacy task with no prospective `O` is `LegacyNoRubric`. It is historical and exempt from M2's obligation predicate, but it cannot enter a work or acceptance campaign with undefined authority. The human may terminally finish under the adopted legacy rule or send it through a new prospective plan review and freeze. Validation rejects a direct `LegacyNoRubric -> FrozenObligationCampaign` transition.
+
+M2 stops on verified scope closure without reading historical outcome arrays. It directly exposes the scope changes measured on Q-78. Its costs are canonical obligation authoring, completeness risk, and a terminal replan whenever frozen scope changes.
 
 ---
 
@@ -338,7 +351,7 @@ Terminate when, for `k` consecutive passes, the maximum severity of **novel in-s
 
 ### 7.1 Replay over the live Q-78 acceptance sequence
 
-`replay.sh` derives the sequence from the log rather than hard-coding it, so it tracks the append-only log if it grows. Run `sh replay.sh` from the repository root.
+The selector in section 1.1 derives the sequence from the append-only log. The M1 and M3 tables apply their stated arithmetic to that selected sequence. The corrected M2 replay has its own durable command below because its scope-digest transitions are load-bearing.
 
 **M1, a pure count budget, at every acceptance sub-budget `Ba`:**
 
@@ -352,6 +365,8 @@ Terminate when, for `k` consecutive passes, the maximum severity of **novel in-s
 | 9 | 9 | low | 0 | none | yes | yes |
 
 The reading is unfavourable to a pure count budget and is stated plainly. **Any acceptance sub-budget below 7 stops on a pass that itself carried a `high`.** At `Ba = 6` the task would have terminated with an open high and 7 further valid shortfalls undiscovered, and **with the terminal floor at `critical` the human would have been offered `accept residual risk` as a legal option in that state.** Setting `F = high` refuses it. This is the strongest local argument for setting the terminal severity floor above `critical` on risky work, and it is an argument the brief's mandatory-minimum requirement permits but does not compel.
+
+**Corrected M2 scope replay over all ten passes.** `docs/plans/workflow-calibration.explorations/q86-q78-scope-replay.sh` reads only task, phase, and artefact descriptions. Passes 2, 4, 7, and 8 each take `ScopeDigestChanged -> Replanned`, preserve open findings as `CarriedToSuccessor`, and require a new human receipt plus plan review and freeze before that pass can be admitted under successor F2, F3, F4, or F5. The other six passes take the matching-scope review edge. Historical obligation outcomes remain unreconstructible because the records have no obligation or finding joins. The replay result is ten passes across five families, four terminal replans, four additional human receipts, and four additional plan-review and freeze campaigns. This is M2's measured cost and its anti-laundering effect.
 
 **M3, the decay gate, across thresholds `T` and windows `k`:**
 
@@ -369,374 +384,209 @@ The reading is unfavourable to a pure count budget and is stated plainly. **Any 
 
 Two red controls fall out. At `T = medium, k = 1` the gate fires on **pass 1**, before all four high-bearing passes, because passes 1 and 2 both had a maximum of `medium`. At `T = high, k = 2` it fires on **pass 6**, a pass that itself carried a high. At `T = low` it never fires while a high is outstanding. The calibration is therefore not a matter of taste: **`T` must sit strictly below the severity that would not be shipped, and `k` must be at least 2.**
 
-### 7.2 Exhaustive transition check
+### 7.2 Corrected exhaustive transition check
 
-`statemachine.awk` enumerates the complete reachable state set under the twelve-input alphabet and checks two properties. **P1 BOUND**: every non-terminal edge strictly decreases the well-founded measure `(CAP - u) * 4 + oc + oh + ob`, so every path terminates. **P2 CRITICAL**: no terminal labelled `converged` or `accepted` is reachable with an open critical or a pending backstop re-check.
+The prior `statemachine.awk` result is withdrawn. Its M2 branch was a four-unit proxy without initial-attempt, repair, verification, reopen, phase, or blind-closure state. It did not derive the claimed bound. The corrected durable proof is `docs/plans/workflow-calibration.explorations/q86-controller-proof.py`.
+
+Mode B is the actual `FrozenObligationCampaign` in section 5. It keeps each obligation identity and disposition, the immutable phase identity, review spend, attached dismissal re-checks, blind closure, exhaustion, and terminal transitions. A valid critical remains open through repair and clears only on its named verification or a terminal non-delivery disposition. The graph is parameterised by the exact number of obligations owned by one phase.
+
+Run:
 
 ```sh
-for m in b0 b0acc m1 m2 m3 m3nogate
-do awk -v MECH=$m -f statemachine.awk </dev/null
+CHECKER=docs/plans/workflow-calibration.explorations/q86-controller-proof.py
+for n in 0 1 2 3
+do
+    nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode B --phase work:example --obligations "$n" --floor high
 done
+nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode B --phase acceptance --obligations 2 --floor critical
+sha256sum "$CHECKER"
 ```
 
-| Mechanism | Reachable states | Edges | Longest path | P1 BOUND | P2 CRITICAL |
-| --- | --- | --- | --- | --- | --- |
-| `b0` baseline convergence | 12 | 58 | 4 | **DISPROVED, cycle reachable** | holds. |
-| `b0acc` baseline acceptance | 1 | 8 | 0 | **DISPROVED, cycle reachable** | holds. |
-| `m1` sealed budget | 38 | 203 | 4 | HOLDS | HOLDS. |
-| `m2` obligation ledger | 107 | 505 | 4 | HOLDS | HOLDS. |
-| `m3` decay gate | 38 | 203 | 4 | HOLDS | HOLDS. |
-| `m3nogate` red control | 36 | 184 | 4 | HOLDS | **VIOLATED, 20 reachable.** |
+The high-floor sweep returns:
 
-The red control is the point of the exercise. `m3nogate` is M3 with the open-finding conjunct removed, leaving the pure severity-trajectory rule that section 3.6 warned about. It remains bounded, and it accepts with an open critical in 20 reachable ways:
-
-```
-2,1,1,0,0 --round_clean--> 3,2,1,0,0 terminal=converged open_critical=1 pending_recheck=0
-2,1,0,1,0 --round_clean--> 3,2,0,1,0 terminal=converged open_critical=0 pending_recheck=1
+```text
+B phase=work:example obligations=0 floor=high bound=1 states=29 edges=30 terminal=22 acyclic=true max_reviews=1 bad_delivery=0 bad_critical_clear=0 bad_bound=0
+B phase=work:example obligations=1 floor=high bound=5 states=283 edges=486 terminal=179 acyclic=true max_reviews=5 bad_delivery=0 bad_critical_clear=0 bad_bound=0
+B phase=work:example obligations=2 floor=high bound=9 states=1680 edges=3785 terminal=892 acyclic=true max_reviews=9 bad_delivery=0 bad_critical_clear=0 bad_bound=0
+B phase=work:example obligations=3 floor=high bound=13 states=8430 edges=21937 terminal=3917 acyclic=true max_reviews=13 bad_delivery=0 bad_critical_clear=0 bad_bound=0
 ```
 
-Read the first witness: two units spent, decay streak 1, a critical open from an earlier pass. A clean pass advances the streak to 2 and the gate fires. The critical never entered the predicate, because the predicate only ever read the current pass. **The trajectory rule is bounded and unsafe until the conjunct is added, and boundedness and safety are genuinely independent properties here.**
+The critical-floor run is also acyclic and reports zero violations. The checker SHA-256 is `db2874d8654957582f18592ece030f344b60ca9657c127715fcc78d6987ef9a7`.
 
-`human_resume` is rejected as an illegal input 22 times for `m1` and `m3` and 56 times for `m2`, at every state, which is the mechanical form of the non-resettability claim.
+The algebra proves the parameter not covered by the finite sweep. Each obligation has at most four review-consuming transitions and cannot move backwards. Each phase has one blind-closure transition. Therefore phase `q` has at most `4n_q + 1` review batches for every finite `n_q`. Exact phase ownership and no transfer make the sum `4|O| + p`. Adding the seven-batch plan campaign gives `4|O| + m + 8`.
 
-The parameters are deliberately small (`CAP = 4`, `REQ = 2`, `k = 2`, `|O| = 2`) so the enumeration is genuinely exhaustive rather than sampled. Nothing in either property depends on the values.
+M1's corrected synthesis controller is mode A in the same proof. M3 is no longer claimed recommendation-eligible from the withdrawn proxy. Its conceptual bound still needs an explicit disposition controller and trustworthy prospective trajectory data before it can return to the option set.
 
 ### 7.3 Every required red-control path
 
-| Path | M1 | M2 | M3 |
+| Path | M1 | Corrected M2 | M3 status. |
 | --- | --- | --- | --- |
-| **Repeated human resume** | Not a legal input. No transition exists, so the ceiling is untouched. Bound: `B`. | Same. Bound: `\|O\| * (r + 1) + 1`. | Same. Bound: `C3`. |
-| **Unbounded acceptance-repair sequence** | Every acceptance pass debits `Ba`. Bound: `Ba`. Terminal: exhaustion menu. | Every pass must close an obligation or spend a reopen. Bound: `\|O\| * (r + 1)`. Terminal: scope closure or ceiling. | Every pass debits `C3`. Bound: `C3`. Terminal: decay streak or ceiling. |
-| **Fix-induced high near exhaustion** | Counts fully, resets the streak, debits. Terminal: `exhausted_restricted` when `F = high`, `exhausted_full` when `F = critical`. | Reopens its obligation and spends one reopen allowance. Terminal: as M1. | Counts fully as novel in-scope, resets the decay streak. Terminal: as M1. |
-| **Scope-expanded low** | Debits its pass, counts as clean for the streak. Bound unchanged. | Routed to the backlog obligation set. `\|O\|` unchanged, so the bound is unchanged. | Excluded from `novel in-scope`, so the decay streak advances. Bound unchanged. |
-| **Relitigation without new evidence** | Dismissed by the ledger rule, counts as clean. Bound unchanged. | Does not reopen an obligation, so no reopen allowance is spent. Bound unchanged. | Excluded from `novel in-scope`. Bound unchanged. |
-| **Narrowing or replan** | New budget, old task terminally closed with findings `carried`. Chain of narrowing replans bounded by `\|O_initial\|`. | Same, and narrowing strictly decreases `\|O\|`, which **is** the bound, so the chain bound is exact. | Same as M1. |
-| **Unresolved critical at exhaustion** | Menu restricted to revert, replan-with-carry, abandon. `accept residual` and `narrow scope` illegal. Terminal: `exhausted_restricted`. Verified over 38 states. | Same, and a critical is always in scope by the section 3.3 severity floor so it cannot be routed to backlog. Verified over 107 states. | Same, and the terminal predicate additionally cannot fire. Verified over 38 states. |
+| **Repeated human resume** | Resume reconstructs spend and every phase ends by batch seven. | Resume reconstructs one immutable phase campaign. Bound `4n_q + 1`. | Excluded pending a corrected controller and instrumentation. |
+| **Unbounded acceptance-repair sequence** | Every acceptance pass debits its slice and the final finding is terminal. | Each obligation has at most an initial repair and one reopened repair. A blind-closure finding is terminal. | Excluded. |
+| **Fix-induced high near exhaustion** | It consumes the authorised verification and can unlock only unspent reserve. | Verification failure or a fix-induced finding enters the terminal decision or serious block. It cannot mint another attempt. | Excluded. |
+| **Scope-expanded low** | It is backlogged and cannot enlarge the frozen scope. | It cannot add an obligation. A changed scope digest terminally replans the family. | Excluded. |
+| **Relitigation without new evidence** | It preserves disposition and cannot reset spend. | It cannot take `MateriallyNewEvidence` or consume reopen authority. | Excluded. |
+| **Narrowing or replan** | The family is terminal and no slice returns. | The family is terminal, `O` stays immutable, and open findings are carried. | Excluded. |
+| **Unresolved critical at exhaustion** | Delivery is unconstructible in the corrected disposition model. | Delivery is unconstructible at both floor values in the corrected controller. | Excluded. |
+| **Blind closure** | Every batch contains a blind seat. | Every phase owns one non-transferable closure seat, including an empty phase. | Excluded. |
 
-All three mechanisms therefore have a finite bound or an exact terminal event on every required path, which is the eligibility condition the brief sets.
+M1 and corrected M2 have a finite bound or exact terminal event on every required path. M3 remains design input rather than a recommendation-eligible option after the proof correction.
 
 ---
 
-## 8. DESIGN: all three against all eight Project Principles by name
+## 8. DESIGN: the candidates against all eight Project Principles by name
 
-| Principle | M1 sealed budget | M2 obligation ledger | M3 decay gate |
+| Principle | M1 sealed budget. | Corrected M2 frozen obligations. | M3 severity decay. |
 | --- | --- | --- | --- |
-| **Prefer the cleaner long-term architecture over the smallest diff** | Weakest. It keeps two stopping stories, a streak and a budget, layered on one concern. | Strongest. One concept, scope closure, replaces the streak, the cap and the uncounted acceptance branch. | Middle. Replaces the streak with a better predicate but keeps a separate ceiling. |
-| **Minimal by default** | Strongest. Streak logic and risk classes are untouched, and only a counter is added. | Weakest. It requires a new authored artifact, the frozen obligation set. | Middle. New predicate, no new artifact. |
-| **Safe on existing projects** | Good. A budget can be absent and default to unbounded on a legacy tree. | Needs care. A tree with no frozen rubric must be exempt, not failed. | Good, if `severities` is absent-tolerant. |
-| **Idempotent** | Holds. No reset transition exists, so two runs of one task give one result. | Holds, and more strongly, because closure is a property of the artifact rather than of the run. | Holds. |
-| **Make illegal states unrepresentable** | Partial. The open-critical conjunct is a guard on the terminal, not a property of the type. | Strong. An obligation's disposition is a closed enum and "done with an open obligation" is not constructible. | Partial, and section 7.2 shows how easy the mistake is to make. |
-| **Ground decisions in evidence** | Poor here. Section 7.1 shows no value of `Ba` below 7 is defensible on the local data, and the local data is one task. | Good. It targets the enlargement that section 1.1 measured. | Good in principle, undermined in practice by section 1.5. |
-| **Reproducible** | Holds. The bound is a constant. | Holds, and the bound is derivable from committed data. | Holds given the ceiling. |
-| **Structured data first, project for humans** | Good. A budget is a `[meta]` integer triple. | Strongest. Obligations become structured rows projected into the rendered plan, which is the pattern `Q-78` and `Q-83` already chose. | Good, but it makes `severities` load-bearing, which section 1.5 argues against today. |
+| **Prefer the cleaner long-term architecture over the smallest diff** | Keeps streak and budget as two stopping concepts. | Uses one obligation campaign for scope, attempts, closure, ownership, and bound. | Keeps a trajectory predicate plus an outer ceiling. |
+| **Minimal by default** | Smallest migration from current semantics. | Largest schema because canonical obligation rows are new. | Middle, but prospective trajectory evidence is also new. |
+| **Safe on existing projects** | A digest boundary can charge old spend and fail loudly. | `LegacyNoRubric` is exempt from B rather than falsely failed, but cannot start B before a prospective freeze. | Historical missing severity must never be treated as safe evidence. |
+| **Idempotent** | Resume reconstructs monotone spend. | Phase, obligation, attempt, and spend replay deterministically. | A sealed ceiling prevents reset. |
+| **Make illegal states unrepresentable** | Explicit finding dispositions remove the old scalar-erasure path. | Closed variants prevent unverified closure, second reopen, phase transfer, and post-terminal action. | Needs the same explicit disposition controller before returning to eligibility. |
+| **Ground decisions in evidence** | Preserves the measured five-round boundary, but reserve values are weakly calibrated. | Targets observed scope movement, while the Q-78 replay exposes four forced replans. | The historical trajectory fields are not trustworthy enough for a gate. |
+| **Reproducible** | Fixed arithmetic and corrected mode-A graph. | `4|O| + m + 8` derives from finite rows and exact owners, and corrected mode B exhausts the controller. | The old proxy is withdrawn. |
+| **Structured data first, project for humans** | Accounts, findings, and receipts are structured. | Obligation rows, owners, attempts, findings, and receipts are structured. | Prospective finding and trajectory state would need structure. |
 
-The baseline's assessment is at section 2.3.
+The baseline assessment remains at section 2.3.
 
 ---
 
 ## 9. DESIGN: migration and enforcement
 
-Common to all three. **Advisory** means prose guidance an agent may follow. **Enforced** means `validate --workflow` exits non-zero.
+Common surfaces move only after the human chooses. Advisory guidance describes judgement. Mechanical enforcement exits non-zero on illegal state.
 
-| Surface | What moves | Advisory or enforced |
+| Surface | What moves. | Authority. |
 | --- | --- | --- |
-| `.agents/workflow.toml` and `pack/workflow.toml` | New constants beside `[convergence]` and `[rounds]`. M1 adds the budget triple. M2 adds the reopen allowance `r`. M3 adds `T` and `k`. All add the terminal severity floor `F`. | Data, consumed by an enforced check. |
-| `src/workflow_spec.rs` | `WorkflowSpec` gains the fields, and the existing drift-guard test that parses the TOML and asserts equality extends to them. | Enforced by the existing test. |
-| `ReviewProcess` reconstruction | The single largest dependency. `review-loop-foreclosure-enforcement` is already scheduled to deliver the shared typed reconstruction with `Convergence` and `SinglePass` disjoint. **All three mechanisms need `SinglePass` to gain a task-scoped counter, which today it deliberately has none of.** M2 additionally needs an obligation join. This work must land after that step, never beside it. | Enforced. |
-| `src/workflow.rs` | A new check in the W-series. Convergence-or-waiver precedence in W3 is untouched. | Enforced. |
-| `src/next.rs` | New reasons distinguishing budget exhaustion from foreclosure and from cap, and the terminal menu. Read-only and advisory authority is unchanged. | Advisory output of an enforced state. |
-| `src/metrics.rs` and the record schema | `round` gains the debited phase and the running spend. M2 adds obligation ids and dispositions. M3 makes `severities` load-bearing. A new terminal-choice record, or an extension of `escalation` with the terminal option chosen. | Enforced by `validate`. |
-| Plan and ledger state | M2's frozen obligation set is plan-resident structured data, projected into the rendered view. The ledger's round-records narrative gains the running spend. The ledger is still deleted at task close, so **no terminal record may live only in the ledger.** | Mixed. |
-| **Append-only history** | **Nothing is rewritten.** The mechanism adopts the same honest device `review-loop-foreclosure-enforcement` already established: a typed, digest-pinned adoption boundary in the plan TOML that retires pre-adoption history for the new check only. Existing waivers, the `q78-design-pass` `[[task_loop]]` declaration and the Q-81 historical rows are untouched. A tree with no boundary enforces from its first round. | Enforced, fail-closed. |
-| `pack/AGENTS.md`, `AGENTS.md`, `.agents/AGENTS.reference.md` | The Convergence and Accept sections. Acceptance stops being described as unbounded. Rendered from the single source, so copies cannot drift. | Advisory text, byte-guarded. |
-| `pack/instrument.md` | The new record fields and the semantics of the terminal record. | Advisory. |
-| `pack/prompts/orchestrator.md`, `reviewer.md`, `triager.md`, and the `.agents/` copies | Reviewer prompts gain the blind-versus-informed brief. **The triager prompt gains the scope ruling and the rule that an out-of-scope ruling at `high` or above takes the backstop re-check.** | Advisory, and the highest-leverage change for M2. |
-| `pack/plan-template.plan.toml`, `pack/plan-template.success-criteria.md` | M2 adds the obligation rows. | Data. |
-| `pack/LEDGER.template.md` and `.agents/LEDGER.template.md` | The spend line in the round-records narrative. | Advisory. |
-| `README.md` | The cap-labelled diagram must stay value-free and become budget-accurate. | Advisory. |
-| `CHANGELOG.md` | Records that a previously valid tree may now fail. | Advisory. |
+| `.agents/workflow.toml` and `pack/workflow.toml` | Chosen controller constants and the human-selected terminal floor. | Data consumed by enforcement. |
+| `src/workflow_spec.rs` | `WorkflowSpec` fields and drift-guard tests. | Enforced by tests. |
+| Shared `ReviewProcess` reconstruction | Task family, phase controller, frozen scope, finding disposition, terminal state, and acceptance campaign. `SinglePass` remains one observation and does not acquire streak or cap fields. | Enforced. |
+| `src/workflow.rs` and `src/next.rs` | One reconstruction supplies validation and the permitted next action. | Enforced state with advisory projection. |
+| Metrics schema | Prospective scope, finding, evidence, disposition, brief, spend or stage, re-check, and terminal events. | Enforced by validation. |
+| Plan source | Family, attempt, scope, phase, adoption, terminal, and B obligation rows. | Enforced structured source. |
+| Ledger | Narrative and resume pointer only. No terminal fact lives only in the ledger. | Advisory projection. |
+| Append-only history | No event is rewritten. A typed digest boundary separates legacy history. B adds `LegacyNoRubric`. | Enforced and fail-closed. |
+| Canonical and generated guidance | `pack/AGENTS.md`, `pack/instrument.md`, role prompts, ledger and plan templates, their dogfood copies, README, and changelog. | Advisory text generated or byte-guarded where applicable. |
 
-**What is enforced versus advised, stated sharply.** The bound itself must be enforced, because an advisory bound is the current cap and section 1.2 shows what an advisory bound does. The **terminal severity floor must be enforced**, because it is the only thing standing between a budget and a concealed critical. Reviewer allocation stays **advisory**, because a machine cannot verify that a reviewer was genuinely blind, and section 1.8 records that "ground-blind" is a label rather than a proven barrier.
+For corrected M2, validation enforces finite canonical obligation rows, exact source labels, one phase owner, `C_q = 4|O_q| + 1`, no transfer, one reopen-discovery transition, repair-before-verification, blind closure, scope-digest terminality, legacy adoption, and critical legality. `next` reports the exact obligation and blind or informed brief permitted by state. It cannot prove that a reviewer was genuinely blind or that a human judgement was true.
+
+The chosen work must land after `review-loop-foreclosure-enforcement` and reuse its typed reconstruction. Acceptance remains a campaign around disjoint `SinglePass` observations rather than adding convergence fields to a single pass.
 
 ---
 
 ## 10. RECOMMENDATION
 
-**Recommended: M2, the frozen-obligation ledger.** Selected only from the viable bounded mechanisms, per the brief.
+**Recommended: corrected M2, frozen obligations with sealed phase campaigns, at medium to low confidence.**
 
-Four reasons, in descending weight.
+The recommendation now rests on the corrected controller rather than the withdrawn 107-state proxy.
 
-- **It bounds the thing that actually grew.** Section 1.1 measures four scope folds into an artifact already under acceptance, and every pass from the second onward describing its own target as "expanded". M1 and M3 both bound the *response* to a growing artifact. Only M2 bounds the growth. Given a choice between rationing the review of a moving target and freezing the target, the second is the cleaner architecture and the one that addresses the measured cause.
-- **Its termination predicate does not read the fields that are broken.** Section 1.5 shows 19 rounds recorded `clean` while carrying valid findings, all 19 advancing a streak. M1's predicate is the streak, which is computed from `outcome`. M3's predicate is `severities`, whose sibling fields are demonstrably lossy. M2's predicate is a per-obligation disposition authored by a triager, which is the one judgement in this system that is already produced by an independent agent and already committed to a findings file.
-- **Its bound is derived rather than chosen.** Section 7.1 shows that no defensible value of a count budget exists on the local data, because every value below 7 stops on a `high`-bearing pass and 7 is a sample of one. `|O| * (r + 1) + 1` requires no such guess and scales with the task.
-- **It answers the external evidence most directly.** The experiment found that the machine-checkable core converged while open-ended contract, conformance and prose obligations did not, and the Lobsters thread names missing "scope, constraints, and satisfaction criteria" as the root cause. A frozen finite obligation set is exactly the conversion of the second category into the first.
+- It addresses the four observed Q-78 scope additions by making each changed scope digest terminal rather than silently enlarging the accepted target.
+- It completes from triage-backed obligation and finding dispositions rather than broken historical outcome or severity arrays.
+- Its bound is derived from a closed finite `O` and exact phase owners: `4|O| + m + 8` review batches per family.
+- Its graph is acyclic and reports zero delivery, critical-clear, and bound violations for both terminal-floor values in the parameterised proof.
 
-**Confidence: MEDIUM.**
+The recommendation has substantial costs.
 
-It is not higher for three reasons. The evidence is one task and ten passes. M2 introduces a genuinely new failure mode that does not exist today, namely an obligation set authored incompletely at freeze time, and the `critical`-always-in-scope rule is the only backstop against it, which is a design claim with one supporting observation in the whole log. And M2 is the weakest of the three on **Minimal by default**, which is a real cost that section 8 does not hide.
+- Q-78 would have required four terminal replans, four additional human receipts, four additional plan-review and freeze campaigns, and five task families before all ten reviewer passes could run.
+- Canonical obligation authoring is the largest schema and migration burden.
+- An incomplete obligation set is a new safety risk that mechanical cardinality cannot eliminate.
+- The one-reopen design and its operational adequacy have no prospective calibration.
 
-It is not lower because the two mechanical results are direct enumerations rather than inferences: the baseline cycle at section 2, and P1 and P2 over 107 reachable states at section 7.2.
+A focused schema and reconstruction proof of concept must show that obligation rows stay finite, precise, and non-duplicative. If it fails, the architecture decision returns to the human with M1 as the recommendation. It never selects M1 automatically.
 
-**Evidence that would overturn this recommendation.**
+Evidence that would overturn M2 includes frozen-scope tasks that still need long repair sequences, systematic uncited genuine defects, any serious finding routed to backlog, or prospective evidence that M1 preserves materially more unique serious findings for acceptable cost. A change to the reopen count requires a new finite prospective value and cannot replenish a live campaign.
 
-- **A second acceptance sequence that grows long with a frozen rubric.** If a task whose scope demonstrably did not move still needed many acceptance passes, the diagnosis in section 1.1 is wrong and M3 becomes the better answer.
-- **A repaired `outcome` and `severities` instrument.** Section 1.5 is the main argument against M3. `calibration-analysis.md` item 2 specifies the repair. If it lands and the fields become trustworthy, M3's predicate reads the quantity that actually decayed and its case strengthens considerably.
-- **An obligation set found to be systematically incomplete at freeze.** If in-scope defects routinely fail to cite any frozen obligation, the firewall is filtering real defects and M1's blunter instrument is safer.
-- **Any recorded case of a `critical` routed to backlog.** That would falsify the severity-floor rule directly and would make M2 unsafe as specified.
-- **A material rise in `human_decision: "resume"`.** Section 1.3 records the first two. If resumes become common under any mechanism, the terminal menu is not being taken seriously and the problem is human process rather than mechanism.
-
-**What this recommendation does not claim.** It does not claim the Q-78 sequence diverged, and section 0 corrects the record. It does not claim the folds caused the highs. It does not claim a rate for anything.
+This recommendation does not claim that Q-78 diverged, that scope additions caused later findings, or that the evidence estimates a population rate.
 
 ---
 
-## 11. YAGNI boundary: what not to build first
+## 11. YAGNI boundary
 
-- **No general issue tracker.** The backlog obligation set is a list of obligation ids in the plan TOML, and nothing more. No priorities, no assignment, no lifecycle beyond `open` and `folded into <task>`.
-- **No autonomous risk judge.** Severity and scope stay triager judgements entering through typed inputs. Nothing infers a risk class, and the existing rule that no transition manufactures a triage verdict holds unchanged.
-- **No probabilistic defect oracle.** No survival model, no threshold fitted from the log, no confidence interval in a gate. Section 1.8 explains why the sample cannot support one, and `calibration-analysis.md` already declined to build one on the same grounds.
-- **No reviewer marketplace.** Allocation stays advisory prompt guidance. Do not build reviewer scoring, selection or routing from the attribution data.
-- **No rewriting of historical findings or records.** The append-only log stays append-only, and adoption uses the digest-pinned boundary device that already exists.
-- **No per-reviewer or per-token budget accounting.** One unit per round, deliberately, so diversity stays free.
-- **No new phase and no new role.** M2 reuses the planner for the freeze, the triager for the scope ruling and the orchestrator for the terminal menu.
-- **Do not build the mechanism before `review-loop-foreclosure-enforcement` lands.** Every candidate needs the shared typed reconstruction and needs `SinglePass` to acquire a task-scoped counter. Building beside that step would create the second loop formula it exists to prevent.
-- **Do not implement anything until the human decides.** `Q-85` scheduled this investigation and decided nothing about the mechanism.
+- Do not build a general issue tracker, project-wide defect database, mutable rubric editor, or autonomous obligation extractor.
+- Do not build an autonomous risk, scope, severity, or residual-risk judge.
+- Do not build probabilistic stopping, dynamic pricing, transferable credits, a reviewer marketplace, or a model optimiser.
+- Do not rewrite or infer historical finding lineage, obligation membership, stage, or closure.
+- Do not build a persistent workflow service, general workflow language, or new scheduler beyond the planned typed fleet.
+- Do not create authority from rename, rebuild, replan, narrowing, scope change, or human resume.
+- Do not implement a mechanism or floor until the human decides.
 
 ---
 
-## 12. The later human decision that implementation needs
+## 12. The later human decisions
 
-Presented through the human-input contract at synthesis time. Only the viable bounded options go to the human. The baseline is comparison evidence and is not an option.
+The synthesis presents only A, B, and C as viable bounded architectures. M3 is excluded until a corrected disposition controller and trustworthy prospective trajectory evidence exist.
 
-**The question.** Which bounded convergence mechanism should replace the current resettable per-artifact cap and the uncounted acceptance-repair sequence?
+**Architecture question.** Which architecture should Q-86 fold into `workflow-calibration`?
 
-**The options.** M1 the sealed non-resettable task budget, M2 the frozen-obligation ledger, M3 the severity-decay gate with a reserved blind pass. Trade-offs at sections 4 to 6, Principle assessment at section 8, migration at section 9.
+**Architecture recommendation.** B, at medium to low confidence, with the costs and proof-of-concept gate in section 10.
 
-**The recommendation.** M2, at MEDIUM confidence, for the reasons at section 10.
+**Serious-floor co-decision.** The human owns `F` whichever architecture is chosen.
 
-**Three sub-decisions the human owns whichever option is chosen.**
+- Choose `high`, recommended. Ordinary residual acceptance and ordinary narrowing are unavailable while a high or critical is open. The retained Q-78 triages show this restriction would apply on passes three through six.
+- Choose `critical`, the mandatory safety minimum. An open critical blocks those choices, while a high may be accepted as residual risk.
+- Defer the floor to a separate receipted decision before implementation.
 
-- **The terminal severity floor `F`.** The mandatory minimum is `critical`. Section 7.1 shows that at `F = critical` the human would have been offered `accept residual risk` on a pass carrying an open `high`, with seven further shortfalls undiscovered. Setting `F = high` for `risky` artifacts refuses that. This is a safety-appetite decision and is not derivable from the data.
-- **Whether at least one blind artifact-wide pass is reserved in the terminal streak.** It costs one pass per task. The external result and the local precision figures both support it, and both are confounded.
-- **Whether the instrument repair precedes the mechanism.** Section 1.5's 19 rounds argue that a gate built on `outcome` or `severities` today would encode a known defect. M2 is the least exposed to this, which is part of why it is recommended, but the question is worth putting explicitly.
+At least one blind closure pass is structural in all three synthesised options, so it is no longer a separate toggle. Instrument repair is required before any outcome or trajectory field becomes load-bearing, but B can proceed from prospective dispositions without waiting for a historical rewrite.
 
-**What must not be inferred.** `Q-85` decided only where this investigation belongs. Nothing in it approves a mechanism.
+`Q-85` decided only where this investigation belongs. No architecture, floor, or implementation is approved by it.
 
 ---
 
-## Appendix A: scripts
+## Appendix A: corrected proof and replay
 
-All three are read-only and mutate no tracked file. Run from the repository root.
+### A.1 Controller proof
 
-### A.1 `evidence.sh`
+The durable proof is `docs/plans/workflow-calibration.explorations/q86-controller-proof.py`. Mode A checks M1. Mode B checks the corrected M2. Mode C checks the fixed-depth synthesis option. Run from the repository root:
 
-Every count in section 1. The individual `jq` commands are reproduced inline in sections 1.1 to 1.6, so this script is a convenience wrapper over them.
-
-### A.2 `replay.sh`
-
-Derives the acceptance sequence from the log rather than hard-coding it, then replays the baseline, M1 at every sub-budget, and M3 at every threshold and window. Produces the tables at section 7.1. Its final block replays the `step-intent-encoding-inc1` window arithmetic from section 1.2.
-
-### A.3 `statemachine.awk`
-
-The exhaustive transition check behind section 7.2.
-
-```awk
-# Usage: awk -v MECH=<b0|b0acc|m1|m2|m3|m3nogate> -f statemachine.awk </dev/null
-#
-# State: u  review units spent
-#        c  streak (clean streak for m1/b0, decay streak for m3)
-#        oc open critical outstanding
-#        oh high dismissal awaiting the backstop re-check
-#        ob open frozen-rubric obligations (m2), or the escalated flag (b0)
-#
-# Input alphabet, applied at EVERY reachable non-terminal state:
-#   1 round_clean          no novel in-scope valid finding
-#   2 round_low            novel in-scope, max severity low
-#   3 round_medium
-#   4 round_high_upheld    triager ruled it valid, so it must be repaired
-#   5 round_high_dismissed triager dismissed it, so a re-check is owed
-#   6 round_critical
-#   7 round_scope_expanded ruled out of the frozen rubric, routed to backlog
-#   8 round_relitigated    re-raised with no new evidence, dismissed by ledger
-#   9 recheck_upheld       backstop upholds the dismissal
-#  10 recheck_overturned   backstop overturns it, the finding is valid
-#  11 fix_closes_critical  a repair pass closes the open critical
-#  12 human_resume         the baseline reset branch
-
-function enc(u, c, oc, oh, ob) { return u "," c "," oc "," oh "," ob }
-function measure(u, c, oc, oh, ob) { return (CAP - u) * 4 + oc + oh + ob }
-
-BEGIN {
-  if (MECH == "") { print "set -v MECH"; exit 1 }
-  CAP = 4; REQ = 2; K = 2; OBL0 = 2
-
-  NIN = 12
-  nm[1]="round_clean";          nm[2]="round_low";            nm[3]="round_medium"
-  nm[4]="round_high_upheld";    nm[5]="round_high_dismissed";  nm[6]="round_critical"
-  nm[7]="round_scope_expanded"; nm[8]="round_relitigated"
-  nm[9]="recheck_upheld";       nm[10]="recheck_overturned";   nm[11]="fix_closes_critical"
-  nm[12]="human_resume"
-
-  start = enc(0, 0, 0, 0, (MECH == "m2" ? OBL0 : 0))
-  q[1] = start; seen[start] = 1; depth[start] = 0; qh = 1; qt = 1
-  edges = 0; badmeasure = 0; cycles = 0; violations = 0; maxdepth = 0; rejected = 0
-
-  while (qh <= qt) {
-    s = q[qh++]
-    if (term[s] != "") continue
-    split(s, f, ",")
-    u = f[1] + 0; c = f[2] + 0; oc = f[3] + 0; oh = f[4] + 0; ob = f[5] + 0
-
-    for (i = 1; i <= NIN; i++) {
-      if (i == 9 || i == 10) { if (oh == 0) { rejected++; continue } }
-      if (i == 11)           { if (oc == 0) { rejected++; continue } }
-      if (i == 12 && MECH != "b0" && MECH != "b0acc") {
-        # In every bounded mechanism a human resume is NOT a legal input:
-        # there are no counters to reset. Recorded as rejected, not a no-op.
-        rejected++; illegal_resume++; continue
-      }
-      # In the baseline, a resume is legal ONLY at an escalated state, and a
-      # review round is legal only at a NON-escalated one. Modelling it this
-      # way matters: allowing a resume anywhere would manufacture the cycle
-      # instead of deriving it from the rule as written.
-      if (MECH == "b0") {
-        if (i == 12 && ob != 1) { rejected++; continue }
-        if (i != 12 && ob == 1) { rejected++; continue }
-      }
-
-      nu = u; nc = c; noc = oc; noh = oh; nob = ob; lab = ""
-
-      if (MECH == "b0") {
-        if (i >= 1 && i <= 8) {
-          nu = u + 1
-          if (i == 1 || i == 7 || i == 8) nc = c + 1; else nc = 0
-          if (nc >= REQ) lab = "converged"
-          else if (nu >= CAP) nob = 1        # escalated, and NOT terminal
-        } else if (i == 12) {
-          nu = 0; nc = 0; nob = 0; lab = ""  # the reset branch
-        } else { rejected++; continue }
-      }
-
-      else if (MECH == "b0acc") {
-        if (i >= 1 && i <= 8) {
-          nu = 0                             # nothing counts an acceptance pass
-          if (i == 1) lab = "accepted"; else nc = 0
-        } else { rejected++; continue }
-      }
-
-      else if (MECH == "m1" || MECH == "m2") {
-        if (i >= 1 && i <= 8) {
-          nu = u + 1
-          if (i == 1 || i == 7 || i == 8) nc = c + 1; else nc = 0
-          if (i == 6) noc = 1
-          if (i == 5) noh = 1
-          if (MECH == "m2" && (i == 1 || i == 2 || i == 3)) nob = (ob > 0 ? ob - 1 : 0)
-          converged = (nc >= REQ && noc == 0 && noh == 0)
-          if (MECH == "m2") converged = (converged && nob == 0)
-          if (converged) lab = "converged"
-          else if (nu >= CAP) lab = (noc == 1 || noh == 1) ? "exhausted_restricted" : "exhausted_full"
-        } else if (i == 9)  { noh = 0 }
-        else if (i == 10) { noh = 0; nc = 0 }
-        else if (i == 11) { noc = 0 }
-      }
-
-      else if (MECH == "m3" || MECH == "m3nogate") {
-        if (i >= 1 && i <= 8) {
-          nu = u + 1
-          # the decay streak advances only on a pass whose NOVEL in-scope
-          # findings are at or below the low threshold
-          if (i == 1 || i == 2 || i == 7 || i == 8) nc = c + 1; else nc = 0
-          if (i == 6) noc = 1
-          if (i == 5) noh = 1
-          if (MECH == "m3") converged = (nc >= K && noc == 0 && noh == 0)
-          else              converged = (nc >= K)     # RED CONTROL: gate omitted
-          if (converged) lab = "converged"
-          else if (nu >= CAP) lab = (noc == 1 || noh == 1) ? "exhausted_restricted" : "exhausted_full"
-        } else if (i == 9)  { noh = 0 }
-        else if (i == 10) { noh = 0; nc = 0 }
-        else if (i == 11) { noc = 0 }
-      }
-
-      t = enc(nu, nc, noc, noh, nob)
-      edges++
-
-      if (lab == "") {
-        if (measure(nu, nc, noc, noh, nob) >= measure(u, c, oc, oh, ob)) {
-          badmeasure++
-          if (badlist[s "->" t] == 0) {
-            badlist[s "->" t] = 1
-            if (nbad < 6) { nbad++; badshow[nbad] = "  " s " --" nm[i] "--> " t \
-              "   measure " measure(u,c,oc,oh,ob) " -> " measure(nu,nc,noc,noh,nob) }
-          }
-        }
-        if (seen[t] && depth[t] <= depth[s]) {
-          cycles++
-          if (ncyc < 4) { ncyc++; cycshow[ncyc] = "  " s " --" nm[i] "--> " t " (revisits an earlier or equal depth)" }
-        }
-      } else {
-        # P2: an accepting terminal must never carry an open critical or a
-        # pending high re-check.
-        if ((lab == "converged" || lab == "accepted") && (noc == 1 || noh == 1)) {
-          violations++
-          if (nvio < 6) { nvio++; vioshow[nvio] = "  " s " --" nm[i] "--> " t \
-            " terminal=" lab " open_critical=" noc " pending_recheck=" noh }
-        }
-        term[t] = lab
-      }
-
-      if (!seen[t]) {
-        seen[t] = 1; depth[t] = depth[s] + 1
-        if (depth[t] > maxdepth) maxdepth = depth[t]
-        q[++qt] = t
-      }
-    }
-  }
-
-  nstates = 0; for (k in seen) nstates++
-  print "MECHANISM: " MECH
-  print "  parameters: ceiling=" CAP "  required_streak=" REQ "  decay_window=" K "  obligations=" OBL0
-  print "  reachable states: " nstates "    edges explored: " edges "    inputs rejected as illegal: " rejected
-  print "  longest path from the initial state: " maxdepth
-  print ""
-  if (MECH == "b0" || MECH == "b0acc") {
-    print "  P1 BOUND: " (cycles > 0 || badmeasure > 0 ? "DISPROVED - a cycle is reachable" : "no cycle found")
-    for (i = 1; i <= ncyc; i++) print cycshow[i]
-    for (i = 1; i <= nbad; i++) print badshow[i]
-    print "  A reachable cycle means no finite bound and no guaranteed terminal event."
-  } else {
-    print "  P1 BOUND: " (badmeasure == 0 ? "HOLDS" : "FAILED") \
-          " - every non-terminal edge strictly decreases the measure (CAP-u)*4+oc+oh+ob."
-    for (i = 1; i <= nbad; i++) print badshow[i]
-    print "           the measure starts at " (CAP * 4 + (MECH == "m2" ? OBL0 : 0)) \
-          " and is bounded below by 0, so every path terminates."
-    print "  human_resume rejected as an illegal input at every state: " illegal_resume " times."
-  }
-  print ""
-  print "  P2 CRITICAL INVARIANT: " (violations == 0 ? "HOLDS - no accepting terminal carries an open critical or a pending re-check." : "VIOLATED (" violations " reachable)")
-  for (i = 1; i <= nvio; i++) print vioshow[i]
-  print ""
-  for (k in term) { tcount[term[k]]++ }
-  printf "  terminal states by label:"
-  for (k in tcount) printf "  %s=%d", k, tcount[k]
-  print ""
-  print "-------------------------------------------------------------"
-}
+```sh
+CHECKER=docs/plans/workflow-calibration.explorations/q86-controller-proof.py
+nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode all --phase acceptance --risk risky --obligations 2 --floor high
+nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode all --phase acceptance --risk risky --obligations 2 --floor critical
+for n in 0 1 2 3
+do
+    nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode B --phase work:example --obligations "$n" --floor high
+done
+sha256sum "$CHECKER"
 ```
+
+The two all-mode outputs are:
+
+```text
+A phase=acceptance risk=risky floor=high normal=5 reserve=2 required=1 states=104 edges=220 terminal=43 acyclic=true max_reviews=7 bad_delivery=0 bad_critical_clear=0 bad_bound=0
+B phase=acceptance obligations=2 floor=high bound=9 states=1680 edges=3785 terminal=892 acyclic=true max_reviews=9 bad_delivery=0 bad_critical_clear=0 bad_bound=0
+C phase=acceptance risk=risky floor=high stages=4 repairs=2 states=79 edges=135 terminal=42 acyclic=true max_reviews=4 bad_delivery=0 bad_critical_clear=0 bad_bound=0
+A phase=acceptance risk=risky floor=critical normal=5 reserve=2 required=1 states=105 edges=221 terminal=44 acyclic=true max_reviews=7 bad_delivery=0 bad_critical_clear=0 bad_bound=0
+B phase=acceptance obligations=2 floor=critical bound=9 states=1744 edges=3963 terminal=938 acyclic=true max_reviews=9 bad_delivery=0 bad_critical_clear=0 bad_bound=0
+C phase=acceptance risk=risky floor=critical stages=4 repairs=2 states=82 edges=138 terminal=45 acyclic=true max_reviews=4 bad_delivery=0 bad_critical_clear=0 bad_bound=0
+```
+
+The B sweep returns bounds `1`, `5`, `9`, and `13`, with acyclic graphs and zero reported violations. The checker SHA-256 is `db2874d8654957582f18592ece030f344b60ca9657c127715fcc78d6987ef9a7`.
+
+### A.2 Q-78 scope replay
+
+The durable replay is `docs/plans/workflow-calibration.explorations/q86-q78-scope-replay.sh`. It reads only task, phase, and artefact descriptions. It does not use outcome or severity arrays.
+
+```sh
+docs/plans/workflow-calibration.explorations/q86-q78-scope-replay.sh docs/metrics/workflow.jsonl
+```
+
+Its summary is:
+
+```text
+summary passes=10 terminal_replans=4 families=5 additional_human_receipts=4 additional_plan_review_and_freeze_cycles=4
+```
+
+Passes 2, 4, 7, and 8 take `ScopeDigestChanged -> Replanned`, carry unresolved findings, and require successor families F2 through F5. Every other pass takes the matching-scope review edge. Historical obligation results remain explicitly unreconstructible.
 
 ---
 
 ## Appendix B: documentation and prompt staleness the recommended mechanism would create
 
-Inventoried per the brief's documentation-impact requirement. This design pass itself changes only a planning record, so nothing is stale now.
+This repair changes planning and proof artifacts only, so shipped product documentation is not stale now. Choosing B would require later implementation work across these surfaces:
 
-- `AGENTS.md`, `pack/AGENTS.md` and `.agents/AGENTS.reference.md`, the Convergence and Accept sections, because acceptance would cease to be an uncounted single pass.
-- `pack/prompts/triager.md` and `.agents/prompts/triager.md`, which would gain the scope ruling and the rule that an out-of-scope ruling at `high` or above takes the backstop re-check.
-- `pack/prompts/reviewer.md` and `.agents/prompts/reviewer.md`, which would gain the requirement to cite a frozen obligation id.
-- `pack/prompts/orchestrator.md` and `.agents/prompts/orchestrator.md`, for the terminal menu and the freeze point.
-- `pack/prompts/planner.md` and `.agents/prompts/planner.md`, because the planner would author the frozen obligation set.
-- `pack/instrument.md`, for the new record fields and the terminal record.
-- `pack/LEDGER.template.md` and `.agents/LEDGER.template.md`, for the spend line.
-- `pack/plan-template.plan.toml` and `pack/plan-template.success-criteria.md`, for the obligation rows.
-- `.agents/workflow.toml` and `pack/workflow.toml`, and the `src/workflow_spec.rs` comments that currently call the cap and the backstop advisory.
-- `README.md`, whose cap-labelled diagram must remain value-free and become budget-accurate.
-- `CHANGELOG.md`, recording that a previously valid tree may now fail.
-- `docs/plans/agent-scaffold.steps/review-loop-foreclosure-enforcement.md` and `workflow-driver-typed-fleet.md`, whose `SinglePass` contract states that acceptance has no round count for cap purposes and would need a reviewed contract migration.
+- Update `pack/AGENTS.md`, `AGENTS.md`, and `.agents/AGENTS.reference.md` because convergence and acceptance would use sealed campaigns.
+- Update planner, orchestrator, reviewer, triager, and implementer prompts in canonical and generated locations for obligation authoring, phase ownership, scope rulings, repair verification, and terminal choices.
+- Update `pack/instrument.md` for scope, obligation, finding, evidence, disposition, spend, re-check, and terminal events.
+- Update plan and ledger templates for obligation rows, phase campaigns, `LegacyNoRubric`, and resume projections.
+- Update `.agents/workflow.toml`, `pack/workflow.toml`, and `WorkflowSpec` for the chosen constants and floor.
+- Update README for the non-resettable campaign and changelog for the adoption break.
+- Reconcile `review-loop-foreclosure-enforcement.md` and `workflow-driver-typed-fleet.md` through the reviewed shared reconstruction while preserving disjoint `SinglePass` observations.

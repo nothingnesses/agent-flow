@@ -2559,18 +2559,23 @@ RECOMMENDATION AND DECISION (human): `Add a design pass to workflow-calibration`
 [[question]]
 id = "Q-86"
 status = "open"
-ask = """which bounded convergence architecture should replace or constrain the current repeated per-artifact cap windows and uncapped sequence of later acceptance passes without concealing unresolved critical findings. The completed decision-ready synthesis is `docs/plans/workflow-calibration.explorations/Q-86-synthesis.md`.
+ask = """which bounded convergence architecture should replace or constrain the current repeated per-artifact cap windows and uncapped sequence of later acceptance passes without concealing unresolved critical findings. The corrected decision-ready synthesis is `docs/plans/workflow-calibration.explorations/Q-86-synthesis.md`.
 
-VIABLE OPTIONS.
-1. `A - Sealed phase budget`. Keep triage-backed clean-streak semantics inside fixed five-plus-two phase slices with monotone non-resettable spend.
-2. `B - Frozen obligations with a sealed derived budget`. Freeze a finite obligation set, stop on its closure, and enforce the derived non-resettable bound `2|O| + 8` for the first-version one-reopen design.
-3. `C - Fixed-depth verification protocol`. Replace fungible credits and streak progression with a four-stage discovery, informed-verification, and blind-closure graph.
+ARCHITECTURE OPTIONS.
+1. `A - Sealed phase budget`. Keep triage-backed clean-streak semantics inside fixed five-plus-two phase slices with monotone non-resettable spend. On Q-78 it stops at pass seven and leaves three later low shortfalls undiscovered.
+2. `B - Frozen obligations with sealed phase campaigns`. Freeze the finite canonical `[[obligation]]` rows, assign each to one phase, and stop on verified closure within `C_q = 4|O_q| + 1`. Its corrected whole-family review bound is `4|O| + m + 8`. On the Q-78 scope replay it forces four terminal replans, four additional human receipts, and four additional plan-review and freeze campaigns.
+3. `C - Fixed-depth verification protocol`. Use the four-stage forward-only discovery, informed-verification, and blind-closure graph. On Q-78 it stops at pass three and leaves 23 later shortfalls undiscovered, including highs.
 
-RECOMMENDATION: `B - Frozen obligations with a sealed derived budget`, at medium confidence in the architecture and low confidence in the first one-reopen value. It reconciles the non-resettable state-machine requirement with the measured moving-scope diagnosis and avoids making the broken historical `outcome` or severity fields the completion predicate.
+RECOMMENDATION: `B - Frozen obligations with sealed phase campaigns`, at medium to low confidence. Its corrected controller combines non-resettable authority with a finite structured completion predicate and does not make broken historical outcome or severity arrays load-bearing. Its costs are the largest authoring and adoption burden, the obligation-completeness risk, and the four Q-78 replans. A focused schema and reconstruction proof of concept is required. If it fails, the choice returns to the human with A as the recommendation and no automatic fallback.
 
-TRADE-OFF SUMMARY: Option A preserves the most bounded late discovery and current semantics but adds a larger account model and uncalibrated numeric slices. Option B gives the strongest scope and completion model and a bound derived from structured obligations, but it has the largest authoring and migration burden and risks an incomplete frozen set. Option C has the smallest proof and lowest maximum cost, but it sends useful late repairs to a terminal human decision and is hardest to adopt from historical records.
+SERIOUS-FLOOR CO-DECISION.
+1. `high`, recommended. Ordinary residual acceptance and ordinary narrowing are unavailable while a high or critical is open. The retained Q-78 triages show that this restriction would apply on passes three through six.
+2. `critical`, the mandatory minimum. An open critical blocks those terminal choices, while the human may accept a high as residual risk.
+3. `defer`, which requires a separate receipted floor decision before implementation.
 
-NO-DECISION BOUNDARY: the resettable baseline remains non-admissible comparison evidence, the severity-decay gate is excluded until its instrumentation prerequisite is repaired, Q-85 authorised only this design pass, and no mechanism, constant, current cap, acceptance rule, reset behaviour, pack change, or code change is approved yet. The human must choose exactly one viable option through the human-input contract. Implementation remains blocked until that choice is receipted and folded into `workflow-calibration`."""
+COST LIMIT: C has the lowest fixed per-phase review depth. It does not have a universally lowest whole-task call bound because B scales with both `|O|` and the number `m` of work loops, while A and C scale with `m`.
+
+NO-DECISION BOUNDARY: the resettable baseline remains non-admissible comparison evidence, the severity-decay gate remains excluded, Q-85 authorised only this design pass, and no architecture, serious floor, numeric constant, current cap, acceptance rule, reset behaviour, pack change, or code change is approved. The human must choose one architecture and a floor or explicit deferral through the human-input contract. Implementation remains blocked until those choices are receipted and folded into `workflow-calibration`."""
 
 [[question]]
 id = "Q-87"
