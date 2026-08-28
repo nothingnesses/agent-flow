@@ -229,13 +229,13 @@ Section 3.4 handles the harder version of this question, which is whether the te
 
 A finding receives a **stable id at the moment a reviewer raises it**, scoped to the task and never reused. A controller carries the complete finite map from stable id to owner, severity, disposition, origin, and optional parent id. That map survives triage, repair, later rounds and later acceptance passes. Duplicate reports of one defect by two reviewers **merge onto one id** and debit nothing extra, which preserves the existing convention that per-reviewer valid counts may exceed the deduplicated round total. The full severity scale is `low`, `medium`, `high`, and `critical`.
 
-One batch may add several findings, including several findings for one obligation. One joint repair moves the complete selected open set to pending verification. Its named joint verification resolves the complete set, conservatively fails the complete set back to open, or leaves parents open while adding stable fix-induced children. A partial verification is failure unless every selected finding has named successful evidence. Completion and delivery quantify over the complete map, so an unrelated result cannot replace an open parent or critical.
+One triaged batch is an atomic finite map from affected obligation owner to finding submap, plus a finite unowned set and one scheduled primary owner. Its reducer advances every affected obligation and the complete finding map in one transition. An absent finding settles only the primary owner. A batch can therefore satisfy several finding-bearing initial attempts, but it cannot claim clean evidence for absent non-primary owners. One joint repair moves the complete selected open set for one owner attempt to pending verification. Its named joint verification resolves the complete set, conservatively fails the complete set back to open, or leaves parents open while adding stable fix-induced children. A partial verification is failure unless every selected finding has named successful evidence. Completion and delivery quantify over the product of the complete map and every obligation state, so an unrelated result cannot replace an open parent or critical or close an affected owner.
 
 Four lineages, kept strictly separate from severity.
 
 - **`pre-existing`.** Present before this task's work. It counts fully against the stopping gate, because it is a real defect in the delivered artifact. The external experiment's blind R5 found six such defects that two informed reviews had missed, so a mechanism that discounted them would systematically miss what blind review is for.
 - **`fix-induced`.** Introduced by a prior repair pass in this task. It counts fully. `calibration-analysis.md` measured 20 of 22 recorded injections as `class = prose`, and the 2026-08-13 audit measured self-reference at 49 per cent strict across 189 findings, so this lineage is the largest single population and discounting it would be the most consequential error available.
-- **`scope-expanded`.** Not a violation of any frozen obligation. It routes to a backlog obligation set for a future task and never enlarges the current one. It debits the pass it arrived in, because the pass ran.
+- **`scope-expanded`.** Not a violation of any frozen obligation. A low routes to a backlog obligation set for a future task. A medium routes to the terminal human scope decision. A proposed high or critical ruling first takes independent scope re-check. An upheld high then routes to the terminal human scope decision, while an overturned high returns in scope. A critical is always safety-blocking, so either re-check result enters `SeriousBlocked`. None enlarges the current family, and each debits the pass it arrived in because the pass ran.
 - **`relitigated`.** An id already settled, re-raised without new evidence. The existing ledger rule dismisses it. It does not reopen an obligation and does not reset a streak.
 
 **Reopening a settled finding** requires materially new evidence that beats the recorded verdict, in the existing `AGENTS.md` sense. A reopen consumes one of a per-finding allowance rather than being free, which is what makes section 5's bound finite.
@@ -252,8 +252,8 @@ Four lineages, kept strictly separate from severity.
 
 **Three anti-abuse rules, because the firewall is the most abusable component here.**
 
-- **An out-of-scope ruling on a `high` or above is treated exactly like a dismissal and takes the same independent backstop re-check.** This composes with the existing backstop rather than bypassing it, and it is the specific answer to the brief's requirement that the firewall must not become a way to relabel an in-scope defect as optional.
-- **A `critical` is always in scope, by rule, regardless of whether it cites a frozen obligation.** Severity overrides the firewall at the top of the scale. This is the safety floor, and section 7 shows it is what makes the unresolved-critical invariant hold.
+- **An out-of-scope ruling on a `high` or above is treated exactly like a dismissal and takes the same independent backstop re-check.** An upheld high goes to the terminal human scope decision rather than backlog, and an overturned high returns in scope. This composes with the existing backstop rather than bypassing it.
+- **A `critical` is always safety-blocking, regardless of whether it cites a frozen obligation.** A proposed out-of-scope label still takes independent re-check as an abuse control, but either result enters `SeriousBlocked` rather than backlog or delivery. Severity overrides the firewall at the top of the scale. This is the safety floor, and section 7 shows it is what makes the unresolved-critical invariant hold.
 - **The triager rules on scope, never the orchestrator.** The orchestrator owns convergence and cost and is therefore biased toward ruling findings out of scope, which is the same argument `AGENTS.md` already makes for never collapsing the triager into the orchestrator.
 
 The frozen rubric is also the direct answer to the Lobsters observation. An approval process that can ask for "better" without naming a defect has no frozen obligation to cite, so under this firewall it produces no in-scope finding at all.
@@ -276,9 +276,10 @@ At exhaustion the human receives the terminal menu through the human-input contr
 
 - The old task **terminally closes** and its open findings are permanently recorded `carried`, not `resolved`. A replan cannot change any finding's disposition, so it cannot launder the safety question even though it grants review capacity.
 - The successor must carry a structured obligation or exclusion delta from the immutable predecessor, and the human receipt must attest that the delta is material.
-- Each replan writes a `decision` receipt naming the predecessor, the full option set, the proposed structured delta, and the human's choice, so the chain is visible rather than implicit.
+- Each replan writes a `decision` receipt bound to the exact predecessor and successor ids, both canonical scope digests, every presented option, the chosen successor, the predecessor spend snapshot, and the complete carried finding map.
+- The successor preserves predecessor spend as lineage and names the new human receipt as the origin of its own authority. It cannot reinterpret predecessor spend as fresh authority.
 
-This materially-different rule is the selected synthesis rule. The stricter proper-subset-or-disjoint rule is retained only as an unselected proposal alternative. No chain bound is claimed across materially different families. The finite controller and call bounds apply per immutable family. Validation rejects predecessor mutation, an unchanged scope, a missing receipt, and copying predecessor spend as fresh successor authority.
+This materially-different rule is the selected synthesis rule. The stricter proper-subset-or-disjoint rule is retained only as an unselected proposal alternative. No chain bound is claimed across materially different families. The finite controller and call bounds apply per immutable family. Validation rejects predecessor mutation, unchanged or reordered scope, a missing option set, wrong family or digest bindings, a missing carried finding, mismatched predecessor spend, and copied predecessor spend presented as fresh authority.
 
 ### 3.5 Reviewer allocation
 
@@ -305,7 +306,7 @@ Carrying forward the sequential and survival framing that `calibration-analysis.
 
 **The non-resettable task-budget design the brief requires.**
 
-A task opens with an authorised budget `B = (Bp, Bw, Ba)` in review units. Rounds and acceptance passes debit per section 3.1. The terminal predicate is the existing consecutive-clean streak, scaled by risk class exactly as today. A loop converges at its required streak provided the complete finding map is settled and no serious dismissal is awaiting its re-check. Only a triage-valid high or critical, or an overturned serious dismissal, unlocks reserve. Referral to re-check does not unlock it, and an upheld dismissal preserves the prior reserve state. When any sub-budget reaches zero, the phase stops and the terminal menu is presented.
+A task opens with an authorised budget `B = (Bp, Bw, Ba)` in review units. Rounds and acceptance passes debit per section 3.1. The terminal predicate is the existing consecutive-clean streak, scaled by risk class exactly as today. A loop converges at its required streak provided the complete finding map is settled and no serious dismissal is awaiting its re-check. Only a triage-valid high or critical, or an overturned serious dismissal, unlocks reserve. Referral to re-check does not unlock it, and an upheld dismissal preserves the prior reserve state. One remaining-clean-suffix calculation runs before every automatic review, repair, and verification. The controller forecloses before emitting the action when the remaining authorised path cannot attain the suffix. When any sub-budget reaches zero, the phase stops and the terminal menu is presented.
 
 **A terminal severity floor `F`** governs which menu appears. With `F = critical`, `accept residual risk` and `narrow scope` are illegal only when a critical is open. With `F = high`, they are illegal when a high is open too. `F = critical` is the mandatory minimum. Section 7.1 shows the difference is large on the local data.
 
@@ -315,9 +316,9 @@ A task opens with an authorised budget `B = (Bp, Bw, Ba)` in review units. Round
 
 ## 5. Mechanism M2: frozen obligations with sealed phase campaigns
 
-M2 is scope-bounded and count-bounded. Plan review has a sealed seven-batch maximum. At convergence it freezes the canonical finite `O`, the set `P` of post-freeze phase identities, and one owner in `P` for every obligation. `P` contains each declared work loop and acceptance, so `p = m + 1`.
+M2 is scope-bounded and count-bounded. Its plan review reuses M1's sealed controller unchanged. The inherited and still unapproved constants are five normal batches, two reserve batches, at most six grouped repairs, and reserve unlock only for a triage-valid high or critical or an overturned serious dismissal. Plan risk is declared once. The plan-review minimum `r_plan` is one clean batch at low risk and two consecutive clean batches at risky, with the complete map settled. The same remaining-clean-suffix foreclosure applies before any repair or review that can no longer attain completion. The maximum is seven batches. At convergence it freezes the canonical finite `O`, the set `P` of post-freeze phase identities, and one owner in `P` for every obligation. `P` contains each declared work loop and acceptance, so `p = m + 1`.
 
-Each phase has one `FrozenObligationCampaign(phase_id, scope_digest, obligations, findings, closure, spend, terminal)`. The `findings` field is the complete stable map, not a scalar. An obligation has `Untested`, `OpenInitial(FindingMap)`, `InitialRepairPendingVerification(FindingMap)`, `Closed(reopen_unused)`, `OpenReopened(FindingMap)`, `ReopenRepairPendingVerification(FindingMap)`, and `Closed(reopen_used)` states. Initial review, initial verification, materially-new-evidence reopen discovery, and reopened verification each consume at most one review batch. One joint repair covers every owned finding in that attempt and consumes no review batch. Only named joint verification of the complete set closes it. A failed parent set or fix-induced child enters the terminal decision or serious block instead of creating another automatic attempt. Relitigation without new evidence cannot reopen. A dismissed high or critical uses the attached independent re-check.
+Each post-freeze phase has one `FrozenObligationCampaign(phase_id, scope_digest, obligations, findings, closure, spend, terminal)`. The `findings` field is the complete stable map, not a scalar. Each review reduction consumes an atomic finite owner map plus an unowned set and advances every affected obligation. An obligation has `Untested`, `OpenInitial(FindingMap)`, `InitialRepairPendingVerification(FindingMap)`, `Closed(reopen_unused)`, `OpenReopened(FindingMap)`, `ReopenRepairPendingVerification(FindingMap)`, and `Closed(reopen_used)` states. Initial review, initial verification, materially-new-evidence reopen discovery, and reopened verification each consume at most one review batch. A cross-owner finding batch can satisfy several initial attempts. An absent non-primary owner remains `Untested`, so the clean minimum remains one primary initial review per obligation. One joint repair covers every owned finding in that attempt and consumes no review batch. Only named joint verification of the complete set closes it. A failed parent set or fix-induced child enters the terminal decision or serious block instead of creating another automatic attempt. Relitigation without new evidence cannot reopen. A dismissed high or critical uses the attached independent re-check.
 
 Every obligation receives its initial attempt before any closed obligation may spend optional reopen authority. When every obligation in one phase is closed, its non-transferable blind-closure batch runs. A settled complete map finishes the phase. Any owned or `UnownedInScopeFinding` result at closure is terminal and never creates another repair. An unowned critical enters `SeriousBlocked`. A changed scope digest terminally replans the family, carries open findings, preserves old `O`, and requires the selected immutable-predecessor, receipt, and structured material scope-delta controls before a successor can review changed scope.
 
@@ -331,7 +332,7 @@ R_M2 = 7 + sum(4n_q + 1)
 
 This corrected bound replaces `2|O| + 8`. One grouped repair per attempt leaves at most six plan repairs and at most two repairs per obligation, so the safe automated-agent upper bound remains `18|O| + 4m + 38`.
 
-A clean phase has the unavoidable minimum `n_q + 1`, one initial attempt per obligation plus blind closure. If `r_plan` is the plan-review minimum, the whole-family minimum is `r_plan + |O| + p = r_plan + |O| + m + 1` review batches and twice that number of reviewer calls. A and C have cardinality-independent phase minima of one or two batches. `|O|` is a future frozen-row count, not a current prose-bullet count.
+A clean post-freeze phase has the unavoidable minimum `n_q + 1`, one clean primary initial attempt per obligation plus blind closure. If `r_plan` is the inherited M1-controller plan-review minimum, the whole-family minimum is `r_plan + |O| + p = r_plan + |O| + m + 1` review batches and twice that number of reviewer calls. A and C have cardinality-independent phase minima of one or two batches. `|O|` is a future frozen-row count, not a current prose-bullet count.
 
 An active legacy task with no prospective `O` is the explicit `LegacyNoRubric` variant. It is historical and exempt from M2's obligation predicate, but it cannot enter a work or acceptance campaign with undefined authority. Its only paths are terminal preservation of a pinned legacy disposition, or a receipted new prospective plan review and freeze before B. The controller rejects direct `LegacyNoRubric -> FrozenObligationCampaign`, historical-round closure credit, and reinterpretation as a zero-obligation campaign.
 
@@ -392,13 +393,13 @@ Two red controls fall out. At `T = medium, k = 1` the gate fires on **pass 1**, 
 
 The prior `statemachine.awk` result is withdrawn. Its M2 branch was a four-unit proxy without initial-attempt, repair, verification, reopen, phase, or blind-closure state. It did not derive the claimed bound. The corrected durable proof is `docs/plans/workflow-calibration.explorations/q86-controller-proof.py`.
 
-Mode B is the actual `FrozenObligationCampaign` in section 5. It keeps immutable phase identity, obligation stages, review spend, and a complete finite stable finding map. Mode A and mode C use the same map. One batch may carry every severity multiset up to cardinality two. The sweep therefore reaches low plus critical, multiple findings for one obligation or blind closure, and a parent plus fix-induced child. Joint repair and verification operate on the complete selected key set. Delivery universally quantifies over the map.
+Mode B is the actual post-freeze `FrozenObligationCampaign` in section 5. It keeps immutable phase identity, obligation stages, review spend, and a complete finite stable finding map. Mode A and mode C use the same map. One B batch is an atomic finite owner map plus unowned set. The sweep reaches same-owner and cross-owner low plus critical, mixed owned and unowned findings, and a parent plus fix-induced child. Joint repair and verification operate on the complete selected key set. Delivery universally quantifies over the map and obligations. The owner-state check is bidirectional, so no owned outstanding finding can coexist with a closed or untested owner and no special obligation state can lose its matching finding.
 
-Run the exact all-mode and B-sweep commands and compare their complete outputs with `Q-86-synthesis.md` under `Corrected proof and red controls`. The checker reports zero `bad_delivery`, `bad_unverified_delivery`, `bad_critical_clear`, `bad_bound`, `bad_upheld_unlock`, `bad_unowned_critical_delivery`, `bad_reopen_before_initial`, legacy-adoption, and successor-control violations at both floors. Its SHA-256 is `937c714a483b583eaa66222adf4fc2e50e4764924568a5d435cbbf3078349260`.
+Run the exact all-mode and B-sweep commands and compare their complete outputs with `Q-86-synthesis.md` under `Corrected proof and red controls`. The checker reports zero delivery, unverified-delivery, critical-clear, bound, upheld-unlock, foreclosure, owner-state, unowned-critical-delivery, reopen-priority, acceptance-blind-bypass, scope-route, legacy-adoption, and successor-control violations at both floors. Its SHA-256 is `b00662359b70139bb1ea670d8ed511caf8a727e6b773b385ab1a31ffd8f8f73c`.
 
-The finite sweep exhausts a complete-map cardinality of two. The arbitrary finite result follows compositionally because reducers union fresh ids and update dispositions pointwise, joint attempt operations take the complete finite selected set, and release is a universal conjunction over ids. Adding a finding cannot remove or rewrite another identity, cannot increase the number of grouped calls in an attempt, and can only make release harder. Induction over finite-map cardinality therefore preserves the lifecycle and delivery invariant. Cardinality two checks the mixed-floor and parent-child interactions that a singleton proof cannot expose.
+The finite sweep exhausts a complete-map cardinality of two. The arbitrary finite result follows over the product of obligation and finding state because reducers atomically union fresh ids and advance every affected owner, joint attempt operations take the complete finite selected set, and release is a universal conjunction over ids and obligation states. Adding an owner component cannot remove or rewrite another identity, close an unaffected obligation, increase phase spend, or make release easier. Induction first over finite owner-map cardinality and then over each finite finding submap preserves the lifecycle, owner-state, and delivery invariants. Cardinality two checks the cross-owner mixed-floor and parent-child interactions that a singleton proof cannot expose.
 
-The checker establishes one phase. The family bound is algebra rather than a multi-phase enumeration. Each obligation has at most four review-consuming transitions, each phase has one blind-closure transition, exact ownership forbids transfer, and phase maxima sum to `4|O| + p`. Adding the seven-batch plan campaign gives `4|O| + m + 8`. The grouped multi-finding semantics leave the repair and call bounds unchanged.
+The checker establishes one post-freeze B phase. B plan review is mode A with the inherited values stated in section 5. The family bound is algebra rather than a multi-phase enumeration. Each obligation has at most four review-consuming transitions, each post-freeze phase has one blind-closure transition, exact ownership forbids transfer, and phase maxima sum to `4|O| + p`. One cross-owner batch can consume several owner attempts at once, so it can only reduce realised spend from that per-owner sum. Adding the seven-batch plan campaign gives `4|O| + m + 8`. The grouped multi-finding semantics leave the repair and call bounds unchanged.
 
 M1's corrected synthesis controller is mode A in the same proof. M3 is no longer claimed recommendation-eligible. Its conceptual bound still needs a disposition controller and trustworthy prospective trajectory data before it can return to the option set.
 
@@ -408,10 +409,13 @@ M1's corrected synthesis controller is mode A in the same proof. M3 is no longer
 | --- | --- | --- | --- |
 | **Repeated human resume** | Resume reconstructs spend and every phase ends by batch seven. | Resume reconstructs one immutable phase campaign. Bound `4n_q + 1`. | Excluded pending a corrected controller and instrumentation. |
 | **Unbounded acceptance-repair sequence** | Every acceptance pass debits its slice and the final finding map is terminal. | Each obligation has at most one initial and one reopened grouped repair. A blind-closure finding is terminal. | Excluded. |
-| **Multiple findings in one batch** | The full map persists, including low plus critical and parent plus child. | Several findings may share an obligation or blind closure. | Excluded. |
+| **Multiple findings in one batch** | The full map persists, including low plus critical and parent plus child. | The atomic map covers same-owner, cross-owner low plus critical, and mixed owned and unowned batches while advancing every affected obligation. | Excluded. |
 | **Fix-induced high near exhaustion** | It consumes authorised verification and unlocks only unspent reserve. | Verification failure or a fix-induced child enters the terminal decision or serious block. | Excluded. |
 | **Upheld serious dismissal** | It preserves the prior reserve state and cannot unlock reserve by itself. | It settles only through the attached re-check. | Excluded. |
-| **Scope-expanded low** | It is backlogged and cannot enlarge frozen scope. | It cannot add an obligation. A changed structured digest terminally replans the family. | Excluded. |
+| **Scope-expanded low** | It is backlogged and cannot enlarge frozen scope. | It is backlogged and cannot add an obligation. | Excluded. |
+| **Scope-expanded medium** | It enters the terminal human scope decision. | It enters the terminal human scope decision. | Excluded. |
+| **Scope-expanded high** | It takes independent scope re-check. Upheld goes to the terminal human scope decision and overturned returns in scope. | The same re-check route applies. | Excluded. |
+| **Scope-expanded critical** | It takes independent scope re-check, but either result is `SeriousBlocked`. | The same always-safety-blocking route applies to owned and unowned criticals. | Excluded. |
 | **Unowned in-scope critical** | The common map blocks delivery. | `UnownedInScopeFinding` enters `SeriousBlocked` and cannot complete or deliver residual. | Excluded. |
 | **Relitigation without new evidence** | It preserves disposition and cannot reset spend. | It cannot take `MateriallyNewEvidence` or consume reopen authority. | Excluded. |
 | **LegacyNoRubric** | Prospective adoption remains separate. | It terminally preserves legacy disposition or enters new prospective plan review and freeze, with no direct campaign, old-round credit, or zero-obligation reinterpretation. | Excluded. |
@@ -456,7 +460,7 @@ Common surfaces move only after the human chooses. Advisory guidance describes j
 | Append-only history | No event is rewritten. A typed digest boundary separates legacy history. B adds `LegacyNoRubric`. | Enforced and fail-closed. |
 | Canonical and generated guidance | `pack/AGENTS.md`, `pack/instrument.md`, role prompts, ledger and plan templates, their dogfood copies, README, and changelog. | Advisory text generated or byte-guarded where applicable. |
 
-For corrected M2, validation enforces finite canonical obligation rows, exact source labels, one phase owner, `C_q = 4|O_q| + 1`, no transfer, all initial attempts before optional reopen work, complete finding maps, grouped repair before grouped verification, `UnownedInScopeFinding`, blind closure, scope-digest terminality, explicit legacy adoption, and critical legality. Successor validation requires an immutable terminal predecessor, a human receipt, and a non-empty structured obligation or exclusion delta attested as material. `next` reports the exact obligation and complete blind or informed brief permitted by state. It cannot prove that a reviewer was genuinely blind or that a human judgement was true.
+For corrected M2, validation enforces finite canonical obligation rows, exact source labels, one phase owner, `C_q = 4|O_q| + 1`, no transfer, all initial attempts before optional reopen work, complete finding maps, grouped repair before grouped verification, `UnownedInScopeFinding`, blind closure, scope-digest terminality, explicit legacy adoption, and critical legality. Successor validation binds the immutable terminal predecessor and successor ids, both scope digests, every presented option, the chosen successor, predecessor spend, the complete carried finding map, and a non-empty structured obligation or exclusion delta attested as material. `next` reports the exact obligation and complete blind or informed brief permitted by state. It cannot prove that a reviewer was genuinely blind or that a human judgement was true.
 
 The chosen work must land after `review-loop-foreclosure-enforcement` and reuse its typed reconstruction. Acceptance remains a campaign around disjoint `SinglePass` observations rather than adding convergence fields to a single pass.
 
@@ -503,7 +507,7 @@ This recommendation does not claim that Q-78 diverged, that named folds caused l
 
 ## 12. The later human decisions
 
-The synthesis presents only A, B, and C as viable bounded architectures. M3 is excluded until a corrected disposition controller and trustworthy prospective trajectory evidence exist. Every controller constant remains unapproved, including A's five-plus-two values, B's one reopen, and C's four-stage and two-repair depth.
+The synthesis presents only A, B, and C as viable bounded architectures. M3 is excluded until a corrected disposition controller and trustworthy prospective trajectory evidence exist. Every controller constant remains unapproved, including the five-normal-plus-two-reserve slice used by A and inherited by B plan review, B's one reopen, and C's four-stage and two-repair depth.
 
 **Architecture question.** Which architecture should Q-86 fold into `workflow-calibration`?
 
@@ -511,8 +515,8 @@ The synthesis presents only A, B, and C as viable bounded architectures. M3 is e
 
 **Serious-floor co-decision.** The human owns `F` whichever architecture is chosen.
 
-- Choose `high`, recommended. Ordinary residual acceptance and ordinary narrowing are unavailable while a high or critical is open. The retained Q-78 triages show this restriction would apply on passes three through six.
-- Choose `critical`, the mandatory safety minimum. An open critical blocks those choices, while a high may be accepted as residual risk.
+- Choose `high`, recommended. Ordinary residual acceptance and ordinary narrowing are unavailable while a high or critical is open. The retained Q-78 triages show this restriction would apply on passes three through six. Under Option C, Q-78 pass three is `SeriousBlocked` and 23 later shortfalls, including further highs, remain undiscovered.
+- Choose `critical`, the mandatory safety minimum. An open critical blocks those choices, while a high may be accepted as residual risk. Under Option C, Q-78 pass three permits residual acceptance of its open high while the same 23 later shortfalls remain undiscovered.
 - Defer the floor to a separate receipted decision before implementation.
 
 At least one blind closure pass is structural in all three synthesised options, so it is no longer a separate toggle. Instrument repair is required before any outcome or trajectory field becomes load-bearing, but B can proceed from prospective complete finding maps without waiting for a historical rewrite.
@@ -529,8 +533,13 @@ The durable proof is `docs/plans/workflow-calibration.explorations/q86-controlle
 
 ```sh
 CHECKER=docs/plans/workflow-calibration.explorations/q86-controller-proof.py
+export PYTHONDONTWRITEBYTECODE=1
 nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode all --phase acceptance --risk risky --obligations 2 --floor high
 nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode all --phase acceptance --risk risky --obligations 2 --floor critical
+nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode A --phase plan_review --risk low_risk --floor high
+nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode A --phase plan_review --risk risky --floor high
+nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode A --phase work_review --risk risky --floor high
+nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase acceptance --risk low_risk --floor high
 for n in 0 1 2 3
 do
     nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode B --phase work:example --obligations "$n" --floor high
@@ -541,19 +550,21 @@ sha256sum "$CHECKER"
 The two all-mode outputs are:
 
 ```text
-A phase=acceptance risk=risky floor=high finding_cap=2 normal=5 reserve=2 required=1 states=809 edges=949 terminal=353 acyclic=true min_reviews=1 max_reviews=7 mixed_low_critical=35 parent_child=160 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_upheld_unlock=0
-B phase=acceptance obligations=2 floor=high finding_cap=2 bound=9 states=11522 edges=12006 terminal=8314 acyclic=true min_reviews=3 max_reviews=9 mixed_low_critical=53 parent_child=144 unowned_critical=105 bad_unowned_critical_delivery=0 bad_reopen_before_initial=0 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0
+A phase=acceptance risk=risky floor=high finding_cap=2 normal=5 reserve=2 required=1 states=809 edges=949 terminal=353 acyclic=true min_reviews=1 max_reviews=7 mixed_low_critical=35 parent_child=160 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_upheld_unlock=0 bad_foreclosure_state=0
+B phase=acceptance obligations=2 floor=high finding_cap=2 bound=9 states=23576 edges=24503 terminal=17410 acyclic=true min_reviews=3 max_reviews=9 mixed_low_critical=138 parent_child=216 cross_owner_low_critical=24 atomic_cross_owner_low_critical=14 multi_initial_batch=46 unowned_critical=267 bad_owner_state=0 bad_unowned_critical_delivery=0 bad_reopen_before_initial=0 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0
 B legacy states=5 edges=4 legal_start_paths=2 bad_direct_campaign=0 bad_historical_credit=0 bad_zero_obligation=0
-B successor structured_cases=4 accepted_different=true bad_same_scope=0 bad_reordered_scope=0 bad_missing_receipt=0 bad_predecessor_mutation=0
-C phase=acceptance risk=risky floor=high finding_cap=2 stages=4 repairs=2 states=794 edges=863 terminal=485 acyclic=true min_reviews=2 max_reviews=4 mixed_low_critical=12 parent_child=48 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0
-A phase=acceptance risk=risky floor=critical finding_cap=2 normal=5 reserve=2 required=1 states=822 edges=962 terminal=366 acyclic=true min_reviews=1 max_reviews=7 mixed_low_critical=35 parent_child=160 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_upheld_unlock=0
-B phase=acceptance obligations=2 floor=critical finding_cap=2 bound=9 states=11859 edges=12343 terminal=8651 acyclic=true min_reviews=3 max_reviews=9 mixed_low_critical=53 parent_child=144 unowned_critical=105 bad_unowned_critical_delivery=0 bad_reopen_before_initial=0 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0
+B successor structured_cases=10 accepted_different=true bad_same_scope=0 bad_reordered_scope=0 bad_missing_receipt=0 bad_missing_options=0 bad_wrong_family=0 bad_wrong_predecessor_digest=0 bad_wrong_successor_digest=0 bad_missing_carry=0 bad_fresh_authority=0 bad_predecessor_mutation=0
+Scope controls low=backlogged medium=terminal_scope_decision high_referral=awaiting_scope_recheck high_upheld=terminal_scope_decision high_overturned=in_scope critical_referral=awaiting_scope_recheck critical_upheld=serious_blocked critical_overturned=serious_blocked bad_scope_route=0
+C phase=acceptance risk=risky floor=high finding_cap=2 stages=4 repairs=2 states=794 edges=863 terminal=485 acyclic=true min_reviews=2 max_reviews=4 mixed_low_critical=12 parent_child=48 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_acceptance_blind_bypass=0
+A phase=acceptance risk=risky floor=critical finding_cap=2 normal=5 reserve=2 required=1 states=822 edges=962 terminal=366 acyclic=true min_reviews=1 max_reviews=7 mixed_low_critical=35 parent_child=160 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_upheld_unlock=0 bad_foreclosure_state=0
+B phase=acceptance obligations=2 floor=critical finding_cap=2 bound=9 states=24405 edges=25332 terminal=18239 acyclic=true min_reviews=3 max_reviews=9 mixed_low_critical=138 parent_child=216 cross_owner_low_critical=24 atomic_cross_owner_low_critical=14 multi_initial_batch=46 unowned_critical=267 bad_owner_state=0 bad_unowned_critical_delivery=0 bad_reopen_before_initial=0 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0
 B legacy states=5 edges=4 legal_start_paths=2 bad_direct_campaign=0 bad_historical_credit=0 bad_zero_obligation=0
-B successor structured_cases=4 accepted_different=true bad_same_scope=0 bad_reordered_scope=0 bad_missing_receipt=0 bad_predecessor_mutation=0
-C phase=acceptance risk=risky floor=critical finding_cap=2 stages=4 repairs=2 states=821 edges=890 terminal=512 acyclic=true min_reviews=2 max_reviews=4 mixed_low_critical=12 parent_child=48 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0
+B successor structured_cases=10 accepted_different=true bad_same_scope=0 bad_reordered_scope=0 bad_missing_receipt=0 bad_missing_options=0 bad_wrong_family=0 bad_wrong_predecessor_digest=0 bad_wrong_successor_digest=0 bad_missing_carry=0 bad_fresh_authority=0 bad_predecessor_mutation=0
+Scope controls low=backlogged medium=terminal_scope_decision high_referral=awaiting_scope_recheck high_upheld=terminal_scope_decision high_overturned=in_scope critical_referral=awaiting_scope_recheck critical_upheld=serious_blocked critical_overturned=serious_blocked bad_scope_route=0
+C phase=acceptance risk=risky floor=critical finding_cap=2 stages=4 repairs=2 states=821 edges=890 terminal=512 acyclic=true min_reviews=2 max_reviews=4 mixed_low_critical=12 parent_child=48 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_acceptance_blind_bypass=0
 ```
 
-The B sweep declares bounds `1`, `5`, `9`, and `13`, reaches cardinality-two maxima `1`, `5`, `9`, and `11`, and reports zero violations. The per-phase algebra and arbitrary finite-map composition establish `4n_q + 1` beyond the finite interaction sweep. The checker SHA-256 is `937c714a483b583eaa66222adf4fc2e50e4764924568a5d435cbbf3078349260`.
+The inherited plan-controller runs report minimums one and two at low and risky plan review, both with maximum seven and zero foreclosure violations. The explicit risky-work run also reports `bad_foreclosure_state=0`. Low-risk acceptance under C reports minimum two and `bad_acceptance_blind_bypass=0`. The B sweep declares bounds `1`, `5`, `9`, and `13`, reaches cardinality-two maxima `1`, `5`, `9`, and `11`, and reports zero violations, including cross-owner and owner-state controls. The per-phase algebra and arbitrary finite-map composition establish `4n_q + 1` beyond the finite interaction sweep. The checker SHA-256 is `b00662359b70139bb1ea670d8ed511caf8a727e6b773b385ab1a31ffd8f8f73c`.
 
 ### A.2 Q-78 scope replay
 
@@ -561,12 +572,15 @@ The durable replay is `docs/plans/workflow-calibration.explorations/q86-q78-scop
 
 ```sh
 docs/plans/workflow-calibration.explorations/q86-q78-scope-replay.sh docs/metrics/workflow.jsonl
+docs/plans/workflow-calibration.explorations/q86-q78-scope-replay.sh --self-test
 ```
 
 Its summary is:
 
 ```text
 summary passes=10 observed_named_folds=4 assumed_digest_changes=4 conditional_terminal_replans=4 conditional_families=5 conditional_additional_human_receipts=4 conditional_additional_plan_review_and_freeze_cycles=4
+self_test selected_passes=9 summary passes=9 observed_named_folds=4 assumed_digest_changes=4 conditional_terminal_replans=4 conditional_families=5 conditional_additional_human_receipts=4 conditional_additional_plan_review_and_freeze_cycles=4
+self_test selected_passes=11 summary passes=11 observed_named_folds=5 assumed_digest_changes=5 conditional_terminal_replans=5 conditional_families=6 conditional_additional_human_receipts=5 conditional_additional_plan_review_and_freeze_cycles=5
 ```
 
 The four named folds are observed. Their four digest changes are explicitly assumed. Under those assumptions, passes 2, 4, 7, and 8 terminally replan, carry unresolved findings, and require successor families F2 through F5. Historical obligation results remain explicitly unreconstructible.
