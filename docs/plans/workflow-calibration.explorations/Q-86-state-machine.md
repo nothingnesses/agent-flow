@@ -134,7 +134,7 @@ RevertedWithArtifact
 CarriedToSuccessor
 ```
 
-`Complete` is constructible only when every in-scope finding is `Resolved`, validly `Dismissed`, or otherwise removed from the delivered artefact, and the phase stopping rule is met. A dismissed high or critical finding must pass the independent re-check before it is settled. A budget or stage boundary never changes a finding disposition by itself.
+`Complete` is constructible only when every in-scope finding is `Resolved`, validly `Dismissed`, or otherwise removed from the delivered artefact, and the phase stopping rule is met. A valid critical follows `Open -> ResolvedPendingVerification -> Resolved`. Repair takes the first transition and only an explicit named verification takes the second. An unrelated later observation, clean streak, budget boundary, or stage boundary cannot clear it. Terminal non-delivery instead records `RemovedFromDelivery`, `RevertedWithArtifact`, `CarriedToSuccessor`, or `UnresolvedAbandoned`. A dismissed high or critical follows `AwaitingDismissalRecheck -> Dismissed` only when the independent re-check upholds dismissal.
 
 At exhaustion the machine enters `AwaitingTerminalDecision` or `CriticalBlocked` and spawns no reviewer or implementer. The human receives accept residual risk, narrow scope, revert, replan, and abandon through the human-input contract. The durable receipt records all options, the recommendation, the chosen option, the exact scope and budget or stage snapshot, and every open `FindingId`.
 
@@ -198,7 +198,7 @@ Any active phase at final authorised batch
 
 Plan and work completion retain the current one-clean or two-consecutive-clean rule by declared risk class. Acceptance requires one pass with no valid in-scope shortfall after triage, every earlier in-scope finding settled, and every Roadmap step complete. Completion wins if it occurs on the final authorised batch. Foreclosure fires as soon as remaining authorised batches are fewer than the clean batches still required. A high or critical dismissal blocks until re-check. Binary clean remains the release test. Novelty and severity affect routing and reserve access, not whether a genuine unresolved defect is called clean.
 
-The state observation is the ordered pair `(serious_seen, open_finding_dispositions)` plus the current clean streak. A falling severity trajectory raises confidence but never settles a finding. The rule is deterministic because current instrumentation is too inconsistent and too small for a safe probabilistic threshold. Stopping still censors what another review might have found. The blind seat and finite red reserve buy bounded extra samples rather than pretending to remove that censoring.
+The state is `(phase_id, spent, serious_seen, clean_streak, finding_dispositions)`. A finding-bearing review opens a stable finding. Repair preserves its severity in `ResolvedPendingVerification`. The next informed verification can resolve that named finding, leave it open, or resolve it while opening a fix-induced finding. The reserve and completion predicates read this state rather than the historical outcome or severity arrays. A falling severity trajectory raises confidence but never settles a finding. Stopping still censors what another review might have found.
 
 ### Finite bound
 
@@ -218,9 +218,9 @@ This is not another resettable cap. `spent` is monotone under every transition, 
 | Narrowing or replan | Either choice is a terminal event for the current `TaskFamilyId`. No seat is restored. |
 | Unresolved critical at exhaustion | `HLLLLLK` reaches `CriticalBlocked` at pass seven. Complete and accept residual risk are unconstructible. |
 
-On the current Q-78 severity sequence `LLHHHHLLLC`, Candidate A stops at pass seven in `AwaitingTerminalDecision` with a medium finding. It does not observe passes eight through ten because stopping censors them. On representative convergence histories, it completes `agents-md-drift-guard-inc1` at pass four and the low-risk `checks-runner-worktree-name-collision` plan review at pass four. `optional-modules-inc2cii` reaches pass five with one clean and an unlocked reserve, so one further clean could complete it. The low-only `prompt-drift-guard-inc1` and medium-only `step-intent-encoding-inc1` reach the normal boundary at pass five and terminally escalate rather than opening a new window.
+On the current Q-78 observation sequence, Candidate A stops at pass seven in `AwaitingTerminalDecision` with that pass carrying medium findings. It does not observe passes eight through ten, which contain three later valid shortfalls, all recorded low. This descriptive replay uses the pass-level adjudication summaries only to compare when a fixed controller would stop. The safety proof does not depend on those arrays. On representative convergence histories, A completes `agents-md-drift-guard-inc1` at pass four and the low-risk `checks-runner-worktree-name-collision` plan review at pass four. `optional-modules-inc2cii` reaches pass five with one clean and an unlocked reserve, so one further clean could complete it. The low-only `prompt-drift-guard-inc1` and medium-only `step-intent-encoding-inc1` reach the normal boundary at pass five and terminally escalate rather than opening a new window.
 
-The exhaustive scratch check enumerated all 16,384 strings of length seven over clean, low or medium, high, and critical observations for acceptance and risky work review. Every path was terminal by seven and no path completed with an unresolved critical. The checker is reproduced below.
+The corrected exhaustive graph check uses explicit open, repaired, verification, pending-recheck, settled, and non-delivery states. For acceptance it reaches 104 states and 220 edges at the recommended high floor. For risky work review it reaches 144 states and 388 edges. Both graphs are acyclic, reach at most seven review batches, and report zero delivery, critical-clear, and bound violations. The proof artifact and exact commands are in the Reproduction section.
 
 ### Candidate A against all eight Project Principles
 
@@ -293,7 +293,7 @@ BlindClosure
   -> CriticalBlocked for a valid critical finding
 ```
 
-A settled observation means no valid in-scope finding remains after triage. It may include a duplicate without new evidence or a scope-expanded optional item that was durably backlogged. It never includes a genuine unresolved defect. Severity determines critical legality and backstop routing. Novelty and lineage determine duplicate, reopen, repair, and backlog routing. Neither severity decay nor a clean count bypasses open finding state.
+A settled observation means no valid in-scope finding remains after triage. It may include a duplicate without new evidence or a scope-expanded optional item that was durably backlogged. It never includes a genuine unresolved defect. `Repair1` and `Repair2` retain the finding identity and severity in `ResolvedPendingVerification`. Only `Verify1Pass` or `Verify2Pass` resolves that named finding. A failed verification preserves it, and a fix-induced finding receives its own open identity. Severity determines critical legality and backstop routing. Neither severity decay nor a clean count bypasses open finding state.
 
 The protocol is deterministic. Confidence increases when informed verification reproduces a repair and when blind closure finds no in-scope defect. Stopping still censors any unrun future review. Candidate B accepts that censoring at a predeclared stage instead of estimating a probability from the current small and inconsistent dataset.
 
@@ -313,9 +313,9 @@ For each of the `m + 2` phases, Candidate B has at most four review batches, fiv
 | Narrowing or replan | Either choice is a terminal event for the current task family and preserves the visited stage history. |
 | Unresolved critical at exhaustion | `LLK` reaches `CriticalBlocked` at `Verify2`, the third review batch. Accept residual risk and complete are illegal. |
 
-On Q-78 `LLHHHHLLLC`, Candidate B reaches a terminal human decision at pass three with a high finding. On `agents-md-drift-guard-inc1` sequence `LLCC`, it completes after `Verify2` and blind closure at pass four. It terminally escalates the low-risk `checks-runner-worktree-name-collision` plan review at pass three because `Verify2` finds another valid issue. The other selected long histories also stop by pass three or four.
+On the Q-78 observation sequence, Candidate B reaches `CriticalBlocked` or `AwaitingTerminalDecision` at pass three with that pass carrying a high. It does not observe passes four through ten, which contain 23 later valid shortfalls and include further highs. This descriptive replay is not the safety oracle. On the `agents-md-drift-guard-inc1` sequence it completes after `Verify2` and blind closure at pass four. It terminally escalates the low-risk `checks-runner-worktree-name-collision` plan review at pass three because `Verify2` finds another valid issue. The other selected long histories also stop by pass three or four.
 
-The exhaustive scratch check enumerated all 256 strings of length four over clean, low or medium, high, and critical observations for both risk classes. Every path was terminal by four and no path completed with an unresolved critical.
+The corrected exhaustive graph check retains finding and disposition state through both repairs and verifications. At the high floor, risky acceptance and risky work review each reach 79 states and 135 edges. Low-risk work review reaches 60 states and 112 edges. Every graph is acyclic, reaches at most four review batches, and reports zero delivery, critical-clear, and bound violations.
 
 ### Candidate B against all eight Project Principles
 
@@ -422,168 +422,28 @@ The values of `n` are demonstrations. The counterexample is unbounded because th
 
 ### Exhaustive transition checker
 
-Save the following as `q86_exhaustive.awk` in an authorised scratch directory:
+The corrected checker is the durable proof artifact `docs/plans/workflow-calibration.explorations/q86-controller-proof.py`. It models Candidate A as mode A and this proposal's fixed-depth Candidate B as mode C, matching the synthesis label map. It retains explicit open, repaired, verification, pending-recheck, settled, terminal, and non-delivery states. A valid critical remains outstanding across repair and can leave only through a named verification or terminal non-delivery disposition. A dismissed critical uses the independent re-check path instead.
 
-```awk
-function a(sequence,    normal,red,need,used,streak,unlocked,critical,state,i,event,limit)
-{
-    normal = 5
-    red = 2
-    need = risk == "risky" && phase != "acceptance" ? 2 : 1
-    state = "Active"
-    i = 1
-    while (i <= length(sequence))
-    {
-        event = substr(sequence, i, 1)
-        if (state == "Active")
-        {
-            used++
-            if (event == "C" || event == "O" || event == "R")
-            {
-                streak++
-                critical = 0
-            }
-            else if (event == "L")
-            {
-                streak = 0
-                critical = 0
-            }
-            else if (event == "H")
-            {
-                streak = 0
-                critical = 0
-                unlocked = 1
-            }
-            else if (event == "K")
-            {
-                streak = 0
-                critical = 1
-                unlocked = 1
-            }
-            limit = normal + (unlocked ? red : 0)
-            if (streak >= need && !critical)
-                state = "Complete"
-            else if (used >= limit)
-                state = critical ? "CriticalBlocked" : "Exhausted"
-        }
-        i++
-    }
-    result = state " " used " " streak " " critical
-    return state
-}
-
-function b(sequence,    stage,state,critical,used,i,event,settled)
-{
-    stage = "Discovery"
-    state = "Active"
-    i = 1
-    while (i <= length(sequence))
-    {
-        event = substr(sequence, i, 1)
-        if (state == "Active")
-        {
-            used++
-            settled = event == "C" || event == "O" || event == "R"
-            critical = event == "K"
-            if (stage == "Discovery")
-            {
-                if (settled)
-                {
-                    if (risk == "risky")
-                        stage = "BlindClosure"
-                    else
-                        state = "Complete"
-                }
-                else
-                    stage = "Verify1"
-            }
-            else if (stage == "Verify1")
-            {
-                if (settled)
-                    stage = "BlindClosure"
-                else
-                    stage = "Verify2"
-            }
-            else if (stage == "Verify2")
-            {
-                if (settled)
-                    stage = "BlindClosure"
-                else
-                    state = critical ? "CriticalBlocked" : "Exhausted"
-            }
-            else if (stage == "BlindClosure")
-            {
-                if (settled)
-                    state = "Complete"
-                else
-                    state = critical ? "CriticalBlocked" : "Exhausted"
-            }
-        }
-        i++
-    }
-    result = state " " stage " " used " " critical
-    return state
-}
-
-{
-    state = mode == "A" ? a($0) : b($0)
-    split(result, fields, " ")
-    critical = fields[4]
-    if (state == "Active")
-    {
-        print "active path", $0 > "/dev/stderr"
-        failures++
-    }
-    if (state == "Complete" && critical)
-    {
-        print "critical completion", $0 > "/dev/stderr"
-        failures++
-    }
-    paths++
-    if (report)
-        print $0, result
-}
-
-END {
-    if (!report)
-        print "mode=" mode, "phase=" phase, "risk=" risk, "paths=" paths, "failures=" failures + 0
-    exit failures ? 1 : 0
-}
-```
-
-The checker alphabet is `C` for no valid in-scope finding, `L` for a valid low or medium finding, `H` for a valid high finding, and `K` for a valid critical finding. `O` is a triaged scope-expanded low sent to backlog. `R` is relitigation without new evidence. A later noncritical verification observation clears a previously pending critical in this toy model. The production model must do that only through an explicit repair and verified finding disposition.
-
-Run these exact commands, with `$CHECKER` naming that scratch file:
+Run:
 
 ```sh
-printf '%s\n' {C,L,H,K}{C,L,H,K}{C,L,H,K}{C,L,H,K}{C,L,H,K}{C,L,H,K}{C,L,H,K} | awk -v mode=A -v phase=acceptance -v risk=risky -f "$CHECKER"
-printf '%s\n' {C,L,H,K}{C,L,H,K}{C,L,H,K}{C,L,H,K}{C,L,H,K}{C,L,H,K}{C,L,H,K} | awk -v mode=A -v phase=work_review -v risk=risky -f "$CHECKER"
-printf '%s\n' {C,L,H,K}{C,L,H,K}{C,L,H,K}{C,L,H,K} | awk -v mode=B -v phase=acceptance -v risk=risky -f "$CHECKER"
-printf '%s\n' {C,L,H,K}{C,L,H,K}{C,L,H,K}{C,L,H,K} | awk -v mode=B -v phase=acceptance -v risk=low_risk -f "$CHECKER"
-printf '%s\n' HLLLLLK O R LLLLL LLLLHCC | awk -v mode=A -v phase=acceptance -v risk=risky -v report=1 -f "$CHECKER"
-printf '%s\n' LLLLHCC | awk -v mode=A -v phase=work_review -v risk=risky -v report=1 -f "$CHECKER"
-printf '%s\n' LLL LLK LHCC | awk -v mode=B -v phase=acceptance -v risk=risky -v report=1 -f "$CHECKER"
-printf '%s\n' O R | awk -v mode=B -v phase=acceptance -v risk=low_risk -v report=1 -f "$CHECKER"
+CHECKER=docs/plans/workflow-calibration.explorations/q86-controller-proof.py
+nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode A --phase acceptance --risk risky --floor high
+nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode A --phase work_review --risk risky --floor high
+nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase acceptance --risk risky --floor high
+nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase work_review --risk low_risk --floor high
+nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase work_review --risk risky --floor high
+sha256sum "$CHECKER"
 ```
 
-The exhaustive outputs were:
+The outputs are:
 
 ```text
-mode=A phase=acceptance risk=risky paths=16384 failures=0
-mode=A phase=work_review risk=risky paths=16384 failures=0
-mode=B phase=acceptance risk=risky paths=256 failures=0
-mode=B phase=acceptance risk=low_risk paths=256 failures=0
-HLLLLLK CriticalBlocked 7 0 1
-O Complete 1 1 0
-R Complete 1 1 0
-LLLLL Exhausted 5 0 0
-LLLLHCC Complete 6 1 0
-LLLLHCC Complete 7 2 0
-LLL Exhausted Verify2 3 0
-LLK CriticalBlocked Verify2 3 1
-LHCC Complete BlindClosure 4 0
-O Complete Discovery 1 0
-R Complete Discovery 1 0
+A phase=acceptance risk=risky floor=high normal=5 reserve=2 required=1 states=104 edges=220 terminal=43 acyclic=true max_reviews=7 bad_delivery=0 bad_critical_clear=0 bad_bound=0
+A phase=work_review risk=risky floor=high normal=5 reserve=2 required=2 states=144 edges=388 terminal=46 acyclic=true max_reviews=7 bad_delivery=0 bad_critical_clear=0 bad_bound=0
+C phase=acceptance risk=risky floor=high stages=4 repairs=2 states=79 edges=135 terminal=42 acyclic=true max_reviews=4 bad_delivery=0 bad_critical_clear=0 bad_bound=0
+C phase=work_review risk=low_risk floor=high stages=4 repairs=2 states=60 edges=112 terminal=29 acyclic=true max_reviews=4 bad_delivery=0 bad_critical_clear=0 bad_bound=0
+C phase=work_review risk=risky floor=high stages=4 repairs=2 states=79 edges=135 terminal=42 acyclic=true max_reviews=4 bad_delivery=0 bad_critical_clear=0 bad_bound=0
 ```
 
-The scratch checker SHA-256 was `589ff1c3d24c837cee2a665bf205e5f52002be364f758561e79f5b5cf3f785b6`.
+The same commands with `--floor critical` also report zero violations. The checker SHA-256 is `db2874d8654957582f18592ece030f344b60ca9657c127715fcc78d6987ef9a7`.
