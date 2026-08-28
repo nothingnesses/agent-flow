@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, replace as dc_replace
 from itertools import combinations_with_replacement
+from hashlib import sha256
 import argparse
 
 SEVERITIES = ("low", "medium", "high", "critical")
@@ -124,21 +125,29 @@ def a_limit(state, normal, reserve):
     return normal + reserve if state.serious_seen else normal
 
 
+def a_clean_needed(state, need):
+    return max(0, need - state.streak) if state.control == "active" else need
+
+
+def a_cannot_complete(state, need, normal, reserve):
+    return a_limit(state, normal, reserve) - state.reviews < a_clean_needed(state, need)
+
+
 def a_settled(state, reviews, findings, need, normal, reserve):
     assert all_settled(findings)
     streak = state.streak + 1
     if streak >= need:
         return AState("complete", reviews, streak, state.serious_seen, findings)
     candidate = AState("active", reviews, streak, state.serious_seen, findings)
-    if reviews >= a_limit(candidate, normal, reserve):
+    if a_cannot_complete(candidate, need, normal, reserve):
         return AState("terminal", reviews, streak, state.serious_seen, findings)
     return candidate
 
 
-def a_open(state, reviews, findings, serious_seen, normal, reserve):
+def a_open(state, reviews, findings, serious_seen, need, normal, reserve):
     assert any(f.disposition == "open" for f in findings)
     candidate = AState("repair", reviews, 0, serious_seen, findings)
-    if reviews >= a_limit(candidate, normal, reserve):
+    if a_cannot_complete(candidate, need, normal, reserve):
         return AState(terminal_control(findings), reviews, 0, serious_seen, findings)
     return candidate
 
@@ -146,34 +155,40 @@ def a_open(state, reviews, findings, serious_seen, normal, reserve):
 def a_edges(state, need, normal, reserve):
     edges = []
     if state.control == "active":
-        if state.reviews >= a_limit(state, normal, reserve):
-            edges.append(("authority_exhausted", AState("terminal", state.reviews, state.streak, state.serious_seen, state.findings)))
+        if a_cannot_complete(state, need, normal, reserve):
+            edges.append(("foreclose_before_review", AState("terminal", state.reviews, state.streak, state.serious_seen, state.findings)))
             return edges
         reviews = state.reviews + 1
         edges.append(("review_settled", a_settled(state, reviews, state.findings, need, normal, reserve)))
         for profile in severity_profiles(FINDING_CAP - len(state.findings)):
             findings = mint_profile(state.findings, profile, "phase", "pre_existing")
             serious_seen = state.serious_seen or any(severity in BACKSTOP for severity in profile)
-            edges.append(("review_findings_" + profile_name(profile), a_open(state, reviews, findings, serious_seen, normal, reserve)))
+            edges.append(("review_findings_" + profile_name(profile), a_open(state, reviews, findings, serious_seen, need, normal, reserve)))
         for profile in dismissal_profiles(state.findings):
             findings = mint_profile(state.findings, profile, "phase", "pre_existing", "awaiting_recheck")
             edges.append(("review_dismissed_" + profile_name(profile), AState("recheck", reviews, 0, state.serious_seen, findings)))
     elif state.control == "repair":
+        if a_cannot_complete(state, need, normal, reserve):
+            edges.append(("foreclose_before_repair", AState(terminal_control(state.findings), state.reviews, 0, state.serious_seen, state.findings)))
+            return edges
         findings = repair_joint(state.findings)
         assert pending_verification_findings(findings)
         edges.append(("repair_joint", AState("verify", state.reviews, 0, state.serious_seen, findings)))
     elif state.control == "verify":
+        if a_cannot_complete(state, need, normal, reserve):
+            edges.append(("foreclose_before_verification", AState(terminal_control(state.findings), state.reviews, 0, state.serious_seen, state.findings)))
+            return edges
         reviews = state.reviews + 1
         passed = verification_pass_joint(state.findings)
         edges.append(("verify_pass_joint", a_settled(state, reviews, passed, need, normal, reserve)))
         failed = verification_fail_joint(state.findings)
-        edges.append(("verify_fail_joint", a_open(state, reviews, failed, state.serious_seen, normal, reserve)))
+        edges.append(("verify_fail_joint", a_open(state, reviews, failed, state.serious_seen, need, normal, reserve)))
         parents = pending_verification_findings(state.findings)
         if parents and len(state.findings) < FINDING_CAP:
             for severity in SEVERITIES:
                 with_child = mint_profile(failed, (severity,), "phase", "fix_induced", "open", parents[0].finding_id)
                 serious_seen = state.serious_seen or severity in BACKSTOP
-                edges.append(("verify_fail_with_child_" + severity, a_open(state, reviews, with_child, serious_seen, normal, reserve)))
+                edges.append(("verify_fail_with_child_" + severity, a_open(state, reviews, with_child, serious_seen, need, normal, reserve)))
         resolved = verification_pass_joint(state.findings)
         parent_id = parents[0].finding_id if parents else 0
         for profile in dismissal_profiles(resolved):
@@ -183,7 +198,7 @@ def a_edges(state, need, normal, reserve):
         upheld = update_findings(state.findings, is_pending_recheck, "dismissed")
         edges.append(("recheck_upheld", a_settled(state, state.reviews, upheld, need, normal, reserve)))
         overturned = update_findings(state.findings, is_pending_recheck, "open")
-        edges.append(("recheck_overturned", a_open(state, state.reviews, overturned, True, normal, reserve)))
+        edges.append(("recheck_overturned", a_open(state, state.reviews, overturned, True, need, normal, reserve)))
     elif state.control in ("terminal", "serious_blocked"):
         if state.control == "terminal" and not outstanding_at_floor(state.findings) and not has_pending_recheck(state.findings):
             accepted = dispose_outstanding(state.findings, "accepted_residual")
@@ -196,32 +211,34 @@ def a_edges(state, need, normal, reserve):
 
 @dataclass(frozen=True)
 class CState:
+    phase: str
     control: str
     reviews: int
     findings: tuple
     return_stage: str
+    blind_visited: bool
 
 
-def c_terminal(reviews, findings):
-    return CState(terminal_control(findings), reviews, findings, "none")
+def c_terminal(state, reviews, findings):
+    return CState(state.phase, terminal_control(findings), reviews, findings, "none", state.blind_visited)
 
 
-def c_settled(stage, reviews, findings, risk):
+def c_settled(state, stage, reviews, findings, risk):
     assert all_settled(findings)
-    if stage == "discovery" and risk == "low_risk":
-        return CState("complete", reviews, findings, "none")
+    if stage == "discovery" and risk == "low_risk" and state.phase != "acceptance":
+        return CState(state.phase, "complete", reviews, findings, "none", state.blind_visited)
     if stage == "blind_closure":
-        return CState("complete", reviews, findings, "none")
-    return CState("blind_closure", reviews, findings, "none")
+        return CState(state.phase, "complete", reviews, findings, "none", True)
+    return CState(state.phase, "blind_closure", reviews, findings, "none", state.blind_visited)
 
 
-def c_open(stage, reviews, findings):
+def c_open(state, stage, reviews, findings):
     assert any(f.disposition == "open" for f in findings)
     if stage == "discovery":
-        return CState("repair1", reviews, findings, "none")
+        return CState(state.phase, "repair1", reviews, findings, "none", state.blind_visited)
     if stage == "verify1":
-        return CState("repair2", reviews, findings, "none")
-    return c_terminal(reviews, findings)
+        return CState(state.phase, "repair2", reviews, findings, "none", state.blind_visited)
+    return c_terminal(state, reviews, findings)
 
 
 def c_edges(state, risk):
@@ -232,42 +249,42 @@ def c_edges(state, risk):
         reviews = state.reviews + 1
         if stage.startswith("verify"):
             passed = verification_pass_joint(state.findings)
-            edges.append(("verify_pass_joint", c_settled(stage, reviews, passed, risk)))
+            edges.append(("verify_pass_joint", c_settled(state, stage, reviews, passed, risk)))
             failed = verification_fail_joint(state.findings)
-            edges.append(("verify_fail_joint", c_open(stage, reviews, failed)))
+            edges.append(("verify_fail_joint", c_open(state, stage, reviews, failed)))
             parents = pending_verification_findings(state.findings)
             if parents and len(state.findings) < FINDING_CAP:
                 for severity in SEVERITIES:
                     with_child = mint_profile(failed, (severity,), "phase", "fix_induced", "open", parents[0].finding_id)
-                    edges.append(("verify_fail_with_child_" + severity, c_open(stage, reviews, with_child)))
+                    edges.append(("verify_fail_with_child_" + severity, c_open(state, stage, reviews, with_child)))
             resolved = verification_pass_joint(state.findings)
             parent_id = parents[0].finding_id if parents else 0
             for profile in dismissal_profiles(resolved):
                 findings = mint_profile(resolved, profile, "phase", "fix_induced", "awaiting_recheck", parent_id)
-                edges.append(("verify_dismissed_" + profile_name(profile), CState("recheck", reviews, findings, stage)))
+                edges.append(("verify_dismissed_" + profile_name(profile), CState(state.phase, "recheck", reviews, findings, stage, state.blind_visited)))
         else:
-            edges.append(("review_settled", c_settled(stage, reviews, state.findings, risk)))
+            edges.append(("review_settled", c_settled(state, stage, reviews, state.findings, risk)))
             for profile in severity_profiles(FINDING_CAP - len(state.findings)):
                 findings = mint_profile(state.findings, profile, "phase", "pre_existing")
-                edges.append(("review_findings_" + profile_name(profile), c_open(stage, reviews, findings)))
+                edges.append(("review_findings_" + profile_name(profile), c_open(state, stage, reviews, findings)))
             for profile in dismissal_profiles(state.findings):
                 findings = mint_profile(state.findings, profile, "phase", "pre_existing", "awaiting_recheck")
-                edges.append(("review_dismissed_" + profile_name(profile), CState("recheck", reviews, findings, stage)))
+                edges.append(("review_dismissed_" + profile_name(profile), CState(state.phase, "recheck", reviews, findings, stage, state.blind_visited)))
     elif state.control in ("repair1", "repair2"):
         findings = repair_joint(state.findings)
-        edges.append((state.control + "_joint", CState("verify" + state.control[-1], state.reviews, findings, "none")))
+        edges.append((state.control + "_joint", CState(state.phase, "verify" + state.control[-1], state.reviews, findings, "none", state.blind_visited)))
     elif state.control == "recheck":
         upheld = update_findings(state.findings, is_pending_recheck, "dismissed")
-        edges.append(("recheck_upheld", c_settled(state.return_stage, state.reviews, upheld, risk)))
+        edges.append(("recheck_upheld", c_settled(state, state.return_stage, state.reviews, upheld, risk)))
         overturned = update_findings(state.findings, is_pending_recheck, "open")
-        edges.append(("recheck_overturned", c_open(state.return_stage, state.reviews, overturned)))
+        edges.append(("recheck_overturned", c_open(state, state.return_stage, state.reviews, overturned)))
     elif state.control in ("terminal", "serious_blocked"):
         if state.control == "terminal" and not outstanding_at_floor(state.findings) and not has_pending_recheck(state.findings):
             accepted = dispose_outstanding(state.findings, "accepted_residual")
-            edges.append(("accept_residual", CState("delivered_residual", state.reviews, accepted, "none")))
+            edges.append(("accept_residual", CState(state.phase, "delivered_residual", state.reviews, accepted, "none", state.blind_visited)))
         for action in NON_DELIVERY:
             disposed = dispose_outstanding(state.findings, {"remove_delivery": "removed", "revert": "reverted", "replan": "carried", "abandon": "abandoned"}[action])
-            edges.append((action, CState("non_delivery", state.reviews, disposed, "none")))
+            edges.append((action, CState(state.phase, "non_delivery", state.reviews, disposed, "none", state.blind_visited)))
     return edges
 
 
@@ -280,8 +297,19 @@ class BState:
     findings: tuple
 
 
+@dataclass(frozen=True)
+class ReviewBatch:
+    primary_index: int
+    owned: tuple
+    unowned: tuple
+
+
 def b_owner(index):
     return "o" + str(index + 1)
+
+
+def b_owner_index(owner):
+    return int(owner[1:]) - 1
 
 
 def b_all_closed(obligations):
@@ -314,12 +342,63 @@ def b_unowned_edge(state, reviews, severity, action_prefix):
     return action_prefix + "_UnownedInScopeFinding_" + severity, b_terminal(candidate)
 
 
-def b_valid_from_attempt(state, index, stage, reviews, profile, origin):
-    owner = b_owner(index)
-    findings = mint_profile(state.findings, profile, owner, origin)
-    obligations = replace(state.obligations, index, stage)
-    candidate = BState(state.phase, obligations, reviews, "active", findings)
-    if reviews >= 4 * len(state.obligations) + 1:
+def b_valid_batches(state, index, owner_indices=None):
+    remaining = FINDING_CAP - len(state.findings)
+    owner_indices = range(len(state.obligations)) if owner_indices is None else owner_indices
+    tokens = tuple((b_owner(owner_index), severity) for owner_index in owner_indices for severity in SEVERITIES)
+    tokens += tuple(("unowned", severity) for severity in SEVERITIES)
+    batches = []
+    for size in range(1, remaining + 1):
+        for selected in combinations_with_replacement(tokens, size):
+            by_owner = {}
+            unowned = []
+            for owner, severity in selected:
+                if owner == "unowned":
+                    unowned.append(severity)
+                else:
+                    by_owner.setdefault(owner, []).append(severity)
+            owned = tuple((owner, tuple(severities)) for owner, severities in sorted(by_owner.items()))
+            batches.append(ReviewBatch(index, owned, tuple(unowned)))
+    return tuple(batches)
+
+
+def b_batch_name(batch):
+    owned = "_".join(owner + "-" + profile_name(profile) for owner, profile in batch.owned) or "none"
+    unowned = profile_name(batch.unowned) if batch.unowned else "none"
+    return "owned_" + owned + "_unowned_" + unowned
+
+
+def b_reduce_valid_batch(state, batch, generation, reviews, settle_primary=True):
+    obligations = list(state.obligations)
+    findings = state.findings
+    owned = dict(batch.owned)
+    if settle_primary:
+        primary_owner = b_owner(batch.primary_index)
+        if primary_owner not in owned:
+            expected = "untested" if generation == 0 else "closed0"
+            assert obligations[batch.primary_index] == expected
+            obligations[batch.primary_index] = "closed" + str(generation)
+    terminal_owner = False
+    for owner, profile in batch.owned:
+        index = b_owner_index(owner)
+        stage = obligations[index]
+        if stage == "untested":
+            obligations[index] = "open0"
+            origin = "pre_existing"
+        elif stage == "closed0":
+            obligations[index] = "open1"
+            origin = "reopened"
+        elif stage == "closed1":
+            obligations[index] = "open_exhausted"
+            origin = "reopened"
+            terminal_owner = True
+        else:
+            raise AssertionError("finding batch targeted an obligation with unresolved work")
+        findings = mint_profile(findings, profile, owner, origin)
+    if batch.unowned:
+        findings = mint_profile(findings, batch.unowned, "unowned", "origin_indeterminate")
+    candidate = BState(state.phase, tuple(obligations), reviews, "active", findings)
+    if terminal_owner or batch.unowned or reviews >= 4 * len(state.obligations) + 1:
         return b_terminal(candidate)
     return candidate
 
@@ -339,8 +418,8 @@ def b_attempt_edges(state, index, generation):
     prefix = owner + "_"
     if generation == 0:
         edges.append((prefix + "initial_clean", BState(state.phase, replace(state.obligations, index, "closed0"), reviews, "active", state.findings)))
-        for profile in severity_profiles(FINDING_CAP - len(state.findings)):
-            edges.append((prefix + "initial_findings_" + profile_name(profile), b_valid_from_attempt(state, index, "open0", reviews, profile, "pre_existing")))
+        for batch in b_valid_batches(state, index):
+            edges.append((prefix + "initial_batch_" + b_batch_name(batch), b_reduce_valid_batch(state, batch, generation, reviews)))
         for profile in dismissal_profiles(state.findings):
             edges.append((prefix + "initial_dismissed_" + profile_name(profile), b_dismissed_from_attempt(state, index, "recheck_initial", reviews, profile, "pre_existing")))
     else:
@@ -349,13 +428,10 @@ def b_attempt_edges(state, index, generation):
         if settled_owner:
             findings = update_findings(state.findings, lambda f: f.owner == owner and f.disposition in ("resolved", "dismissed"), "open")
             edges.append((prefix + "material_new_evidence_existing", BState(state.phase, replace(state.obligations, index, "open1"), reviews, "active", findings)))
-        for profile in severity_profiles(FINDING_CAP - len(state.findings)):
-            edges.append((prefix + "material_new_evidence_" + profile_name(profile), b_valid_from_attempt(state, index, "open1", reviews, profile, "reopened")))
+        for batch in b_valid_batches(state, index):
+            edges.append((prefix + "reopen_batch_" + b_batch_name(batch), b_reduce_valid_batch(state, batch, generation, reviews)))
         for profile in dismissal_profiles(state.findings):
             edges.append((prefix + "material_new_evidence_dismissed_" + profile_name(profile), b_dismissed_from_attempt(state, index, "recheck_reopen", reviews, profile, "reopened")))
-    if len(state.findings) < FINDING_CAP:
-        for severity in SEVERITIES:
-            edges.append(b_unowned_edge(state, reviews, severity, prefix + ("initial" if generation == 0 else "reopen")))
     if reviews > limit:
         return []
     return edges
@@ -378,7 +454,12 @@ def b_verify_edges(state, index, generation):
     next_closed = "closed" + str(generation)
     prefix = owner + "_verify" + str(generation) + "_"
     passed = b_owner_update(state.findings, owner, "pending_verification", "resolved")
-    edges.append((prefix + "pass_joint", BState(state.phase, replace(state.obligations, index, next_closed), reviews, "active", passed)))
+    passed_state = BState(state.phase, replace(state.obligations, index, next_closed), reviews, "active", passed)
+    edges.append((prefix + "pass_joint", passed_state))
+    other_owners = tuple(owner_index for owner_index, stage in enumerate(state.obligations) if owner_index != index and stage in ("untested", "closed0", "closed1"))
+    for batch in b_valid_batches(state, index, other_owners):
+        observed = b_reduce_valid_batch(passed_state, batch, generation, reviews, False)
+        edges.append((prefix + "pass_with_batch_" + b_batch_name(batch), observed))
     failed = b_owner_update(state.findings, owner, "pending_verification", "open")
     failed_state = BState(state.phase, replace(state.obligations, index, "open" + str(generation)), reviews, "active", failed)
     edges.append((prefix + "fail_joint", b_terminal(failed_state)))
@@ -419,16 +500,12 @@ def b_blind_edges(state):
     edges = []
     reviews = state.reviews + 1
     edges.append(("blind_closure_clean", BState(state.phase, state.obligations, reviews, "complete", state.findings)))
-    for profile in severity_profiles(FINDING_CAP - len(state.findings)):
-        findings = mint_profile(state.findings, profile, "blind", "pre_existing")
-        candidate = BState(state.phase, state.obligations, reviews, "active", findings)
-        edges.append(("blind_closure_findings_" + profile_name(profile), b_terminal(candidate)))
+    for batch in b_valid_batches(state, -1):
+        observed = b_reduce_valid_batch(BState(state.phase, state.obligations, reviews, "active", state.findings), batch, 0, reviews, False)
+        edges.append(("blind_closure_batch_" + b_batch_name(batch), b_terminal(observed)))
     for profile in dismissal_profiles(state.findings):
         findings = mint_profile(state.findings, profile, "blind", "pre_existing", "awaiting_recheck")
         edges.append(("blind_closure_dismissed_" + profile_name(profile), BState(state.phase, state.obligations, reviews, "recheck_blind", findings)))
-    if len(state.findings) < FINDING_CAP:
-        for severity in SEVERITIES:
-            edges.append(b_unowned_edge(state, reviews, severity, "blind_closure"))
     return edges
 
 
@@ -501,23 +578,85 @@ def legacy_edges(state):
     return []
 
 
+def scope_digest(obligations, exclusions):
+    canonical = "obligations=" + "\x1f".join(sorted(obligations)) + "\x1eexclusions=" + "\x1f".join(sorted(exclusions))
+    return sha256(canonical.encode("ascii")).hexdigest()
+
+
 @dataclass(frozen=True)
 class Predecessor:
     family_id: str
     obligations: tuple
     exclusions: tuple
+    scope_digest: str
     terminal: bool
+    review_spend: int
+    carried_findings: tuple
+
+
+@dataclass(frozen=True)
+class Successor:
+    family_id: str
+    predecessor_id: str
+    obligations: tuple
+    exclusions: tuple
+    scope_digest: str
+    predecessor_spend: int
+    carried_findings: tuple
+    authority_origin: str
 
 
 @dataclass(frozen=True)
 class SuccessorReceipt:
-    present: bool
+    predecessor_id: str
+    successor_id: str
+    predecessor_scope_digest: str
+    successor_scope_digest: str
+    presented_options: tuple
+    chosen_successor: str
+    predecessor_spend: int
+    carried_findings: tuple
     materially_different: bool
 
 
-def successor_authorised(predecessor, obligations, exclusions, receipt):
-    structured_delta = frozenset(predecessor.obligations) != frozenset(obligations) or frozenset(predecessor.exclusions) != frozenset(exclusions)
-    return predecessor.terminal and receipt.present and receipt.materially_different and structured_delta
+def successor_authorised(predecessor, successor, receipt):
+    if receipt is None:
+        return False
+    structured_delta = predecessor.scope_digest != successor.scope_digest
+    exact_successor_digest = successor.scope_digest == scope_digest(successor.obligations, successor.exclusions)
+    exact_predecessor_digest = predecessor.scope_digest == scope_digest(predecessor.obligations, predecessor.exclusions)
+    return all((
+        predecessor.terminal,
+        structured_delta,
+        exact_predecessor_digest,
+        exact_successor_digest,
+        successor.predecessor_id == predecessor.family_id,
+        successor.predecessor_spend == predecessor.review_spend,
+        successor.carried_findings == predecessor.carried_findings,
+        successor.authority_origin == "new_human_receipt",
+        receipt.predecessor_id == predecessor.family_id,
+        receipt.successor_id == successor.family_id,
+        receipt.predecessor_scope_digest == predecessor.scope_digest,
+        receipt.successor_scope_digest == successor.scope_digest,
+        bool(receipt.presented_options),
+        receipt.chosen_successor in receipt.presented_options,
+        receipt.chosen_successor == successor.family_id,
+        receipt.predecessor_spend == predecessor.review_spend,
+        receipt.carried_findings == predecessor.carried_findings,
+        receipt.materially_different,
+    ))
+
+
+def scope_expanded_route(severity, recheck=None):
+    if severity == "low":
+        return "backlogged"
+    if severity == "medium":
+        return "terminal_scope_decision"
+    if recheck is None:
+        return "awaiting_scope_recheck"
+    if severity == "high":
+        return "terminal_scope_decision" if recheck == "upheld" else "in_scope"
+    return "serious_blocked"
 
 
 def findings_of(state):
@@ -538,6 +677,37 @@ def legal_critical_clear(source_finding, target_finding, action):
     if target_finding.disposition in ("removed", "reverted", "carried", "abandoned") and (action in NON_DELIVERY or action == "scope_digest_changed"):
         return True
     return False
+
+
+def b_owner_state_matches(state):
+    for finding in state.findings:
+        if not is_outstanding(finding) or not finding.owner.startswith("o"):
+            continue
+        stage = state.obligations[b_owner_index(finding.owner)]
+        if finding.disposition == "open" and not stage.startswith("open"):
+            return False
+        if finding.disposition == "pending_verification" and not stage.startswith("pending"):
+            return False
+        if finding.disposition == "awaiting_recheck" and not stage.startswith("recheck"):
+            return False
+    if state.control in ("active", "terminal", "serious_blocked"):
+        for index, stage in enumerate(state.obligations):
+            owner_findings = tuple(f for f in state.findings if f.owner == b_owner(index) and is_outstanding(f))
+            if stage.startswith("open") and not any(f.disposition == "open" for f in owner_findings):
+                return False
+            if stage.startswith("pending") and not any(f.disposition == "pending_verification" for f in owner_findings):
+                return False
+            if stage.startswith("recheck") and not any(f.disposition == "awaiting_recheck" for f in owner_findings):
+                return False
+    return True
+
+
+def b_atomic_cross_owner_low_critical(source, action, target):
+    if "batch_" not in action:
+        return False
+    source_ids = {finding.finding_id for finding in source.findings}
+    added = tuple(finding for finding in target.findings if finding.finding_id not in source_ids and finding.owner.startswith("o"))
+    return {finding.severity for finding in added} >= {"low", "critical"} and len({finding.owner for finding in added}) >= 2
 
 
 def delivery_is_verified(state):
@@ -640,8 +810,10 @@ def check_a(phase, risk):
     result = walk(start, lambda state: a_edges(state, need, 5, 2), ("complete", "delivered_residual"), 7)
     assert_common(result)
     bad_upheld_unlock = sum(1 for source, action, target in result["edges_data"] if action == "recheck_upheld" and not source.serious_seen and target.serious_seen)
+    bad_foreclosure_state = sum(1 for state in result["seen"] if state.control in ("active", "repair", "verify") and a_cannot_complete(state, need, 5, 2))
     assert bad_upheld_unlock == 0
-    print("A phase=%s risk=%s floor=%s finding_cap=%d normal=5 reserve=2 required=%d states=%d edges=%d terminal=%d acyclic=%s min_reviews=%d max_reviews=%d mixed_low_critical=%d parent_child=%d bad_delivery=%d bad_unverified_delivery=%d bad_critical_clear=%d bad_bound=%d bad_upheld_unlock=%d" % (
+    assert bad_foreclosure_state == 0
+    print("A phase=%s risk=%s floor=%s finding_cap=%d normal=5 reserve=2 required=%d states=%d edges=%d terminal=%d acyclic=%s min_reviews=%d max_reviews=%d mixed_low_critical=%d parent_child=%d bad_delivery=%d bad_unverified_delivery=%d bad_critical_clear=%d bad_bound=%d bad_upheld_unlock=%d bad_foreclosure_state=%d" % (
         phase,
         risk,
         FLOOR,
@@ -660,14 +832,17 @@ def check_a(phase, risk):
         result["bad_clear"],
         result["bad_bound"],
         bad_upheld_unlock,
+        bad_foreclosure_state,
     ))
 
 
 def check_c(phase, risk):
-    start = CState("discovery", 0, (), "none")
+    start = CState(phase, "discovery", 0, (), "none", False)
     result = walk(start, lambda state: c_edges(state, risk), ("complete", "delivered_residual"), 4)
     assert_common(result)
-    print("C phase=%s risk=%s floor=%s finding_cap=%d stages=4 repairs=2 states=%d edges=%d terminal=%d acyclic=%s min_reviews=%d max_reviews=%d mixed_low_critical=%d parent_child=%d bad_delivery=%d bad_unverified_delivery=%d bad_critical_clear=%d bad_bound=%d" % (
+    bad_acceptance_blind_bypass = sum(1 for state in result["seen"] if phase == "acceptance" and state.control == "complete" and not state.blind_visited)
+    assert bad_acceptance_blind_bypass == 0
+    print("C phase=%s risk=%s floor=%s finding_cap=%d stages=4 repairs=2 states=%d edges=%d terminal=%d acyclic=%s min_reviews=%d max_reviews=%d mixed_low_critical=%d parent_child=%d bad_delivery=%d bad_unverified_delivery=%d bad_critical_clear=%d bad_bound=%d bad_acceptance_blind_bypass=%d" % (
         phase,
         risk,
         FLOOR,
@@ -684,6 +859,7 @@ def check_c(phase, risk):
         result["bad_unverified_delivery"],
         result["bad_clear"],
         result["bad_bound"],
+        bad_acceptance_blind_bypass,
     ))
 
 
@@ -709,21 +885,56 @@ def check_legacy():
 
 
 def check_successor():
-    predecessor = Predecessor("F1", ("O1", "O2"), (), True)
-    unchanged = (predecessor.family_id, predecessor.obligations, predecessor.exclusions, predecessor.terminal)
-    receipt = SuccessorReceipt(True, True)
-    missing = SuccessorReceipt(False, True)
-    accepted_different = successor_authorised(predecessor, ("O1", "O2", "O3"), (), receipt)
-    accepted_same = successor_authorised(predecessor, predecessor.obligations, predecessor.exclusions, receipt)
-    accepted_reordered = successor_authorised(predecessor, ("O2", "O1"), (), receipt)
-    accepted_missing_receipt = successor_authorised(predecessor, ("O1", "O2", "O3"), (), missing)
-    predecessor_immutable = unchanged == (predecessor.family_id, predecessor.obligations, predecessor.exclusions, predecessor.terminal)
+    carried = (
+        Finding(1, "o1", "low", "carried", "pre_existing", 0),
+        Finding(2, "o2", "critical", "carried", "fix_induced", 1),
+    )
+    predecessor_obligations = ("O1", "O2")
+    predecessor = Predecessor("F1", predecessor_obligations, (), scope_digest(predecessor_obligations, ()), True, 7, carried)
+    unchanged = predecessor
+    successor_obligations = ("O1", "O2", "O3")
+    successor = Successor("F2", "F1", successor_obligations, (), scope_digest(successor_obligations, ()), 7, carried, "new_human_receipt")
+    receipt = SuccessorReceipt("F1", "F2", predecessor.scope_digest, successor.scope_digest, ("F2", "abandon"), "F2", 7, carried, True)
+    accepted_different = successor_authorised(predecessor, successor, receipt)
+    same_scope = dc_replace(successor, obligations=predecessor.obligations, scope_digest=predecessor.scope_digest)
+    reordered_scope = dc_replace(successor, obligations=("O2", "O1"), scope_digest=predecessor.scope_digest)
+    missing_receipt = None
+    missing_options = dc_replace(receipt, presented_options=())
+    wrong_family = dc_replace(receipt, predecessor_id="F9")
+    wrong_predecessor_digest = dc_replace(receipt, predecessor_scope_digest="wrong")
+    wrong_successor_digest = dc_replace(receipt, successor_scope_digest="wrong")
+    missing_carry = dc_replace(receipt, carried_findings=carried[:1])
+    fresh_authority = dc_replace(successor, predecessor_spend=0, authority_origin="predecessor_unspent")
+    accepted_same = successor_authorised(predecessor, same_scope, dc_replace(receipt, successor_scope_digest=same_scope.scope_digest))
+    accepted_reordered = successor_authorised(predecessor, reordered_scope, dc_replace(receipt, successor_scope_digest=reordered_scope.scope_digest))
+    accepted_missing_receipt = successor_authorised(predecessor, successor, missing_receipt)
+    accepted_missing_options = successor_authorised(predecessor, successor, missing_options)
+    accepted_wrong_family = successor_authorised(predecessor, successor, wrong_family)
+    accepted_wrong_predecessor_digest = successor_authorised(predecessor, successor, wrong_predecessor_digest)
+    accepted_wrong_successor_digest = successor_authorised(predecessor, successor, wrong_successor_digest)
+    accepted_missing_carry = successor_authorised(predecessor, successor, missing_carry)
+    accepted_fresh_authority = successor_authorised(predecessor, fresh_authority, receipt)
+    predecessor_immutable = predecessor == unchanged
     assert accepted_different
-    assert not accepted_same
-    assert not accepted_reordered
-    assert not accepted_missing_receipt
+    assert not any((accepted_same, accepted_reordered, accepted_missing_receipt, accepted_missing_options, accepted_wrong_family, accepted_wrong_predecessor_digest, accepted_wrong_successor_digest, accepted_missing_carry, accepted_fresh_authority))
     assert predecessor_immutable
-    print("B successor structured_cases=4 accepted_different=%s bad_same_scope=%d bad_reordered_scope=%d bad_missing_receipt=%d bad_predecessor_mutation=%d" % (str(accepted_different).lower(), int(accepted_same), int(accepted_reordered), int(accepted_missing_receipt), int(not predecessor_immutable)))
+    print("B successor structured_cases=10 accepted_different=%s bad_same_scope=%d bad_reordered_scope=%d bad_missing_receipt=%d bad_missing_options=%d bad_wrong_family=%d bad_wrong_predecessor_digest=%d bad_wrong_successor_digest=%d bad_missing_carry=%d bad_fresh_authority=%d bad_predecessor_mutation=%d" % (str(accepted_different).lower(), int(accepted_same), int(accepted_reordered), int(accepted_missing_receipt), int(accepted_missing_options), int(accepted_wrong_family), int(accepted_wrong_predecessor_digest), int(accepted_wrong_successor_digest), int(accepted_missing_carry), int(accepted_fresh_authority), int(not predecessor_immutable)))
+
+
+def check_scope_controls():
+    low = scope_expanded_route("low")
+    medium = scope_expanded_route("medium")
+    high_referral = scope_expanded_route("high")
+    high_upheld = scope_expanded_route("high", "upheld")
+    high_overturned = scope_expanded_route("high", "overturned")
+    critical_referral = scope_expanded_route("critical")
+    critical_upheld = scope_expanded_route("critical", "upheld")
+    critical_overturned = scope_expanded_route("critical", "overturned")
+    expected = ("backlogged", "terminal_scope_decision", "awaiting_scope_recheck", "terminal_scope_decision", "in_scope", "awaiting_scope_recheck", "serious_blocked", "serious_blocked")
+    actual = (low, medium, high_referral, high_upheld, high_overturned, critical_referral, critical_upheld, critical_overturned)
+    bad_scope_route = int(actual != expected)
+    assert bad_scope_route == 0
+    print("Scope controls low=%s medium=%s high_referral=%s high_upheld=%s high_overturned=%s critical_referral=%s critical_upheld=%s critical_overturned=%s bad_scope_route=%d" % (low, medium, high_referral, high_upheld, high_overturned, critical_referral, critical_upheld, critical_overturned, bad_scope_route))
 
 
 def check_b(phase, obligations):
@@ -738,14 +949,23 @@ def check_b(phase, obligations):
     if obligations > 0:
         assert result["mixed"] > 0
         assert result["parent_child"] > 0
-    bad_reopen_before_initial = sum(1 for source, action, target in result["edges_data"] if ("material_new_evidence" in action or "reopen_clean" in action) and "untested" in source.obligations)
+    bad_reopen_before_initial = sum(1 for source, action, target in result["edges_data"] if ("material_new_evidence" in action or "reopen_clean" in action or "reopen_batch" in action) and "untested" in source.obligations)
     unowned_critical_states = sum(1 for state in result["seen"] if any(f.owner == "unowned" and f.severity == "critical" and is_outstanding(f) for f in state.findings))
     unowned_critical_delivery = sum(1 for state in result["seen"] if state.control in ("complete", "delivered_residual") and any(f.owner == "unowned" and f.severity == "critical" for f in state.findings))
+    cross_owner_low_critical = sum(1 for state in result["seen"] if any(is_outstanding(low) and low.severity == "low" and low.owner.startswith("o") and any(is_outstanding(critical) and critical.severity == "critical" and critical.owner.startswith("o") and critical.owner != low.owner for critical in state.findings) for low in state.findings))
+    atomic_cross_owner_low_critical = sum(1 for source, action, target in result["edges_data"] if b_atomic_cross_owner_low_critical(source, action, target))
+    multi_initial_batch = sum(1 for source, action, target in result["edges_data"] if "initial_batch" in action and sum(1 for before, after in zip(source.obligations, target.obligations) if before == "untested" and after != "untested") > 1)
+    bad_owner_state = sum(1 for state in result["seen"] if not b_owner_state_matches(state))
     assert bad_reopen_before_initial == 0
+    assert bad_owner_state == 0
     if obligations > 0:
         assert unowned_critical_states > 0
+    if obligations > 1:
+        assert cross_owner_low_critical > 0
+        assert atomic_cross_owner_low_critical > 0
+        assert multi_initial_batch > 0
     assert unowned_critical_delivery == 0
-    print("B phase=%s obligations=%d floor=%s finding_cap=%d bound=%d states=%d edges=%d terminal=%d acyclic=%s min_reviews=%d max_reviews=%d mixed_low_critical=%d parent_child=%d unowned_critical=%d bad_unowned_critical_delivery=%d bad_reopen_before_initial=%d bad_delivery=%d bad_unverified_delivery=%d bad_critical_clear=%d bad_bound=%d" % (
+    print("B phase=%s obligations=%d floor=%s finding_cap=%d bound=%d states=%d edges=%d terminal=%d acyclic=%s min_reviews=%d max_reviews=%d mixed_low_critical=%d parent_child=%d cross_owner_low_critical=%d atomic_cross_owner_low_critical=%d multi_initial_batch=%d unowned_critical=%d bad_owner_state=%d bad_unowned_critical_delivery=%d bad_reopen_before_initial=%d bad_delivery=%d bad_unverified_delivery=%d bad_critical_clear=%d bad_bound=%d" % (
         phase,
         obligations,
         FLOOR,
@@ -759,7 +979,11 @@ def check_b(phase, obligations):
         result["max_reviews"],
         result["mixed"],
         result["parent_child"],
+        cross_owner_low_critical,
+        atomic_cross_owner_low_critical,
+        multi_initial_batch,
         unowned_critical_states,
+        bad_owner_state,
         unowned_critical_delivery,
         bad_reopen_before_initial,
         result["bad_delivery"],
@@ -789,6 +1013,7 @@ def main():
     if args.mode == "all":
         check_legacy()
         check_successor()
+        check_scope_controls()
     if args.mode in ("C", "all"):
         check_c(args.phase, args.risk)
 

@@ -92,7 +92,7 @@ The rubric freezes when plan review completes and before implementation starts. 
 
 A finding is in scope when it demonstrates, with reproducible evidence, a violation of a frozen Success Criterion, invariant, security or trust boundary, documentation-currency duty, or project-principle floor on the delivered artefact. A finding is scope-expanded only when the artefact can satisfy every frozen obligation without the proposed new capability, platform, quality threshold, or taste preference. The triager must record the failed entailment, the cited frozen obligations, and the counterfactual compliant artefact. Uncertainty stays in scope or goes to the human. It never defaults to backlog.
 
-A low scope-expanded improvement can become `Backlogged(scope_delta_id)` and does not keep the current task active. A medium, high, or critical scope-expansion proposal goes to the terminal human scope decision rather than silently joining the current task or being automatically backlogged. A newly discovered violation of an existing obligation remains in scope regardless of when it is found. A security defect created or exposed by the shipped change is in scope even when the exact exploit was not named in the Success Criteria. The firewall therefore cannot relabel an in-scope defect merely by calling it optional.
+A low scope-expanded improvement can become `Backlogged(scope_delta_id)` and does not keep the current task active. A medium scope expansion goes to the terminal human scope decision rather than silently joining the current task or being automatically backlogged. A proposed high or critical out-of-scope ruling first enters `AwaitingScopeRecheck`. An upheld high ruling then goes to the terminal human scope decision, while an overturned high returns in scope. A critical is always safety-blocking, so either critical re-check result enters `SeriousBlocked` and cannot backlog or deliver. A newly discovered violation of an existing obligation remains in scope regardless of when it is found. A security defect created or exposed by the shipped change is in scope even when the exact exploit was not named in the Success Criteria. The firewall therefore cannot relabel an in-scope defect merely by calling it optional.
 
 Any change to frozen obligations, exclusions, or boundaries after freeze ends the current family as `Narrowed` or `Replanned`. A Roadmap edit that only schedules a repair without changing the frozen rubric is not a scope change. `ScopeId` never mutates. New optional work starts only through a separately authorised task family. An identical obligation set, renamed step, rebuild, changed baseline commit, or human resume resolves to the existing family and cannot obtain fresh state. A successor budget requires a human receipt and a materially different obligation or exclusion set, so an artefact rename or rebuild cannot alter a digest merely to launder spend.
 
@@ -196,7 +196,7 @@ Any active phase at final authorised batch
   -> AwaitingTerminalDecision otherwise
 ```
 
-Plan and work completion retain the current one-clean or two-consecutive-clean rule by declared risk class. Acceptance requires one pass with no valid in-scope shortfall after triage, every earlier in-scope finding settled, and every Roadmap step complete. Completion wins if it occurs on the final authorised batch. Foreclosure fires as soon as remaining authorised batches are fewer than the clean batches still required. A high or critical dismissal blocks until re-check. Binary clean remains the release test. Novelty and severity affect routing and reserve access, not whether a genuine unresolved defect is called clean.
+Plan and work completion retain the current one-clean or two-consecutive-clean rule by declared risk class. Acceptance requires one pass with no valid in-scope shortfall after triage, every earlier in-scope finding settled, and every Roadmap step complete. Completion wins if it occurs on the final attainable batch. One remaining-clean-suffix calculation runs before every automatic review, repair, and verification. Foreclosure fires before that action when its remaining authorised verification path cannot attain the suffix. A high or critical dismissal blocks until re-check. Binary clean remains the release test. Novelty and severity affect routing and reserve access, not whether a genuine unresolved defect is called clean.
 
 The state is `(phase_id, spent, serious_seen, clean_streak, FindingMap)`. A finding-bearing review unions every stable id from the triaged batch into that map. Joint repair moves the complete selected set to pending verification. The next informed verification can resolve the complete set, leave it open, or leave parents open while adding fix-induced children. The reserve and completion predicates universally quantify over the map rather than reading historical outcome or severity arrays. A falling severity trajectory raises confidence but never settles a finding. Stopping still censors what another review might have found.
 
@@ -216,14 +216,17 @@ This is not another resettable cap. `spent` is monotone under every transition, 
 | Upheld high dismissal at batch five | The re-check settles the dismissal but leaves reserve locked unless earlier valid serious evidence already unlocked it. |
 | Low plus critical in one batch | Both stable ids remain in the map and the critical blocks delivery regardless of the low disposition. |
 | Parent plus fix-induced child | Failed joint verification leaves the parent open and adds the child. Neither identity replaces the other. |
-| Scope-expanded low | `O` records backlog and counts as no in-scope valid finding. Low-risk acceptance can complete at pass one. |
+| Scope-expanded low | `O` records backlog and counts as no in-scope valid finding. |
+| Scope-expanded medium | It enters the terminal human scope decision. |
+| Scope-expanded high | It enters independent scope re-check. Upheld goes to the terminal human scope decision and overturned returns in scope. |
+| Scope-expanded critical | It enters independent scope re-check, but either result is `SeriousBlocked` and cannot backlog or deliver. |
 | Relitigation without new evidence | `R` preserves the settled finding and counts as no new valid finding. It cannot reset spend. |
 | Narrowing or replan | Either choice is a terminal event for the current `TaskFamilyId`. No seat is restored. |
 | Unresolved critical at exhaustion | `HLLLLLK` reaches `CriticalBlocked` at pass seven. Complete and accept residual risk are unconstructible. |
 
 On the current Q-78 observation sequence, Candidate A stops at pass seven in `AwaitingTerminalDecision` with that pass carrying medium findings. It does not observe passes eight through ten, which contain three later valid shortfalls, all recorded low. This descriptive replay uses the pass-level adjudication summaries only to compare when a fixed controller would stop. The safety proof does not depend on those arrays. On representative convergence histories, A completes `agents-md-drift-guard-inc1` at pass four and the low-risk `checks-runner-worktree-name-collision` plan review at pass four. `optional-modules-inc2cii` reaches pass five with one clean and an unlocked reserve, so one further clean could complete it. The low-only `prompt-drift-guard-inc1` and medium-only `step-intent-encoding-inc1` reach the normal boundary at pass five and terminally escalate rather than opening a new window.
 
-The corrected exhaustive graph check carries the complete stable finding map and explicitly models all severity multisets up to cardinality two, including medium, low plus critical, and parent plus child. At the high floor, acceptance reaches 809 states and 949 edges, while risky work review reaches 1606 states and 2078 edges. Both graphs are acyclic, reach at most seven batches, and report zero delivery, unverified-delivery, critical-clear, bound, and upheld-dismissal-unlock violations. The proof artifact and exact commands are in the Reproduction section.
+The corrected exhaustive graph check carries the complete stable finding map and explicitly models all severity multisets up to cardinality two, including medium, low plus critical, and parent plus child. At the high floor, acceptance reaches 809 states and 949 edges, while risky work review reaches 1386 states and 1648 edges after impossible clean-suffix states are foreclosed. Both graphs are acyclic, reach at most seven batches, and report zero delivery, unverified-delivery, critical-clear, bound, upheld-dismissal-unlock, and foreclosure-state violations. The proof artifact and exact commands are in the Reproduction section.
 
 ### Candidate A against all eight Project Principles
 
@@ -264,7 +267,7 @@ Candidate B replaces fungible credits with one fixed graph per plan review, decl
 
 | Stage | Allocation and transition. |
 | --- | --- |
-| `Discovery` | Two blind reviewer seats inspect the frozen artefact and rubric. A settled low-risk observation completes. A settled risky observation goes to `BlindClosure`. Any valid in-scope finding permits `Repair1` and goes to `Verify1`. |
+| `Discovery` | Two blind reviewer seats inspect the frozen artefact and rubric. A settled low-risk plan or work observation completes. Every settled acceptance observation and every settled risky plan or work observation goes to `BlindClosure`. Any valid in-scope finding permits `Repair1` and goes to `Verify1`. |
 | `Verify1` | One informed reviewer verifies named repairs and affected regions. A settled result goes to `BlindClosure`. Any valid in-scope finding permits `Repair2` and goes to `Verify2`. |
 | `Verify2` | One informed reviewer verifies the second repair. A settled result goes to `BlindClosure`. Any valid in-scope finding goes directly to the terminal decision. |
 | `BlindClosure` | One blind reviewer with no repair history samples the final artefact. A settled result completes. Any valid in-scope finding goes directly to the terminal decision. |
@@ -277,8 +280,8 @@ Acceptance again remains a campaign around typed single passes. The stage belong
 
 ```text
 Discovery
-  -> Complete for a settled low-risk phase
-  -> BlindClosure for a settled risky phase
+  -> Complete for a settled low-risk plan or work phase
+  -> BlindClosure for every acceptance phase or a settled risky plan or work phase
   -> Repair1 -> Verify1 for a valid in-scope finding
 
 Verify1
@@ -296,7 +299,7 @@ BlindClosure
   -> CriticalBlocked for a valid critical finding
 ```
 
-A settled observation means no valid in-scope finding remains after triage. It may include a duplicate without new evidence or a scope-expanded optional item that was durably backlogged. It never includes a genuine unresolved defect. `Repair1` and `Repair2` jointly retain every selected identity and severity in `ResolvedPendingVerification`. Only named complete-set verification resolves them. A failed verification preserves every parent, and each fix-induced finding receives its own open child identity. Severity determines critical legality and backstop routing. Neither severity decay nor a clean count bypasses the complete map.
+A settled observation means no valid in-scope finding remains after triage. It may include a duplicate without new evidence or a scope-expanded low that was durably backlogged. It never includes a genuine unresolved defect. `Repair1` and `Repair2` jointly retain every selected identity and severity in `ResolvedPendingVerification`. Only named complete-set verification resolves them. A failed verification preserves every parent, and each fix-induced finding receives its own open child identity. Severity determines critical legality and backstop routing. Neither severity decay nor a clean count bypasses the complete map.
 
 The protocol is deterministic. Confidence increases when informed verification reproduces a repair and when blind closure finds no in-scope defect. Stopping still censors any unrun future review. Candidate B accepts that censoring at a predeclared stage instead of estimating a probability from the current small and inconsistent dataset.
 
@@ -311,12 +314,15 @@ For each of the `m + 2` phases, Candidate B has at most four review batches, fiv
 | Repeated human resume | Terminal nodes have no edge to `Discovery`, `Verify1`, `Verify2`, or `BlindClosure`. |
 | Unbounded acceptance repair | A third consecutive finding at `Verify2` enters the terminal decision. Any path is terminal by the fourth review batch. |
 | Fix-induced high near exhaustion | `LHCC` uses `Repair1`, sees a high at `Verify1`, uses `Repair2`, verifies clean at `Verify2`, and completes after blind closure at batch four. |
-| Scope-expanded low | `O` is backlogged and treated as settled. A low-risk phase completes at discovery. A risky phase still runs blind closure. |
+| Scope-expanded low | `O` is backlogged and treated as settled. A low-risk plan or work phase may complete at discovery. Acceptance and risky plan or work still run blind closure. |
+| Scope-expanded medium | It enters the terminal human scope decision. |
+| Scope-expanded high | It enters independent scope re-check. Upheld goes to the terminal human scope decision and overturned returns in scope. |
+| Scope-expanded critical | It enters independent scope re-check, but either result is `SeriousBlocked` and cannot backlog or deliver. |
 | Relitigation without new evidence | `R` preserves the prior disposition and is settled. It creates no repair state and no new identity. |
 | Narrowing or replan | Either choice is a terminal event for the current task family and preserves the visited stage history. |
 | Unresolved critical at exhaustion | `LLK` reaches `CriticalBlocked` at `Verify2`, the third review batch. Accept residual risk and complete are illegal. |
 
-On the Q-78 observation sequence, Candidate B reaches `CriticalBlocked` or `AwaitingTerminalDecision` at pass three with that pass carrying a high. It does not observe passes four through ten, which contain 23 later valid shortfalls and include further highs. This descriptive replay is not the safety oracle. On the `agents-md-drift-guard-inc1` sequence it completes after `Verify2` and blind closure at pass four. It terminally escalates the low-risk `checks-runner-worktree-name-collision` plan review at pass three because `Verify2` finds another valid issue. The other selected long histories also stop by pass three or four.
+On the Q-78 observation sequence, Candidate B stops at pass three with that pass carrying a high. At floor `high` it reaches `SeriousBlocked`. At floor `critical` it reaches `AwaitingTerminalDecision`, where residual acceptance of the open high is legal. Under both floors it does not observe passes four through ten, which contain 23 later valid shortfalls and include further highs. This descriptive replay is not the safety oracle. On the `agents-md-drift-guard-inc1` sequence it completes after `Verify2` and blind closure at pass four. It terminally escalates the low-risk `checks-runner-worktree-name-collision` plan review at pass three because `Verify2` finds another valid issue. The other selected long histories also stop by pass three or four.
 
 The corrected exhaustive graph check retains the complete stable finding map through both grouped repairs and verifications. At the high floor, risky acceptance and risky work review each reach 794 states and 863 edges. Low-risk work review reaches 659 states and 711 edges. Every graph is acyclic, reaches at most four review batches, and reports zero delivery, unverified-delivery, critical-clear, and bound violations.
 
@@ -357,7 +363,7 @@ Advisory guidance includes model and harness diversity and the quality of human 
 | Response to serious late finding | Unlocks two already-reserved batches without reset. | Permits repair only when the finding occurs before `Verify2` or closure. |
 | Blind and informed allocation | One blind and one informed or rubric-focused seat in every batch. | Two blind seats at discovery, informed verification seats, then one blind closure seat. |
 | Compatibility with current streak logic | Retains plan and work streaks and wraps acceptance passes in a budgeted campaign. | Replaces streak progression with a stage graph. |
-| Q-78 replay | Terminal at pass seven with a medium finding. | Terminal at pass three with a high finding. |
+| Q-78 replay | Terminal at pass seven with a medium finding. | Terminal at pass three with a high. It is `SeriousBlocked` at floor `high`, while residual acceptance is available at floor `critical`. |
 | Main risk | Numeric seats can become policy knobs and the schema is larger. | Useful late repair is rejected even when unused earlier capacity exists. |
 
 Recommendation: choose Candidate A, with medium confidence in the architecture and low confidence in the initial five-plus-two values. The reason is judged primarily against Prefer the cleaner long-term architecture over the smallest diff, Make illegal states unrepresentable, Ground decisions in evidence, and Structured data first, project for humans. Candidate A unifies task spend without collapsing typed phase semantics, removes every automatic reset, reserves bounded capacity for the serious tail observed in Q-78, and remains mechanically replayable. Candidate B is cleaner in isolation and cheaper, but the local replay shows that it terminally escalates before useful later evidence that Candidate A still admits.
@@ -391,7 +397,7 @@ The first implementation should build only typed identities, frozen scope, prosp
 
 ## Reproduction
 
-The original proposal used the sibling `q86-state-machine` scratch directory. The corrected proof rerun used `/tmp/claude-1000/-home-jessea-Documents-projects-agent-scaffold/2fed83bd-4a13-402b-9e76-143356c0d130/scratchpad/q86-synthesis-r2-fix`. The live plan and log were not mutated.
+The corrected proof uses the durable checker below from the repository root and has no dependency on a session-specific scratch directory. The live plan and log were not mutated.
 
 ### Q-78 counts and reviewer attribution
 
@@ -427,17 +433,17 @@ The values of `n` are demonstrations. The counterexample is unbounded because th
 
 The corrected checker is the durable proof artifact `docs/plans/workflow-calibration.explorations/q86-controller-proof.py`. It models Candidate A as mode A and this proposal's fixed-depth Candidate B as mode C, matching the synthesis label map. It retains the complete stable finding map through open, pending-verification, pending-recheck, settled, terminal, and non-delivery states. It exhausts every severity multiset up to cardinality two, including medium, low plus critical, and parent plus fix-induced child. A valid critical remains outstanding across repair and can leave only through named complete-set verification or terminal non-delivery. A dismissed critical uses the independent re-check path instead.
 
-The cardinality-two graph checks the interactions a singleton cannot expose. Arbitrary finite maps follow by induction because transitions union fresh ids and update dispositions pointwise, joint actions name the complete selected key set, and delivery is a universal conjunction over ids. Adding a finding cannot erase another identity or increase grouped calls, and can only make delivery harder.
+The cardinality-two graph checks the interactions a singleton cannot expose. For B, every triage-valid batch is an atomic finite map from affected obligation owner to finding submap plus an unowned set. Arbitrary finite maps follow by induction over the product of obligation state and finding state because transitions union fresh ids, advance every affected owner, preserve the bidirectional owner-state invariant, and make delivery a universal conjunction over ids and obligations. Adding an owner component cannot erase another identity, close an unaffected obligation, increase grouped calls, or make delivery easier.
 
 Run:
 
 ```sh
 CHECKER=docs/plans/workflow-calibration.explorations/q86-controller-proof.py
 export PYTHONDONTWRITEBYTECODE=1
-export TMPDIR=/tmp/claude-1000/-home-jessea-Documents-projects-agent-scaffold/2fed83bd-4a13-402b-9e76-143356c0d130/scratchpad/q86-synthesis-r2-fix
 nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode A --phase acceptance --risk risky --floor high
 nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode A --phase work_review --risk risky --floor high
 nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase acceptance --risk risky --floor high
+nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase acceptance --risk low_risk --floor high
 nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase work_review --risk low_risk --floor high
 nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase work_review --risk risky --floor high
 sha256sum "$CHECKER"
@@ -446,11 +452,12 @@ sha256sum "$CHECKER"
 The outputs are:
 
 ```text
-A phase=acceptance risk=risky floor=high finding_cap=2 normal=5 reserve=2 required=1 states=809 edges=949 terminal=353 acyclic=true min_reviews=1 max_reviews=7 mixed_low_critical=35 parent_child=160 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_upheld_unlock=0
-A phase=work_review risk=risky floor=high finding_cap=2 normal=5 reserve=2 required=2 states=1606 edges=2078 terminal=617 acyclic=true min_reviews=2 max_reviews=7 mixed_low_critical=35 parent_child=160 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_upheld_unlock=0
-C phase=acceptance risk=risky floor=high finding_cap=2 stages=4 repairs=2 states=794 edges=863 terminal=485 acyclic=true min_reviews=2 max_reviews=4 mixed_low_critical=12 parent_child=48 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0
-C phase=work_review risk=low_risk floor=high finding_cap=2 stages=4 repairs=2 states=659 edges=711 terminal=387 acyclic=true min_reviews=1 max_reviews=4 mixed_low_critical=11 parent_child=48 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0
-C phase=work_review risk=risky floor=high finding_cap=2 stages=4 repairs=2 states=794 edges=863 terminal=485 acyclic=true min_reviews=2 max_reviews=4 mixed_low_critical=12 parent_child=48 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0
+A phase=acceptance risk=risky floor=high finding_cap=2 normal=5 reserve=2 required=1 states=809 edges=949 terminal=353 acyclic=true min_reviews=1 max_reviews=7 mixed_low_critical=35 parent_child=160 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_upheld_unlock=0 bad_foreclosure_state=0
+A phase=work_review risk=risky floor=high finding_cap=2 normal=5 reserve=2 required=2 states=1386 edges=1648 terminal=569 acyclic=true min_reviews=2 max_reviews=7 mixed_low_critical=29 parent_child=128 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_upheld_unlock=0 bad_foreclosure_state=0
+C phase=acceptance risk=risky floor=high finding_cap=2 stages=4 repairs=2 states=794 edges=863 terminal=485 acyclic=true min_reviews=2 max_reviews=4 mixed_low_critical=12 parent_child=48 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_acceptance_blind_bypass=0
+C phase=acceptance risk=low_risk floor=high finding_cap=2 stages=4 repairs=2 states=794 edges=863 terminal=485 acyclic=true min_reviews=2 max_reviews=4 mixed_low_critical=12 parent_child=48 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_acceptance_blind_bypass=0
+C phase=work_review risk=low_risk floor=high finding_cap=2 stages=4 repairs=2 states=659 edges=711 terminal=387 acyclic=true min_reviews=1 max_reviews=4 mixed_low_critical=11 parent_child=48 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_acceptance_blind_bypass=0
+C phase=work_review risk=risky floor=high finding_cap=2 stages=4 repairs=2 states=794 edges=863 terminal=485 acyclic=true min_reviews=2 max_reviews=4 mixed_low_critical=12 parent_child=48 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_acceptance_blind_bypass=0
 ```
 
-The same commands with `--floor critical` also report zero violations. The checker SHA-256 is `937c714a483b583eaa66222adf4fc2e50e4764924568a5d435cbbf3078349260`.
+The same commands with `--floor critical` also report zero violations. The checker SHA-256 is `b00662359b70139bb1ea670d8ed511caf8a727e6b773b385ab1a31ffd8f8f73c`.
