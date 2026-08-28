@@ -153,10 +153,12 @@ C has the smallest fixed phase graph and lowest fixed per-phase maximum. It reje
 
 | Unit | A minimum | B minimum | C minimum |
 | --- | --- | --- | --- |
-| Low-risk plan or work phase | One batch and two reviewer calls | `n_q + 1` batches and `2(n_q + 1)` reviewer calls | One batch and two reviewer calls |
-| Risky plan or work phase | Two batches and four reviewer calls | `n_q + 1` batches and `2(n_q + 1)` reviewer calls | Two batches and three reviewer calls |
-| Acceptance phase | One batch and two reviewer calls | `n_q + 1` batches and `2(n_q + 1)` reviewer calls, with `q = acceptance` | Two batches and three reviewer calls |
-| Whole family | `r_plan + sum(r_work_q) + 1` batches | `r_plan + |O| + m + 1` batches | `c_plan + sum(c_work_q) + 2` batches |
+| Low-risk plan review | One batch and two reviewer calls | One batch and two reviewer calls, reusing A's sealed plan controller | One batch and two reviewer calls |
+| Risky plan review | Two batches and four reviewer calls | Two batches and four reviewer calls, reusing A's sealed plan controller | Two batches and three reviewer calls |
+| Low-risk post-freeze work phase | One batch and two reviewer calls | `n_q + 1` batches and `2(n_q + 1)` reviewer calls | One batch and two reviewer calls |
+| Risky post-freeze work phase | Two batches and four reviewer calls | `n_q + 1` batches and `2(n_q + 1)` reviewer calls | Two batches and three reviewer calls |
+| Post-freeze acceptance phase | One batch and two reviewer calls | `n_q + 1` batches and `2(n_q + 1)` reviewer calls, with `q = acceptance` | Two batches and three reviewer calls |
+| Whole family | `r_plan + sum(r_work_q) + 1` batches | `r_plan + \|O\| + m + 1` batches | `c_plan + sum(c_work_q) + 2` batches |
 
 C has the lowest fixed per-phase maximum. Whole-family costs cannot be universally ranked across all three options because B additionally scales with `|O|`.
 

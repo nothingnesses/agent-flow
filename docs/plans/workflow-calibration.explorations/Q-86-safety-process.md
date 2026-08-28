@@ -400,7 +400,7 @@ The prior `statemachine.awk` result is withdrawn. Its M2 branch was a four-unit 
 
 Mode B is the actual post-freeze `FrozenObligationCampaign` in section 5. It keeps immutable phase identity, obligation stages, review spend, and a complete finite stable finding map. Mode A and mode C use the same map. One B batch is an atomic finite owner map plus unowned set. The sweep reaches same-owner and cross-owner low plus critical, mixed owned and unowned findings, and a parent plus fix-induced child. Joint repair and verification operate on the complete selected key set. Delivery universally quantifies over the map and obligations. The owner-state check is bidirectional, so no owned outstanding finding can coexist with a closed or untested owner and no special obligation state can lose its matching finding.
 
-Run the all-mode and B-sweep commands as adversarial evidence about the retained prototype. The output reports zero for the counters the prototype implements at both floors, but round 5 demonstrated that those counters omit required state products and cross-family behaviour. Its SHA-256 is `d0dabe6da04fde2009a2baf22d0a3d9fabdfbd6bc96d2859d26043531aff579a`.
+Run the all-mode and B-sweep commands as adversarial evidence about the retained prototype. The output reports zero for the counters the prototype implements at both floors, but round 5 demonstrated that those counters omit required state products and cross-family behaviour. The current retained file's SHA-256 is `8a349c68dbe18df43d1d60d4110e11b3e216d97cdf4efb9f7e7328693d668175`.
 
 The finite sweep caps the complete retained finding map at cardinality two. The earlier arbitrary-finite extension argument is withdrawn. Settled identities consume that cap and remove later fresh-finding, reopen, scope, and delivery transitions, so adding a component can make completion easier. A selected-option proof must separate finite batch-interaction coverage from arbitrary persistent history or establish another sound quotient and induction.
 
@@ -442,7 +442,7 @@ M1 and M2 retain proposed finite bounds or terminal events for every required pa
 | **Idempotent** | Resume reconstructs monotone spend. | Phase, obligation, attempt, and spend replay deterministically. | A sealed ceiling prevents reset. |
 | **Make illegal states unrepresentable** | Complete finding maps remove scalar erasure. | Closed variants and `UnownedInScopeFinding` prevent unverified closure, second reopen, phase transfer, and post-terminal action. | Needs the same explicit disposition controller before returning to eligibility. |
 | **Ground decisions in evidence** | Preserves the measured five-round boundary, but reserve values are weakly calibrated. | Targets observed scope movement, while the conditional Q-78 scenario exposes four possible replans under stated digest assumptions. | The historical trajectory fields are not trustworthy enough for a gate. |
-| **Reproducible** | Fixed arithmetic with an adversarial finite prototype whose limits are explicit. | `4|O| + m + 8` is an algebraic proposal requiring a complete selected-option proof. | The old proxy is withdrawn. |
+| **Reproducible** | Fixed arithmetic with an adversarial finite prototype whose limits are explicit. | `4\|O\| + m + 8` is an algebraic proposal requiring a complete selected-option proof. | The old proxy is withdrawn. |
 | **Structured data first, project for humans** | Accounts, findings, and receipts are structured. | Obligation rows, owners, attempts, findings, and receipts are structured. | Prospective finding and trajectory state would need structure. |
 
 The baseline assessment remains at section 2.3.
@@ -552,7 +552,7 @@ done
 sha256sum "$CHECKER"
 ```
 
-The synthesis no longer retains a large exact stdout block. Run the commands below to reproduce the prototype's current output. Its zero-valued counters describe only implemented checks and do not show that all required controls passed. The B sweep declares design bounds `1`, `5`, `9`, and `13`, reaches smaller maxima under the retained-map cap in some cases, and reports clean minimums `1`, `2`, `3`, and `4`. The earlier arbitrary finite-map conclusion is withdrawn. The checker SHA-256 for this historical prototype is `d0dabe6da04fde2009a2baf22d0a3d9fabdfbd6bc96d2859d26043531aff579a`.
+The synthesis no longer retains a large exact stdout block. Run the commands below to reproduce the prototype's current output. Its zero-valued counters describe only implemented checks and do not show that all required controls passed. The B sweep declares design bounds `1`, `5`, `9`, and `13`, reaches smaller maxima under the retained-map cap in some cases, and reports clean minimums `1`, `2`, `3`, and `4`. The earlier arbitrary finite-map conclusion is withdrawn. The current retained checker SHA-256 is `8a349c68dbe18df43d1d60d4110e11b3e216d97cdf4efb9f7e7328693d668175`. Before the required in-file prototype caveat was added, the checker at historical commit `ad989b5f` had SHA-256 `d0dabe6da04fde2009a2baf22d0a3d9fabdfbd6bc96d2859d26043531aff579a`; that historical digest does not identify the current retained file.
 
 ### A.2 Q-78 scope replay
 
