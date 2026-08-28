@@ -166,12 +166,12 @@ C has the lowest fixed per-phase maximum. Whole-family costs cannot be universal
 
 | Project Principle | Option A | Option B | Option C |
 | --- | --- | --- | --- |
-| Prefer the cleaner long-term architecture over the smallest diff | Unifies task spend but layers a budget over existing streaks | Unifies scope, ownership, disposition, phase authority, and completion | Uses the smallest fixed graph but replaces streak progression |
-| Minimal by default | Reuses current semantics but adds account and reserve fields | Adds canonical obligations and the largest schema | Uses four review nodes and two repair generations |
+| Prefer the cleaner long-term architecture over the smallest diff | Unifies task spend but layers a budget over existing streaks | Unifies scope, ownership, disposition, phase authority, and completion while retaining A's sealed plan-review controller | Uses the smallest fixed graph but replaces streak progression |
+| Minimal by default | Reuses current semantics but adds account and reserve fields | Adds canonical obligations and the largest schema on top of A's plan-review account and reserve fields | Uses four review nodes and two repair generations |
 | Safe on existing projects | Prospective adoption can charge prior spend and fail loudly | `LegacyNoRubric` can fail closed before prospective freeze | Historical stage adoption is ambiguous and must route to a human |
 | Idempotent | Ordered replay preserves monotone spend | Frozen owner and obligation state reconstruct without reset | Every stage is forward-only and single-use |
 | Make illegal states unrepresentable | Typed accounts can remove reset and unsafe completion paths | Typed obligations can make unverified closure, phase transfer, and unowned completion illegal | The graph can make a third automatic repair and backward movement illegal |
-| Ground decisions in evidence | Keeps the measured five-round boundary, but reserve values are weakly calibrated | Addresses observed scope movement, but obligation cost and completeness lack prospective evidence | Matches anchoring evidence, but Q-78 shows the cost of early terminality |
+| Ground decisions in evidence | Keeps the measured five-round boundary, but reserve values are weakly calibrated | Addresses observed scope movement, but obligation cost and completeness lack prospective evidence and its inherited five-normal-plus-two-reserve values are weakly calibrated | Matches anchoring evidence, but Q-78 shows the cost of early terminality |
 | Reproducible | Fixed arithmetic is reproducible once the transition model is proved | Finite rows and exact ownership make the algebra reproducible once the controller is proved | A fixed graph is reproducible once every transition product is proved |
 | Structured data first, project for humans | Accounts, findings, and receipts are structured | Obligations, owners, attempts, findings, scope deltas, and receipts are structured | Stages, briefs, findings, and terminal state are structured |
 
@@ -179,9 +179,9 @@ C has the lowest fixed per-phase maximum. Whole-family costs cannot be universal
 
 The provisional recommendation remains `B - Frozen obligations with sealed phase campaigns`, at low confidence.
 
-This recommendation does not rely on the controller prototype. It rests on the conceptual architecture. B gives frozen scope, exact obligation ownership, finding disposition, phase authority, and completion one structured source, while A keeps streak and budget as separate stopping concepts and C discards bounded late repair earlier. That reasoning is strongest under Prefer the cleaner long-term architecture over the smallest diff, Make illegal states unrepresentable, and Structured data first, project for humans.
+This recommendation does not rely on the controller prototype. It rests on the conceptual architecture. B gives frozen scope, exact obligation ownership, finding disposition, phase authority, and completion one structured source for post-freeze phases, where A keeps streak and budget as separate stopping concepts throughout and C discards bounded late repair earlier. B does not replace A's plan machinery: it inherits A's sealed plan-review controller, including its account/reserve model and weakly calibrated five-normal-plus-two-reserve values. That reasoning is strongest under Prefer the cleaner long-term architecture over the smallest diff, Make illegal states unrepresentable, and Structured data first, project for humans.
 
-Confidence is low under Minimal by default, Safe on existing projects, and Ground decisions in evidence. B has the largest schema, its clean cost scales with `|O|`, an incomplete obligation set is a new safety risk, and five proof rounds found serious omissions in the prototype. The recommendation is advice for the human decision, not proof of eligibility and not a selection.
+Confidence is low under Minimal by default, Safe on existing projects, and Ground decisions in evidence. B has the largest schema, its clean cost scales with `|O|`, its inherited plan-review account/reserve values are weakly calibrated, an incomplete obligation set is a new safety risk, and five proof rounds found serious omissions in the prototype. The recommendation is advice for the human decision, not proof of eligibility and not a selection.
 
 ## Blocking selected-option proof of concept
 
@@ -213,6 +213,8 @@ The architecture choice does not settle the serious terminal floor.
 - Choose `high`, recommended. Ordinary residual acceptance and ordinary narrowing are unavailable while a high or critical is open. The retained Q-78 triages show that this restriction would apply on passes three through six.
 - Choose `critical`, the mandatory minimum. An open critical blocks those choices, while a high may be accepted as residual risk.
 - Choose `defer`. A separate receipted floor decision is then required before the selected-option proof of concept can close and before implementation.
+
+`high` is recommended under Make failure and absence explicit and Correctness before performance: making an open high non-deliverable keeps known serious risk explicit and avoids trading correctness for a terminal escape. Its cost under Ground decisions in evidence and Minimal by default is that Q-78 supplies only descriptive, not prospective, evidence for the stricter boundary, which removes residual-acceptance and narrowing choices on passes three through six. The recommendation accepts that evidence and minimality cost in favour of the safer fail-closed boundary; it selects nothing.
 
 The selected-option proof of concept must model both floor values even if the human selects one, so the safety difference remains executable and the rejected floor cannot hide an untested transition.
 
