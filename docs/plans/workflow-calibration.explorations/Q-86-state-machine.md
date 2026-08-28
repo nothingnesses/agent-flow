@@ -113,7 +113,7 @@ Continuity = New
 Severity = Low | Medium | High | Critical
 ```
 
-The triager mints one `FindingId` for a new proposition defined by the violated obligation, affected surface, and falsifying behaviour. Reviewer reports keep their own `ReportId` and point to that finding after deduplication. Duplicate reviewer reports consume the reviewer seats already used but create no extra finding, repair, or severity count. A repair records the findings it claims to address. A demonstrably new defect caused by that repair receives a new child `FindingId` with `FixInduced`. A defect shown to exist before the repair is `PreExisting` even if detected later.
+The triager reduces every batch to a finite stable `FindingMap`, not one scalar. Each value records owner, severity, disposition, origin, and optional parent id. The map may hold several findings from one batch, including low plus critical and a parent plus fix-induced child. The triager mints one `FindingId` for each new proposition defined by the violated obligation, affected surface, and falsifying behaviour. Reviewer reports keep their own `ReportId` and point to those findings after deduplication. Duplicate reviewer reports consume the reviewer seats already used but create no extra finding, repair, or severity count. A demonstrably new defect caused by a repair receives a new child id whose parent remains in the map. A defect shown to exist before the repair is `PreExisting` even if detected later.
 
 Relitigation without materially new evidence points to the settled `FindingId` and leaves its disposition unchanged. Materially new evidence creates a new `EvidenceId` and reopens the same finding root. It does not mint a fresh budget or reset a stage. Severity is orthogonal to every lineage axis. A pre-existing critical and a fix-induced critical are equally critical. A scope-expanded low can be backlogged only because of scope relation, not because low severity makes a genuine defect disappear.
 
@@ -134,7 +134,7 @@ RevertedWithArtifact
 CarriedToSuccessor
 ```
 
-`Complete` is constructible only when every in-scope finding is `Resolved`, validly `Dismissed`, or otherwise removed from the delivered artefact, and the phase stopping rule is met. A valid critical follows `Open -> ResolvedPendingVerification -> Resolved`. Repair takes the first transition and only an explicit named verification takes the second. An unrelated later observation, clean streak, budget boundary, or stage boundary cannot clear it. Terminal non-delivery instead records `RemovedFromDelivery`, `RevertedWithArtifact`, `CarriedToSuccessor`, or `UnresolvedAbandoned`. A dismissed high or critical follows `AwaitingDismissalRecheck -> Dismissed` only when the independent re-check upholds dismissal.
+`Complete` is constructible only when every in-scope finding in the complete map is `Resolved`, validly `Dismissed`, or otherwise removed from the delivered artefact, and the phase stopping rule is met. One grouped repair moves the complete selected open set to `ResolvedPendingVerification`. Its named joint verification resolves every selected id, conservatively fails the complete set back to open, or leaves parents open while adding fix-induced children. A partial verification is failure unless every selected finding has named successful evidence. An unrelated later observation, clean streak, budget boundary, child finding, or stage boundary cannot clear a parent. Terminal non-delivery instead records `RemovedFromDelivery`, `RevertedWithArtifact`, `CarriedToSuccessor`, or `UnresolvedAbandoned`. A dismissed high or critical follows `AwaitingDismissalRecheck -> Dismissed` only when the independent re-check upholds dismissal.
 
 At exhaustion the machine enters `AwaitingTerminalDecision` or `CriticalBlocked` and spawns no reviewer or implementer. The human receives accept residual risk, narrow scope, revert, replan, and abandon through the human-input contract. The durable receipt records all options, the recommendation, the chosen option, the exact scope and budget or stage snapshot, and every open `FindingId`.
 
@@ -154,7 +154,7 @@ Model and harness diversity are preferred when available because shared models a
 
 `TaskBudget` belongs to `TaskFamilyId` and is declared in two irreversible steps. Task opening declares the seven-batch plan slice. Plan convergence freezes `ScopeId`, the finite number `m` of work-loop identities, seven batches for each work loop, and seven acceptance batches. The second declaration occurs once. Later plan edits, scope changes, new artefact versions, attempts, renames, rebuilds, replans, and human decisions cannot append or restore seats in that family.
 
-Each phase slice has five normal review batches and two red-reserve batches. A valid high or critical finding sets monotone `serious_seen = true` and unlocks the two reserve batches for that phase. Medium and low churn does not unlock them. Unlocking does not reset spent state. The reserve gives a risky plan or work loop enough room for two clean verification batches after a high finding at normal batch five. It also gives acceptance one repair verification and one further blind sample if needed.
+Each phase slice has five normal review batches and two red-reserve batches. A triage-valid high or critical, or an overturned serious dismissal, sets monotone `serious_seen = true` and unlocks the two reserve batches for that phase. Referral of a dismissal to re-check does not unlock reserve. An upheld dismissal preserves the prior value. Medium and low churn does not unlock reserve. Unlocking does not reset spent state. The reserve gives a risky plan or work loop enough room for two clean verification batches after valid serious evidence at normal batch five. It also gives acceptance one repair verification and one further blind sample if needed.
 
 | Account in each plan, work, or acceptance slice | Initial authority. |
 | --- | --- |
@@ -198,7 +198,7 @@ Any active phase at final authorised batch
 
 Plan and work completion retain the current one-clean or two-consecutive-clean rule by declared risk class. Acceptance requires one pass with no valid in-scope shortfall after triage, every earlier in-scope finding settled, and every Roadmap step complete. Completion wins if it occurs on the final authorised batch. Foreclosure fires as soon as remaining authorised batches are fewer than the clean batches still required. A high or critical dismissal blocks until re-check. Binary clean remains the release test. Novelty and severity affect routing and reserve access, not whether a genuine unresolved defect is called clean.
 
-The state is `(phase_id, spent, serious_seen, clean_streak, finding_dispositions)`. A finding-bearing review opens a stable finding. Repair preserves its severity in `ResolvedPendingVerification`. The next informed verification can resolve that named finding, leave it open, or resolve it while opening a fix-induced finding. The reserve and completion predicates read this state rather than the historical outcome or severity arrays. A falling severity trajectory raises confidence but never settles a finding. Stopping still censors what another review might have found.
+The state is `(phase_id, spent, serious_seen, clean_streak, FindingMap)`. A finding-bearing review unions every stable id from the triaged batch into that map. Joint repair moves the complete selected set to pending verification. The next informed verification can resolve the complete set, leave it open, or leave parents open while adding fix-induced children. The reserve and completion predicates universally quantify over the map rather than reading historical outcome or severity arrays. A falling severity trajectory raises confidence but never settles a finding. Stopping still censors what another review might have found.
 
 ### Finite bound
 
@@ -213,6 +213,9 @@ This is not another resettable cap. `spent` is monotone under every transition, 
 | Repeated human resume | `resume` is reconstruction only. A terminal state has no edge to an active state. |
 | Unbounded acceptance repair | A low or medium only sequence reaches `AwaitingTerminalDecision` at pass five. Any sequence reaches a terminal state by pass seven. |
 | Fix-induced high near exhaustion | `LLLLHCC` unlocks the reserve at pass five. Acceptance completes on clean pass six. A risky convergence loop completes on the two-clean streak at pass seven. |
+| Upheld high dismissal at batch five | The re-check settles the dismissal but leaves reserve locked unless earlier valid serious evidence already unlocked it. |
+| Low plus critical in one batch | Both stable ids remain in the map and the critical blocks delivery regardless of the low disposition. |
+| Parent plus fix-induced child | Failed joint verification leaves the parent open and adds the child. Neither identity replaces the other. |
 | Scope-expanded low | `O` records backlog and counts as no in-scope valid finding. Low-risk acceptance can complete at pass one. |
 | Relitigation without new evidence | `R` preserves the settled finding and counts as no new valid finding. It cannot reset spend. |
 | Narrowing or replan | Either choice is a terminal event for the current `TaskFamilyId`. No seat is restored. |
@@ -220,7 +223,7 @@ This is not another resettable cap. `spent` is monotone under every transition, 
 
 On the current Q-78 observation sequence, Candidate A stops at pass seven in `AwaitingTerminalDecision` with that pass carrying medium findings. It does not observe passes eight through ten, which contain three later valid shortfalls, all recorded low. This descriptive replay uses the pass-level adjudication summaries only to compare when a fixed controller would stop. The safety proof does not depend on those arrays. On representative convergence histories, A completes `agents-md-drift-guard-inc1` at pass four and the low-risk `checks-runner-worktree-name-collision` plan review at pass four. `optional-modules-inc2cii` reaches pass five with one clean and an unlocked reserve, so one further clean could complete it. The low-only `prompt-drift-guard-inc1` and medium-only `step-intent-encoding-inc1` reach the normal boundary at pass five and terminally escalate rather than opening a new window.
 
-The corrected exhaustive graph check uses explicit open, repaired, verification, pending-recheck, settled, and non-delivery states. For acceptance it reaches 104 states and 220 edges at the recommended high floor. For risky work review it reaches 144 states and 388 edges. Both graphs are acyclic, reach at most seven review batches, and report zero delivery, critical-clear, and bound violations. The proof artifact and exact commands are in the Reproduction section.
+The corrected exhaustive graph check carries the complete stable finding map and explicitly models all severity multisets up to cardinality two, including medium, low plus critical, and parent plus child. At the high floor, acceptance reaches 809 states and 949 edges, while risky work review reaches 1606 states and 2078 edges. Both graphs are acyclic, reach at most seven batches, and report zero delivery, unverified-delivery, critical-clear, bound, and upheld-dismissal-unlock violations. The proof artifact and exact commands are in the Reproduction section.
 
 ### Candidate A against all eight Project Principles
 
@@ -293,7 +296,7 @@ BlindClosure
   -> CriticalBlocked for a valid critical finding
 ```
 
-A settled observation means no valid in-scope finding remains after triage. It may include a duplicate without new evidence or a scope-expanded optional item that was durably backlogged. It never includes a genuine unresolved defect. `Repair1` and `Repair2` retain the finding identity and severity in `ResolvedPendingVerification`. Only `Verify1Pass` or `Verify2Pass` resolves that named finding. A failed verification preserves it, and a fix-induced finding receives its own open identity. Severity determines critical legality and backstop routing. Neither severity decay nor a clean count bypasses open finding state.
+A settled observation means no valid in-scope finding remains after triage. It may include a duplicate without new evidence or a scope-expanded optional item that was durably backlogged. It never includes a genuine unresolved defect. `Repair1` and `Repair2` jointly retain every selected identity and severity in `ResolvedPendingVerification`. Only named complete-set verification resolves them. A failed verification preserves every parent, and each fix-induced finding receives its own open child identity. Severity determines critical legality and backstop routing. Neither severity decay nor a clean count bypasses the complete map.
 
 The protocol is deterministic. Confidence increases when informed verification reproduces a repair and when blind closure finds no in-scope defect. Stopping still censors any unrun future review. Candidate B accepts that censoring at a predeclared stage instead of estimating a probability from the current small and inconsistent dataset.
 
@@ -315,7 +318,7 @@ For each of the `m + 2` phases, Candidate B has at most four review batches, fiv
 
 On the Q-78 observation sequence, Candidate B reaches `CriticalBlocked` or `AwaitingTerminalDecision` at pass three with that pass carrying a high. It does not observe passes four through ten, which contain 23 later valid shortfalls and include further highs. This descriptive replay is not the safety oracle. On the `agents-md-drift-guard-inc1` sequence it completes after `Verify2` and blind closure at pass four. It terminally escalates the low-risk `checks-runner-worktree-name-collision` plan review at pass three because `Verify2` finds another valid issue. The other selected long histories also stop by pass three or four.
 
-The corrected exhaustive graph check retains finding and disposition state through both repairs and verifications. At the high floor, risky acceptance and risky work review each reach 79 states and 135 edges. Low-risk work review reaches 60 states and 112 edges. Every graph is acyclic, reaches at most four review batches, and reports zero delivery, critical-clear, and bound violations.
+The corrected exhaustive graph check retains the complete stable finding map through both grouped repairs and verifications. At the high floor, risky acceptance and risky work review each reach 794 states and 863 edges. Low-risk work review reaches 659 states and 711 edges. Every graph is acyclic, reaches at most four review batches, and reports zero delivery, unverified-delivery, critical-clear, and bound violations.
 
 ### Candidate B against all eight Project Principles
 
@@ -368,7 +371,7 @@ The later synthesis should present only viable bounded options. This proposal co
 1. Choose Candidate A, the non-resettable task budget. Trade-off: it preserves more bounded late discovery and current streak semantics at the cost of a larger structured account model. This proposal recommends it because it best serves Prefer the cleaner long-term architecture over the smallest diff, Make illegal states unrepresentable, Ground decisions in evidence, and Structured data first, project for humans.
 2. Choose Candidate B, the fixed-depth protocol. Trade-off: it has the smaller proof and lower maximum cost, but sends more late findings directly to a human terminal choice and replaces streak semantics.
 
-The human must choose after the orchestrator synthesises every independent exploration. The current baseline must remain comparison evidence and must not appear as a viable option. Q-85 must not be treated as approval. A decision receipt must record the full option set, recommendation, chosen option, and principle-grounded reasoning before implementation is planned.
+The human must choose after the orchestrator synthesises every independent exploration. The current baseline must remain comparison evidence and must not appear as a viable option. Q-85 must not be treated as approval. A decision receipt must record the full option set, recommendation, chosen option, and principle-grounded reasoning before implementation is planned. Candidate A's five-plus-two values and Candidate B's four-stage and two-repair depth remain unapproved constants.
 
 ## YAGNI boundary
 
@@ -388,7 +391,7 @@ The first implementation should build only typed identities, frozen scope, prosp
 
 ## Reproduction
 
-All scratch work used `/tmp/claude-1000/-home-jessea-Documents-projects-agent-scaffold/2fed83bd-4a13-402b-9e76-143356c0d130/scratchpad/q86-state-machine`. The live plan and log were not mutated.
+The original proposal used the sibling `q86-state-machine` scratch directory. The corrected proof rerun used `/tmp/claude-1000/-home-jessea-Documents-projects-agent-scaffold/2fed83bd-4a13-402b-9e76-143356c0d130/scratchpad/q86-synthesis-r2-fix`. The live plan and log were not mutated.
 
 ### Q-78 counts and reviewer attribution
 
@@ -422,12 +425,16 @@ The values of `n` are demonstrations. The counterexample is unbounded because th
 
 ### Exhaustive transition checker
 
-The corrected checker is the durable proof artifact `docs/plans/workflow-calibration.explorations/q86-controller-proof.py`. It models Candidate A as mode A and this proposal's fixed-depth Candidate B as mode C, matching the synthesis label map. It retains explicit open, repaired, verification, pending-recheck, settled, terminal, and non-delivery states. A valid critical remains outstanding across repair and can leave only through a named verification or terminal non-delivery disposition. A dismissed critical uses the independent re-check path instead.
+The corrected checker is the durable proof artifact `docs/plans/workflow-calibration.explorations/q86-controller-proof.py`. It models Candidate A as mode A and this proposal's fixed-depth Candidate B as mode C, matching the synthesis label map. It retains the complete stable finding map through open, pending-verification, pending-recheck, settled, terminal, and non-delivery states. It exhausts every severity multiset up to cardinality two, including medium, low plus critical, and parent plus fix-induced child. A valid critical remains outstanding across repair and can leave only through named complete-set verification or terminal non-delivery. A dismissed critical uses the independent re-check path instead.
+
+The cardinality-two graph checks the interactions a singleton cannot expose. Arbitrary finite maps follow by induction because transitions union fresh ids and update dispositions pointwise, joint actions name the complete selected key set, and delivery is a universal conjunction over ids. Adding a finding cannot erase another identity or increase grouped calls, and can only make delivery harder.
 
 Run:
 
 ```sh
 CHECKER=docs/plans/workflow-calibration.explorations/q86-controller-proof.py
+export PYTHONDONTWRITEBYTECODE=1
+export TMPDIR=/tmp/claude-1000/-home-jessea-Documents-projects-agent-scaffold/2fed83bd-4a13-402b-9e76-143356c0d130/scratchpad/q86-synthesis-r2-fix
 nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode A --phase acceptance --risk risky --floor high
 nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode A --phase work_review --risk risky --floor high
 nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase acceptance --risk risky --floor high
@@ -439,11 +446,11 @@ sha256sum "$CHECKER"
 The outputs are:
 
 ```text
-A phase=acceptance risk=risky floor=high normal=5 reserve=2 required=1 states=104 edges=220 terminal=43 acyclic=true max_reviews=7 bad_delivery=0 bad_critical_clear=0 bad_bound=0
-A phase=work_review risk=risky floor=high normal=5 reserve=2 required=2 states=144 edges=388 terminal=46 acyclic=true max_reviews=7 bad_delivery=0 bad_critical_clear=0 bad_bound=0
-C phase=acceptance risk=risky floor=high stages=4 repairs=2 states=79 edges=135 terminal=42 acyclic=true max_reviews=4 bad_delivery=0 bad_critical_clear=0 bad_bound=0
-C phase=work_review risk=low_risk floor=high stages=4 repairs=2 states=60 edges=112 terminal=29 acyclic=true max_reviews=4 bad_delivery=0 bad_critical_clear=0 bad_bound=0
-C phase=work_review risk=risky floor=high stages=4 repairs=2 states=79 edges=135 terminal=42 acyclic=true max_reviews=4 bad_delivery=0 bad_critical_clear=0 bad_bound=0
+A phase=acceptance risk=risky floor=high finding_cap=2 normal=5 reserve=2 required=1 states=809 edges=949 terminal=353 acyclic=true min_reviews=1 max_reviews=7 mixed_low_critical=35 parent_child=160 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_upheld_unlock=0
+A phase=work_review risk=risky floor=high finding_cap=2 normal=5 reserve=2 required=2 states=1606 edges=2078 terminal=617 acyclic=true min_reviews=2 max_reviews=7 mixed_low_critical=35 parent_child=160 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_upheld_unlock=0
+C phase=acceptance risk=risky floor=high finding_cap=2 stages=4 repairs=2 states=794 edges=863 terminal=485 acyclic=true min_reviews=2 max_reviews=4 mixed_low_critical=12 parent_child=48 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0
+C phase=work_review risk=low_risk floor=high finding_cap=2 stages=4 repairs=2 states=659 edges=711 terminal=387 acyclic=true min_reviews=1 max_reviews=4 mixed_low_critical=11 parent_child=48 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0
+C phase=work_review risk=risky floor=high finding_cap=2 stages=4 repairs=2 states=794 edges=863 terminal=485 acyclic=true min_reviews=2 max_reviews=4 mixed_low_critical=12 parent_child=48 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0
 ```
 
-The same commands with `--floor critical` also report zero violations. The checker SHA-256 is `db2874d8654957582f18592ece030f344b60ca9657c127715fcc78d6987ef9a7`.
+The same commands with `--floor critical` also report zero violations. The checker SHA-256 is `937c714a483b583eaa66222adf4fc2e50e4764924568a5d435cbbf3078349260`.
