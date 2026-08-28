@@ -4,7 +4,9 @@
 
 Q-86 remains `open` for a human architecture decision and a serious terminal-floor decision. The five-round review loop on the earlier proof-before-choice synthesis ended at its cap with valid findings in every round. Q-88 records the human decision to narrow the proof scope rather than open a sixth ordinary review round.
 
-This is the new narrowed decision artefact. It retains three bounded architecture proposals and their algebraic finite bounds, but it does not present the executable controller or replay scripts as recommendation-eligibility proofs. Those scripts are adversarial prototypes that exposed proof obligations. The architecture the human later selects must receive a complete executable proof of concept before implementation. No workflow or production behaviour changes in this pass. It appends exactly one `type: "decision"` event for Q-88 to the metrics log without changing the metrics schema or behaviour. The generated plan changes only as the required projection of the Q-86 and Q-88 planning sources.
+The narrowed decision artefact then reached its own five-round cap with valid findings in every round and two low findings in round 5. Q-89 records the human choice `Fix, verify once, then close`. The capped narrowed counters retire. After the two fixes below, one focused mixed-model verification checks only those fixes and their direct residue; if it finds nothing new, the capped narrowed artefact closes without resuming the full review loop. Any new valid finding returns to the human. Q-89 selects no architecture or serious terminal floor.
+
+This narrowed decision artefact retains three bounded architecture proposals and their algebraic finite bounds, but it does not present the executable controller or replay scripts as recommendation-eligibility proofs. Those scripts are adversarial prototypes that exposed proof obligations. The architecture the human later selects must receive a complete executable proof of concept before implementation. No workflow or production behaviour changes in either cap decision or this repair. The Q-88 narrowing pass and Q-89 cap-decision fold each append exactly one `type: "decision"` event to the metrics log without changing the metrics schema or behaviour. The generated plan changes only as the required projection of the Q-86, Q-88, and Q-89 planning sources.
 
 The architecture options remain:
 
@@ -14,7 +16,7 @@ The architecture options remain:
 
 The source proposal labels map as follows. Option A maps to state-machine Candidate A in `Q-86-state-machine.md` and safety M1 in `Q-86-safety-process.md`. Option B maps to safety M2 plus the state-machine proposal's sealed authority envelope. Option C maps to state-machine Candidate B. Safety M3 remains excluded. These proposals remain design inputs under the prototype caveats below, and this provenance map does not revive any proof or recommendation-eligibility claim.
 
-No architecture, serious terminal floor, or controller constant has been selected. Q-85 authorised the design pass. Q-88 changed only the proof timing and gate.
+No architecture, serious terminal floor, or controller constant has been selected. Q-85 authorised the design pass. Q-88 changed only the proof timing and gate. Q-89 changed only how the capped narrowed artefact is repaired and verified.
 
 ## Evidence that constrains the choice
 
@@ -136,7 +138,7 @@ B gives scope, ownership, finding disposition, and completion one structured arc
 
 C gives each plan review, work loop, and acceptance campaign forward-only `Discovery`, `Verify1`, `Verify2`, and `BlindClosure` review nodes, with at most `Repair1` and `Repair2`. A valid finding at `Verify2` or blind closure goes to a terminal human state rather than another automatic repair. Risky plan and work paths and every ordinarily completing acceptance path require blind closure.
 
-For each of the `m + 2` phases, the proposed maximum is four review batches and fifteen automated-agent calls. The whole-family maxima are:
+For each of the `m + 2` phases, the proposed maximum is four review batches and fifteen automated-agent calls. Across those four batches, the maximum comprises five reviewer passes (two at Discovery and one each at Verify1, Verify2, and BlindClosure), four triage calls, four backstop calls, and two repair passes, so `5 + 4 + 4 + 2 = 15`. The whole-family maxima are:
 
 ```text
 R_C = 4(m + 2)
@@ -214,7 +216,7 @@ The architecture choice does not settle the serious terminal floor.
 - Choose `critical`, the mandatory minimum. An open critical blocks those choices, while a high may be accepted as residual risk.
 - Choose `defer`. A separate receipted floor decision is then required before the selected-option proof of concept can close and before implementation.
 
-`high` is recommended under Make failure and absence explicit and Correctness before performance: making an open high non-deliverable keeps known serious risk explicit and avoids trading correctness for a terminal escape. Its cost under Ground decisions in evidence and Minimal by default is that Q-78 supplies only descriptive, not prospective, evidence for the stricter boundary, which removes residual-acceptance and narrowing choices on passes three through six. The recommendation accepts that evidence and minimality cost in favour of the safer fail-closed boundary; it selects nothing.
+`high` is recommended under Make illegal states unrepresentable because an unresolved serious finding has no delivery state, and Safe on existing projects because the stricter boundary fails closed on adoption. Its cost under Ground decisions in evidence and Minimal by default is that Q-78 supplies only descriptive, not prospective, evidence for the stricter boundary, which removes residual-acceptance and narrowing choices on passes three through six. The recommendation accepts that evidence and minimality cost in favour of the safer fail-closed boundary; it selects nothing.
 
 The selected-option proof of concept must model both floor values even if the human selects one, so the safety difference remains executable and the rejected floor cannot hide an untested transition.
 
