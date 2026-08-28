@@ -5075,7 +5075,7 @@ Q-88 ended the five-round capped proof-before-choice artefact. The three archite
 
 ## Architecture options
 
-1. `A - Sealed phase budget`. Proposed maximum `7(m + 2)` review batches and `34(m + 2)` automated-agent calls. It stays closest to current streak semantics and preserves more bounded late discovery than C on the descriptive Q-78 replay. Its five-normal-plus-two-reserve values are weakly calibrated and its account model is substantial.
+1. `A - Sealed phase budget`. Proposed maximum `7(m + 2)` review batches and `34(m + 2)` automated-agent calls. It stays closest to current streak semantics and preserves more bounded late discovery than C on the descriptive Q-78 replay. On the descriptive Q-78 replay it stops at pass seven and leaves three later low shortfalls undiscovered. Its five-normal-plus-two-reserve values are weakly calibrated and its account model is substantial.
 2. `B - Frozen obligations with sealed phase campaigns`. Proposed clean post-freeze phase minimum `n_q + 1`, maximum `4n_q + 1`, whole-family minimum `r_plan + |O| + m + 1`, whole-family maximum `4|O| + m + 8`, and automated-agent maximum `18|O| + 4m + 38`. It gives scope, obligation ownership, finding disposition, phase authority, and completion one structured architecture. It also has the largest schema, clean cost that scales with `|O|`, difficult legacy adoption, and an obligation-completeness risk.
 3. `C - Fixed-depth verification protocol`. Proposed maximum `4(m + 2)` review batches and `15(m + 2)` automated-agent calls. It has the smallest fixed graph and lowest fixed per-phase maximum, but sends late findings to a terminal choice earlier. On the descriptive Q-78 replay it stops at pass three and leaves 23 later shortfalls undiscovered, including further highs.
 
@@ -5110,6 +5110,8 @@ The selected proof must model both floor values even if the human selects one.
 ## No-decision boundary
 
 The current resettable mechanism remains non-admissible comparison evidence. The severity-decay gate remains excluded. Q-85 authorised the design pass, and Q-88 authorised the narrowed proof timing. No architecture, serious floor, controller constant, current cap, acceptance rule, reset behaviour, pack change, or code change is approved. The human architecture choice authorises only the selected architecture's proof of concept. Production implementation remains blocked until that proof closes every applicable valid Q-86 synthesis finding.
+
+Q-88 records how the human closed the capped Q-86 proof-before-choice artefact.
 
 ## Decision
 
