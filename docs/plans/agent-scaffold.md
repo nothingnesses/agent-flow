@@ -5111,8 +5111,6 @@ The selected proof must model both floor values even if the human selects one.
 
 The current resettable mechanism remains non-admissible comparison evidence. The severity-decay gate remains excluded. Q-85 authorised the design pass, and Q-88 authorised the narrowed proof timing. No architecture, serious floor, controller constant, current cap, acceptance rule, reset behaviour, pack change, or code change is approved. The human architecture choice authorises only the selected architecture's proof of concept. Production implementation remains blocked until that proof closes every applicable valid Q-86 synthesis finding.
 
-# Q-88: narrow the Q-86 proof scope at the review cap
-
 ## Decision
 
 The Q-86 proof-before-choice artefact reached its five-round cap with a clean streak of zero of two. Every round returned valid findings. The human chose how to close that capped artefact through the human-input contract.
