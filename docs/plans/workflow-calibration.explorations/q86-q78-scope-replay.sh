@@ -1,4 +1,7 @@
 #!/bin/sh
+# Adversarial prototype retained as evidence, not a safety or recommendation-eligibility proof.
+# Its output and counts do not establish eligibility. See the Prototype boundary in docs/plans/workflow-calibration.explorations/Q-86-synthesis.md and the round-5 triage at docs/plans/agent-scaffold.reviews/q86-synthesis-r5-triage.md.
+
 set -eu
 
 select_rows()

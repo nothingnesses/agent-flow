@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""Adversarial prototype retained as evidence, not a safety or recommendation-eligibility proof.
+
+Zero-valued controls and counts do not establish eligibility. See the Prototype boundary in `docs/plans/workflow-calibration.explorations/Q-86-synthesis.md` and the round-5 triage at `docs/plans/agent-scaffold.reviews/q86-synthesis-r5-triage.md`.
+"""
+
 from collections import deque
 from dataclasses import dataclass, replace as dc_replace
 from itertools import combinations_with_replacement, product
