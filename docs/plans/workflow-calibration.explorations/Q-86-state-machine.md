@@ -1,5 +1,9 @@
 # Q-86 bounded convergence by state and lineage
 
+## Prototype status after the capped synthesis review
+
+Q-88 supersedes this proposal's proof-before-choice boundary. The architecture descriptions and algebraic bounds remain design inputs, but the executable checker is an adversarial prototype rather than a recommendation-eligibility proof. Every later statement that calls the checker corrected or exhaustive, reports zero violations, or treats a graph run as establishing a safety property records the prototype's historical self-assessment and is not a current assurance claim. The round-5 triage at `docs/plans/agent-scaffold.reviews/q86-synthesis-r5-triage.md` demonstrates unsound arbitrary-finite composition, cross-family serious carry, scope and dismissal products, global family identity, and fresh-evidence handling. A complete executable proof is required only if the human later selects the corresponding architecture, and it must close every applicable Q-86 triage finding before implementation.
+
 ## Question and decision boundary
 
 Q-86 asks how to bound repeated review, repair, acceptance, and human-resume cycles without hiding an unresolved critical finding. Q-85 authorised this design pass only. It did not authorise a mechanism. This proposal changes no workflow rule, constant, plan status, log record, prompt, pack file, generated copy, or Rust source.
@@ -224,9 +228,9 @@ This is not another resettable cap. `spent` is monotone under every transition, 
 | Narrowing or replan | Either choice is a terminal event for the current `TaskFamilyId`. No seat is restored. |
 | Unresolved critical at exhaustion | `HLLLLLK` reaches `CriticalBlocked` at pass seven. Complete and accept residual risk are unconstructible. |
 
-On the current Q-78 observation sequence, Candidate A stops at pass seven in `AwaitingTerminalDecision` with that pass carrying medium findings. It does not observe passes eight through ten, which contain three later valid shortfalls, all recorded low. This descriptive replay uses the pass-level adjudication summaries only to compare when a fixed controller would stop. The safety proof does not depend on those arrays. On representative convergence histories, A completes `agents-md-drift-guard-inc1` at pass four and the low-risk `checks-runner-worktree-name-collision` plan review at pass four. `optional-modules-inc2cii` reaches pass five with one clean and an unlocked reserve, so one further clean could complete it. The low-only `prompt-drift-guard-inc1` and medium-only `step-intent-encoding-inc1` reach the normal boundary at pass five and terminally escalate rather than opening a new window.
+On the current Q-78 observation sequence, Candidate A stops at pass seven in `AwaitingTerminalDecision` with that pass carrying medium findings. It does not observe passes eight through ten, which contain three later valid shortfalls, all recorded low. This descriptive replay uses the pass-level adjudication summaries only to compare when a fixed controller would stop. The proposed algebra does not depend on those arrays, while the selected-option safety proof remains owed. On representative convergence histories, A completes `agents-md-drift-guard-inc1` at pass four and the low-risk `checks-runner-worktree-name-collision` plan review at pass four. `optional-modules-inc2cii` reaches pass five with one clean and an unlocked reserve, so one further clean could complete it. The low-only `prompt-drift-guard-inc1` and medium-only `step-intent-encoding-inc1` reach the normal boundary at pass five and terminally escalate rather than opening a new window.
 
-The corrected exhaustive graph check carries the complete stable finding map and explicitly models all severity multisets up to cardinality two, including medium, low plus critical, and parent plus child. At the high floor, acceptance reaches 809 states and 949 edges, while risky work review reaches 1386 states and 1648 edges after impossible clean-suffix states are foreclosed. Both graphs are acyclic, reach at most seven batches, and report zero delivery, unverified-delivery, critical-clear, bound, upheld-dismissal-unlock, and foreclosure-state violations. The proof artifact and exact commands are in the Reproduction section.
+The adversarial prototype explores stable finding maps only within its finite retained-map cap. Earlier exact graph counts in this paragraph became stale as the prototype changed and are deliberately removed. The retained output block in the Reproduction section records one historical run, not a safety proof. Round 5 showed that settled identities consume the global cap and remove later fresh-finding transitions, so the run does not establish arbitrary-finite delivery, critical, bound, dismissal, or foreclosure invariants.
 
 ### Candidate A against all eight Project Principles
 
@@ -238,7 +242,7 @@ The corrected exhaustive graph check carries the complete stable finding map and
 | Idempotent | Reconstructing the same ordered events yields the same spend. Duplicate event ids fail instead of charging twice. Resume has no state mutation. |
 | Make illegal states unrepresentable | Phase slices, terminal states, and the critical block are disjoint variants. No reset method exists. Acceptance single passes cannot acquire convergence fields. |
 | Ground decisions in evidence | Five normal batches preserve the current measured boundary. Two reserve batches respond only to serious evidence. The numeric defaults remain provisional because one project cannot calibrate an optimum. |
-| Reproducible | The arithmetic is deterministic, the state can be replayed from ordered records, and the exhaustive model has a finite oracle. |
+| Reproducible | The arithmetic is deterministic and the adversarial prototype is replayable, but a complete finite oracle remains owed for a selected architecture. |
 | Structured data first, project for humans | Immutable ids, budget declarations, scope digests, finding events, and terminal receipts are structured sources. Ledger prose and human output are projections. |
 
 ### Candidate A migration and enforcement
@@ -324,7 +328,7 @@ For each of the `m + 2` phases, Candidate B has at most four review batches, fiv
 
 On the Q-78 observation sequence, Candidate B stops at pass three with that pass carrying a high. At floor `high` it reaches `SeriousBlocked`. At floor `critical` it reaches `AwaitingTerminalDecision`, where residual acceptance of the open high is legal. Under both floors it does not observe passes four through ten, which contain 23 later valid shortfalls and include further highs. This descriptive replay is not the safety oracle. On the `agents-md-drift-guard-inc1` sequence it completes after `Verify2` and blind closure at pass four. It terminally escalates the low-risk `checks-runner-worktree-name-collision` plan review at pass three because `Verify2` finds another valid issue. The other selected long histories also stop by pass three or four.
 
-The corrected exhaustive graph check retains the complete stable finding map through both grouped repairs and verifications. At the high floor, risky acceptance and risky work review each reach 794 states and 863 edges. Low-risk work review reaches 659 states and 711 edges. Every graph is acyclic, reaches at most four review batches, and reports zero delivery, unverified-delivery, critical-clear, and bound violations.
+The adversarial prototype exercises both grouped repair generations within its finite retained-map cap. Earlier exact graph counts in this paragraph became stale as the prototype changed and are deliberately removed. The retained output block records one historical run. It does not establish arbitrary-finite delivery, critical, or bound invariants because the round-5 findings identify missing fresh-history and transition products.
 
 ### Candidate B against all eight Project Principles
 
@@ -336,7 +340,7 @@ The corrected exhaustive graph check retains the complete stable finding map thr
 | Idempotent | Ordered replay returns the same node. Every node is single-use and duplicate event ids fail. |
 | Make illegal states unrepresentable | Backward edges, a third repair, and completion with an open critical do not exist in the type graph. |
 | Ground decisions in evidence | External anchoring evidence motivates separate blind stages. The exact depth of two repairs is a conservative design choice, not a calibrated optimum. |
-| Reproducible | The graph has an exhaustive transition table and a four-batch upper bound. |
+| Reproducible | The fixed topology gives a proposed four-batch upper bound, while the adversarial prototype is not a complete transition proof. |
 | Structured data first, project for humans | Stage, finding, scope, and terminal data are structured and projected. The stage graph needs fewer arithmetic fields than Candidate A. |
 
 ### Candidate B migration and enforcement
@@ -375,7 +379,7 @@ Evidence that would overturn the recommendation includes prospective data showin
 The later synthesis should present only viable bounded options. This proposal contributes these two:
 
 1. Choose Candidate A, the non-resettable task budget. Trade-off: it preserves more bounded late discovery and current streak semantics at the cost of a larger structured account model. This proposal recommends it because it best serves Prefer the cleaner long-term architecture over the smallest diff, Make illegal states unrepresentable, Ground decisions in evidence, and Structured data first, project for humans.
-2. Choose Candidate B, the fixed-depth protocol. Trade-off: it has the smaller proof and lower maximum cost, but sends more late findings directly to a human terminal choice and replaces streak semantics.
+2. Choose Candidate B, the fixed-depth protocol. Trade-off: it has the smaller proposed graph and lower fixed maximum cost, but sends more late findings directly to a human terminal choice and replaces streak semantics.
 
 The human must choose after the orchestrator synthesises every independent exploration. The current baseline must remain comparison evidence and must not appear as a viable option. Q-85 must not be treated as approval. A decision receipt must record the full option set, recommendation, chosen option, and principle-grounded reasoning before implementation is planned. Candidate A's five-plus-two values and Candidate B's four-stage and two-repair depth remain unapproved constants.
 
@@ -397,7 +401,7 @@ The first implementation should build only typed identities, frozen scope, prosp
 
 ## Reproduction
 
-The corrected proof uses the durable checker below from the repository root and has no dependency on a session-specific scratch directory. The live plan and log were not mutated.
+The retained adversarial prototype can be run from the repository root and has no dependency on a session-specific scratch directory. The live plan and log were not mutated. Its output is reproducible evidence about that prototype only and is not a complete controller proof.
 
 ### Q-78 counts and reviewer attribution
 
@@ -431,7 +435,7 @@ The values of `n` are demonstrations. The counterexample is unbounded because th
 
 ### Exhaustive transition checker
 
-The corrected checker is the durable proof artifact `docs/plans/workflow-calibration.explorations/q86-controller-proof.py`. It models Candidate A as mode A and this proposal's fixed-depth Candidate B as mode C, matching the synthesis label map. It retains the complete stable finding map through open, pending-verification, pending dismissal re-check, pending scope re-check, settled, terminal, and non-delivery states. It exhausts every severity multiset and every valid-plus-dismissed-serious disposition product up to cardinality two, including medium, low plus critical, and parent plus fix-induced child. Upheld and overturned re-check continuations preserve the valid repair component through both normal progression and explicit exhaustion boundary controls. A valid critical remains outstanding across repair and can leave only through named complete-set verification or terminal non-delivery. A dismissed critical uses the independent re-check path instead.
+The retained checker is the durable adversarial prototype `docs/plans/workflow-calibration.explorations/q86-controller-proof.py`. It models Candidate A as mode A and this proposal's fixed-depth Candidate B as mode C, matching the synthesis label map. It exercises a finite subset of finding, dismissal, scope, terminal, and non-delivery states. Its global retained-map cap and missing products make it incomplete, as the round-5 triage demonstrates. The command remains useful for reproducing the prototype and for mutation-driven development of a selected-option proof.
 
 The cardinality-two graph checks the interactions a singleton cannot expose. For B, every triage-valid batch is an atomic finite map from affected obligation owner to finding submap plus an unowned set. Arbitrary finite maps follow by induction over the product of obligation state and finding state because transitions union fresh ids, advance every affected owner, preserve the bidirectional owner-state invariant, and make delivery a universal conjunction over ids and obligations. Adding an owner component cannot erase another identity, close an unaffected obligation, increase grouped calls, or make delivery easier.
 
@@ -460,4 +464,4 @@ C phase=work_review risk=low_risk floor=high finding_cap=2 stages=4 repairs=2 st
 C phase=work_review risk=risky floor=high finding_cap=2 stages=4 repairs=2 states=1365 edges=1528 terminal=825 acyclic=true min_reviews=2 max_reviews=4 mixed_low_critical=16 parent_child=64 mixed_disposition=32 mixed_upheld=32 mixed_overturned=32 mixed_exhausted=16 mixed_exhaustion_cases=8 scope_routes=8 bad_delivery=0 bad_unverified_delivery=0 bad_critical_clear=0 bad_bound=0 bad_mixed_preservation=0 bad_mixed_exhaustion=0 bad_scope_spend=0 bad_scope_identity=0 bad_scope_delivery=0 bad_acceptance_blind_bypass=0
 ```
 
-The same commands with `--floor critical` also report zero violations. The checker SHA-256 is `d0dabe6da04fde2009a2baf22d0a3d9fabdfbd6bc96d2859d26043531aff579a`.
+The same commands with `--floor critical` also report zero for the prototype's implemented counters. Round 5 demonstrated that those counters omit required state products and cross-family behaviour, so zero is not evidence that every required control passed. The checker SHA-256 for this historical run is `d0dabe6da04fde2009a2baf22d0a3d9fabdfbd6bc96d2859d26043531aff579a`.
