@@ -76,7 +76,7 @@ These are architecture requirements, not established prototype results.
 
 ### Proposed controller and algebraic bound
 
-A declares a non-resettable budget over plan review, each of `m` work loops, and acceptance. Each of the `m + 2` phase slices has five normal review batches and two already-declared reserve batches. Reserve unlock is proposed only after a triage-valid high or critical or an overturned serious dismissal. Plan and work retain their risk-scaled clean suffix. Acceptance requires one settled pass after every earlier in-scope finding and Roadmap step is settled. A remaining-clean-suffix check forecloses an action that can no longer complete within authority.
+A declares a non-resettable budget over plan review, each of `m` work loops, and acceptance. Each of the `m + 2` phase slices has five normal review batches and two already-declared reserve batches. Reserve unlock is proposed only after a triage-valid high or critical or an overturned serious dismissal. Plan and work retain their risk-scaled clean suffix. Acceptance requires one settled pass after every earlier in-scope finding and Roadmap step is settled. That single settled acceptance batch has one broad blind seat and one rubric-focused or informed seat; the blind seat supplies the required closure evidence. A remaining-clean-suffix check forecloses an action that can no longer complete within authority.
 
 The proposed maximum is:
 
