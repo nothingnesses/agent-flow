@@ -11,6 +11,7 @@ replay_rows()
     family=1
     assumed_replans=0
     passes=0
+    seen_folds='|'
     while IFS="	" read -r pass artifact
     do
         [ -n "$pass" ] || continue
@@ -31,10 +32,16 @@ replay_rows()
         fi
         if [ -n "$observed_fold" ]
         then
+            if printf '%s\n' "$seen_folds" | grep -Fq "|$observed_fold|"
+            then
+                printf 'pass=%s family=F%s observed_named_fold=%s fold_identity=repeated digest_mapping=already_counted conditional_review=admitted obligation_result=historically_unreconstructible\n' "$pass" "$family" "$observed_fold"
+                continue
+            fi
+            seen_folds="${seen_folds}${observed_fold}|"
             old=$family
             family=$((family + 1))
             assumed_replans=$((assumed_replans + 1))
-            printf 'pass=%s family=F%s observed_named_fold=%s digest_mapping=assumed_material_scope_delta conditional_terminal=Replanned dispositions=CarriedToSuccessor successor=F%s\n' "$pass" "$old" "$observed_fold" "$family"
+            printf 'pass=%s family=F%s observed_named_fold=%s fold_identity=first_observation digest_mapping=assumed_material_scope_delta conditional_terminal=Replanned dispositions=CarriedToSuccessor successor=F%s\n' "$pass" "$old" "$observed_fold" "$family"
             printf 'pass=%s family=F%s conditional_event=successor_scope_frozen receipt=required structured_scope_delta=required review=admitted obligation_result=historically_unreconstructible\n' "$pass" "$family"
         else
             printf 'pass=%s family=F%s observed_named_fold=none digest_mapping=assumed_unchanged conditional_review=admitted obligation_result=historically_unreconstructible\n' "$pass" "$family"
@@ -111,7 +118,7 @@ EOF
 if [ "${1:-}" = "--self-test" ]
 then
     check_synthetic 9 'summary passes=9 observed_named_folds=4 assumed_digest_changes=4 conditional_terminal_replans=4 conditional_families=5 conditional_additional_human_receipts=4 conditional_additional_plan_review_and_freeze_cycles=4'
-    check_synthetic 11 'summary passes=11 observed_named_folds=5 assumed_digest_changes=5 conditional_terminal_replans=5 conditional_families=6 conditional_additional_human_receipts=5 conditional_additional_plan_review_and_freeze_cycles=5'
+    check_synthetic 11 'summary passes=11 observed_named_folds=4 assumed_digest_changes=4 conditional_terminal_replans=4 conditional_families=5 conditional_additional_human_receipts=4 conditional_additional_plan_review_and_freeze_cycles=4'
     exit 0
 fi
 

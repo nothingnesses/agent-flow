@@ -2,7 +2,7 @@
 
 ## Status and decision boundary
 
-Q-86 is `exploring`. Q-85 decided only where this investigation belongs: add a design pass to the existing `workflow-calibration` step. It did not select a convergence mechanism. Later explorers write separate proposals beside this brief as `Q-86-<disambiguator>.md`; the orchestrator synthesises them, moves Q-86 to `open`, and presents the viable options to the human. A later human decision is required before implementation.
+The design pass specified by this brief is complete. Q-86 is now `open` against the decision-ready synthesis at `docs/plans/workflow-calibration.explorations/Q-86-synthesis.md`. Q-85 decided only where this investigation belongs by adding the design pass to the existing `workflow-calibration` step. It did not select a convergence mechanism. The synthesis retains all three viable bounded architectures and the separate serious-floor choice for the human. A later human decision is required before implementation.
 
 This pass changes no current workflow rule or implementation. In particular, it does not change the five-round per-artifact cap, the reset-after-human-resume branch, the single-pass acceptance rule, any convergence constant, any Roadmap status, or any existing review identity.
 
