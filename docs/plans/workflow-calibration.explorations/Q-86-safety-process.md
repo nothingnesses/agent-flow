@@ -2,9 +2,9 @@
 
 ## Prototype status after the capped synthesis review
 
-Q-88 supersedes this proposal's proof-before-choice boundary. The architecture descriptions and algebraic bounds remain design inputs, but the executable controller and replay scripts are adversarial prototypes rather than recommendation-eligibility proofs. Every later statement that calls the checker corrected or exhaustive, reports zero violations, or treats a run as establishing a safety property records the prototype's historical self-assessment and is not a current assurance claim. The round-5 triage at `docs/plans/agent-scaffold.reviews/q86-synthesis-r5-triage.md` demonstrates unsound arbitrary-finite composition, cross-family serious carry, scope and dismissal products, global family identity, and fresh-evidence handling. A complete executable proof is required only if the human later selects the corresponding architecture, and it must close every applicable Q-86 triage finding before implementation.
+Q-88 supersedes this proposal's proof-before-choice boundary. Q-86 later selected `B - Frozen obligations with sealed phase campaigns`, which maps to this proposal's M2 plus the state-machine proposal's sealed plan-review authority envelope. Q-91 selected floor `high`. The architecture descriptions and algebraic bounds remain design inputs, but the executable controller and replay scripts are adversarial prototypes rather than recommendation-eligibility proofs. Every later statement that calls the checker corrected or exhaustive, reports zero violations, or treats a run as establishing a safety property records the prototype's historical self-assessment and is not a current assurance claim. The round-5 triage at `docs/plans/agent-scaffold.reviews/q86-synthesis-r5-triage.md` demonstrates unsound arbitrary-finite composition, cross-family serious carry, scope and dismissal products, global family identity, and fresh-evidence handling. Selected Option B now requires the separate complete executable `bounded-convergence-option-b-proof` unit before implementation, and it must close every applicable Q-86 triage finding.
 
-Explorer proposal for `Q-86`, written under a safety, human-process, finding-lineage and reviewer-allocation lens. Advisory design notes only. This document changes no workflow rule, no constant, no status and no code, and implementation remains blocked on the later human decision.
+Explorer proposal for `Q-86`, written under a safety, human-process, finding-lineage and reviewer-allocation lens. Advisory design notes only. This document changes no workflow rule, no constant, no status and no code. Production implementation remains blocked on `bounded-convergence-option-b-proof` and a later separate implementation decision.
 
 The original exploration ran in worktree `.agents/worktrees/q86-explorer-safety`, branch `explore/q86-safety`, from `05142309`. The retained prototype no longer depends on that scratch directory. Appendix A points to the durable controller and replay artefacts and gives exact reproduction commands and historical outputs.
 
@@ -451,7 +451,7 @@ The baseline assessment remains at section 2.3.
 
 ## 9. DESIGN: migration and enforcement
 
-Common surfaces move only after the human chooses. Advisory guidance describes judgement. Mechanical enforcement exits non-zero on illegal state.
+Common production surfaces move only after the selected proof passes and the human separately authorises implementation. Advisory guidance describes judgement. Mechanical enforcement exits non-zero on illegal state.
 
 | Surface | What moves. | Authority. |
 | --- | --- | --- |
@@ -467,7 +467,7 @@ Common surfaces move only after the human chooses. Advisory guidance describes j
 
 For a selected M2 implementation, validation would need to enforce finite canonical obligation rows, exact source labels, one phase owner, `C_q = 4|O_q| + 1`, no transfer, all initial attempts before optional reopen work, deferred early finding identity, complete finding maps and triage disposition products, grouped repair before grouped verification, `UnownedInScopeFinding`, blind closure, typed scope-recheck state, scope-digest terminality, explicit legacy adoption, and critical legality. Successor validation binds the immutable terminal predecessor, its ordered ancestry registry, a successor id fresh against that registry, exact successor ancestry, both scope digests, every presented option, the chosen successor, predecessor spend, the complete carried finding map, and a non-empty structured obligation or exclusion delta attested as material. `next` reports the exact obligation and complete blind or informed brief permitted by state. It cannot prove that a reviewer was genuinely blind or that a human judgement was true.
 
-The chosen work must land after `review-loop-foreclosure-enforcement` and reuse its typed reconstruction. Acceptance remains a campaign around disjoint `SinglePass` observations rather than adding convergence fields to a single pass.
+The selected proof has no dependency on `review-loop-foreclosure-enforcement` or production typed reconstruction because it is an isolated executable specification. Any later production work may reuse the reviewed reconstruction where the proof shows that reuse is sound. Acceptance remains a campaign around disjoint `SinglePass` observations rather than adding convergence fields to a single pass.
 
 ---
 
@@ -490,7 +490,7 @@ The recommendation has substantial costs.
 - An incomplete obligation set is a new safety risk that mechanical cardinality cannot eliminate.
 - The one-reopen design and its operational adequacy have no prospective calibration.
 
-If the human selects M2, a complete executable proof of concept must close every applicable valid Q-86 synthesis finding, including arbitrary finite maps, cross-family serious carry, scope and dismissal products, global family identity, fresh evidence, legacy adoption, terminal floors, and every M2 transition and bound. If it fails, implementation remains blocked and the architecture decision returns to the human. No fallback architecture or floor is selected automatically.
+The human selected synthesised Option B, which includes M2. The separate complete executable proof of concept must close every applicable valid Q-86 synthesis finding, including arbitrary finite maps, cross-owner and mixed products, cross-family serious carry, scope and dismissal products, global family identity, fresh evidence, legacy adoption, both terminal floors, every terminal choice, and every M2 transition and bound. If it fails, implementation remains blocked and the architecture decision returns to the human. No fallback architecture or floor is selected automatically.
 
 Evidence that would overturn M2 includes frozen-scope tasks that still need long repair sequences, systematic uncited genuine defects, any serious finding routed to backlog, or prospective evidence that M1 preserves materially more unique serious findings for acceptable cost. A change to the reopen count requires a new finite prospective value and cannot replenish a live campaign.
 
@@ -506,27 +506,19 @@ This recommendation does not claim that Q-78 diverged, that named folds caused l
 - Do not rewrite or infer historical finding lineage, obligation membership, stage, or closure.
 - Do not build a persistent workflow service, general workflow language, or new scheduler beyond the planned typed fleet.
 - Do not create authority from rename, rebuild, replan, narrowing, scope change, or human resume.
-- Do not implement a mechanism or floor until the human decides.
+- Do not implement selected Option B or floor `high` until the proof passes and the human separately authorises production implementation.
 
 ---
 
-## 12. The later human decisions
+## 12. The human decisions and proof authority
 
-The synthesis presents only A, B, and C as viable bounded architectures. M3 is excluded until a corrected disposition controller and trustworthy prospective trajectory evidence exist. Every controller constant remains unapproved, including the five-normal-plus-two-reserve slice used by A and inherited by B plan review, B's one reopen, and C's four-stage and two-repair depth.
+The synthesis presented only A, B, and C as viable bounded architectures. Q-86 records recommendation and chosen value `B - Frozen obligations with sealed phase campaigns`. M3 remains excluded. Every controller constant remains unapproved, including the five-normal-plus-two-reserve slice inherited by selected B plan review and B's one reopen.
 
-**Architecture question.** Which architecture should Q-86 fold into `workflow-calibration`?
+Q-91 records the serious-floor options `high`, `critical`, and `defer`, with recommendation and chosen value `high`. Ordinary residual acceptance and ordinary narrowing are unavailable while a high or critical is open. The selected proof models `critical` as a comparison so its residual-high difference remains executable.
 
-**Architecture recommendation.** B, at low confidence, with the conceptual reasoning, costs, and selected-option proof gate in section 10.
+At least one blind closure pass is structural in selected Option B. Instrument repair is required before any outcome or trajectory field becomes load-bearing, but the proof proceeds from prospective complete finding maps without waiting for a historical rewrite.
 
-**Serious-floor co-decision.** The human owns `F` whichever architecture is chosen.
-
-- Choose `high`, recommended. Ordinary residual acceptance and ordinary narrowing are unavailable while a high or critical is open. The retained Q-78 triages show this restriction would apply on passes three through six. Under Option C, Q-78 pass three is `SeriousBlocked` and 23 later shortfalls, including further highs, remain undiscovered.
-- Choose `critical`, the mandatory safety minimum. An open critical blocks those choices, while a high may be accepted as residual risk. Under Option C, Q-78 pass three permits residual acceptance of its open high while the same 23 later shortfalls remain undiscovered.
-- Defer the floor to a separate receipted decision before implementation.
-
-At least one blind closure pass is structural in all three synthesised options, so it is no longer a separate toggle. Instrument repair is required before any outcome or trajectory field becomes load-bearing, but B can proceed from prospective complete finding maps without waiting for a historical rewrite.
-
-`Q-85` decided only where this investigation belongs. No architecture, floor, or implementation is approved by it.
+Q-85 decided only where this investigation belongs. Q-86 and Q-91 authorise only `bounded-convergence-option-b-proof`. No production implementation is approved.
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## Prototype status after the capped synthesis review
 
-Q-88 supersedes this proposal's proof-before-choice boundary. The architecture descriptions and algebraic bounds remain design inputs, but the executable checker is an adversarial prototype rather than a recommendation-eligibility proof. Every later statement that calls the checker corrected or exhaustive, reports zero violations, or treats a graph run as establishing a safety property records the prototype's historical self-assessment and is not a current assurance claim. The round-5 triage at `docs/plans/agent-scaffold.reviews/q86-synthesis-r5-triage.md` demonstrates unsound arbitrary-finite composition, cross-family serious carry, scope and dismissal products, global family identity, and fresh-evidence handling. A complete executable proof is required only if the human later selects the corresponding architecture, and it must close every applicable Q-86 triage finding before implementation.
+Q-88 supersedes this proposal's proof-before-choice boundary. Q-86 later selected `B - Frozen obligations with sealed phase campaigns`, which maps to safety M2 plus this proposal's sealed plan-review authority envelope. Q-91 selected floor `high`. The architecture descriptions and algebraic bounds remain design inputs, but the executable checker is an adversarial prototype rather than a recommendation-eligibility proof. Every later statement that calls the checker corrected or exhaustive, reports zero violations, or treats a graph run as establishing a safety property records the prototype's historical self-assessment and is not a current assurance claim. The round-5 triage at `docs/plans/agent-scaffold.reviews/q86-synthesis-r5-triage.md` demonstrates unsound arbitrary-finite composition, cross-family serious carry, scope and dismissal products, global family identity, and fresh-evidence handling. Selected Option B now requires the separate complete executable `bounded-convergence-option-b-proof` unit before implementation. This proposal's other candidates are not selected and receive no production authority.
 
 ## Question and decision boundary
 
@@ -13,7 +13,7 @@ The current mechanism is comparison evidence only. It is not an admissible optio
 1. Candidate A is a non-resettable task budget with phase slices and a severity reserve.
 2. Candidate B is a fixed-depth discovery, repair, verification, and blind-closure protocol.
 
-The recommendation is Candidate A. The later human decision remains required.
+The proposal's historical recommendation was Candidate A. The later synthesis instead recommended Option B, and Q-86 records the human choice of Option B.
 
 ## Evidence, separated from recommendation
 
@@ -374,14 +374,14 @@ Recommendation: choose Candidate A, with medium confidence in the architecture a
 
 Evidence that would overturn the recommendation includes prospective data showing that Candidate B catches the same medium-or-worse defects with materially fewer agent calls, stable finding lineage showing that Candidate A red-reserve batches mostly produce relitigation or optional scope expansion, a proof that task budget adoption cannot distinguish legitimate new scope from laundering, or an implementation proof that the stage graph composes with the scheduled typed fleet much more safely than budget accounts. Evidence that would change only the numeric values includes calibrated post-boundary probes, consistent per-finding severity data, and measured cost per unique valid finding.
 
-## Later human decision required
+## Historical human-decision input
 
-The later synthesis should present only viable bounded options. This proposal contributes these two:
+The later synthesis presented only viable bounded options. This proposal contributed these two:
 
 1. Choose Candidate A, the non-resettable task budget. Trade-off: it preserves more bounded late discovery and current streak semantics at the cost of a larger structured account model. This proposal recommends it because it best serves Prefer the cleaner long-term architecture over the smallest diff, Make illegal states unrepresentable, Ground decisions in evidence, and Structured data first, project for humans.
 2. Choose Candidate B, the fixed-depth protocol. Trade-off: it has the smaller proposed graph and lower fixed maximum cost, but sends more late findings directly to a human terminal choice and replaces streak semantics.
 
-The human must choose after the orchestrator synthesises every independent exploration. The current baseline must remain comparison evidence and must not appear as a viable option. Q-85 must not be treated as approval. A decision receipt must record the full option set, recommendation, chosen option, and principle-grounded reasoning before implementation is planned. Candidate A's five-plus-two values and Candidate B's four-stage and two-repair depth remain unapproved constants.
+The human later chose synthesised Option B, frozen obligations with sealed phase campaigns, rather than either state-machine candidate alone. The current baseline remains comparison evidence and is not a viable option. Q-85 is not approval. Q-86's receipt records the full synthesised option set, recommendation, and chosen Option B. Candidate A's five-plus-two values contribute only the selected Option B sealed plan-review proof obligation, and Candidate B's four-stage and two-repair depth remains unselected. No value is a production constant.
 
 ## YAGNI boundary
 
