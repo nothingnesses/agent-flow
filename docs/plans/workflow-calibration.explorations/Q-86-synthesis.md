@@ -2,21 +2,15 @@
 
 ## Status and decision boundary
 
-Q-86 remains `open` for a human architecture decision and a serious terminal-floor decision. The five-round review loop on the earlier proof-before-choice synthesis ended at its cap with valid findings in every round. Q-88 records the human decision to narrow the proof scope rather than open a sixth ordinary review round.
+Q-86 is `decided -> folded into bounded-convergence-option-b-proof`. The exact architecture options were `A - Sealed phase budget`, `B - Frozen obligations with sealed phase campaigns`, and `C - Fixed-depth verification protocol`. The recommendation and human choice were both Option B. Q-91 separately records the exact terminal-floor options `high`, `critical`, and `defer`, with recommendation and chosen value `high`.
 
-The narrowed decision artefact then reached its own five-round cap with valid findings in every round and two low findings in round 5. Q-89 records the human choice `Fix, verify once, then close`: it retired the capped narrowed counters and authorised focused mixed-model verification of the two low fixes. That verification found one valid low current-state wording defect in the structured Q-86 ask and returned it to the human as Q-89 required. Q-90 records the human choice `Fix and merge`; it authorises the exact correction and merge without another review. The narrowed decision artefact is closed while Q-86 remains `open`. Neither Q-89 nor Q-90 selects an architecture or serious terminal floor.
+The five-round review loop on the earlier proof-before-choice synthesis ended at its cap with valid findings in every round. Q-88 records the human decision to narrow the proof scope rather than open a sixth ordinary review round. The narrowed decision artefact then reached its own five-round cap with valid findings in every round and two low findings in round 5. Q-89 records the human choice `Fix, verify once, then close`. It retired the capped narrowed counters and authorised focused mixed-model verification of the two low fixes. That verification found one valid low current-state wording defect in the structured Q-86 ask and returned it to the human as Q-89 required. Q-90 records the human choice `Fix and merge`. It authorised the exact correction and merge without another review. The narrowed decision artefact is closed.
 
-This narrowed decision artefact retains three bounded architecture proposals and their algebraic finite bounds, but it does not present the executable controller or replay scripts as recommendation-eligibility proofs. Those scripts are adversarial prototypes that exposed proof obligations. The architecture the human later selects must receive a complete executable proof of concept before implementation. No workflow or production behaviour changes in either cap decision, the focused verification repair, or Q-90's closure correction. The Q-88 narrowing pass, Q-89 cap-decision fold, and Q-90 closure fold each append exactly one `type: "decision"` event to the metrics log without changing the metrics schema or behaviour. The generated plan remains only a projection of the Q-86, Q-88, Q-89, and Q-90 planning sources.
+This narrowed decision artefact retains all three bounded architecture proposals and their algebraic finite bounds as decision provenance. It does not present the executable controller or replay scripts as recommendation-eligibility proofs. Those scripts are adversarial prototypes that exposed proof obligations. Selected Option B must receive a complete executable proof of concept before implementation. No workflow or production behaviour changes in this decision fold. Q-86 and Q-91 each append exactly one `type: "decision"` event to the metrics log without changing the metrics schema or behaviour. The generated plan remains only a projection of the Q-86, Q-88, Q-89, Q-90, and Q-91 planning sources.
 
-The architecture options remain:
+The source proposal labels map as follows. Option A maps to state-machine Candidate A in `Q-86-state-machine.md` and safety M1 in `Q-86-safety-process.md`. Selected Option B maps to safety M2 plus the state-machine proposal's sealed authority envelope. Option C maps to state-machine Candidate B. Safety M3 remains excluded. These proposals remain design inputs under the prototype caveats below, and this provenance map does not revive any proof or recommendation-eligibility claim.
 
-- `A - Sealed phase budget`.
-- `B - Frozen obligations with sealed phase campaigns`.
-- `C - Fixed-depth verification protocol`.
-
-The source proposal labels map as follows. Option A maps to state-machine Candidate A in `Q-86-state-machine.md` and safety M1 in `Q-86-safety-process.md`. Option B maps to safety M2 plus the state-machine proposal's sealed authority envelope. Option C maps to state-machine Candidate B. Safety M3 remains excluded. These proposals remain design inputs under the prototype caveats below, and this provenance map does not revive any proof or recommendation-eligibility claim.
-
-No architecture, serious terminal floor, or controller constant has been selected. Q-85 authorised the design pass. Q-88 changed only the proof timing and gate. Q-89 retired the capped narrowed counters and authorised only the two low repairs plus one focused mixed-model verification. Q-90 authorised only the exact current-state wording correction and merge without another review.
+No controller constant or production implementation has been selected. Q-85 authorised the design pass. Q-88 changed only the proof timing and gate. Q-89 retired the capped narrowed counters and authorised only the two low repairs plus one focused mixed-model verification. Q-90 authorised only the exact current-state wording correction and merge without another review. Q-86 selects Option B and Q-91 selects floor `high`, but both authorise proof work only.
 
 ## Evidence that constrains the choice
 
@@ -177,17 +171,17 @@ C has the lowest fixed per-phase maximum. Whole-family costs cannot be universal
 | Reproducible | Fixed arithmetic is reproducible once the transition model is proved | Finite rows and exact ownership make the algebra reproducible once the controller is proved | A fixed graph is reproducible once every transition product is proved |
 | Structured data first, project for humans | Accounts, findings, and receipts are structured | Obligations, owners, attempts, findings, scope deltas, and receipts are structured | Stages, briefs, findings, and terminal state are structured |
 
-## Provisional recommendation and confidence
+## Selected architecture and confidence boundary
 
-The provisional recommendation remains `B - Frozen obligations with sealed phase campaigns`, at low confidence.
+The recommendation and human choice are both `B - Frozen obligations with sealed phase campaigns`.
 
-This recommendation does not rely on the controller prototype. It rests on the conceptual architecture. B gives frozen scope, exact obligation ownership, finding disposition, phase authority, and completion one structured source for post-freeze phases, where A keeps streak and budget as separate stopping concepts throughout and C discards bounded late repair earlier. B does not replace A's plan machinery: it inherits A's sealed plan-review controller, including its account/reserve model and weakly calibrated five-normal-plus-two-reserve values. That reasoning is strongest under Prefer the cleaner long-term architecture over the smallest diff, Make illegal states unrepresentable, and Structured data first, project for humans.
+The decision does not rely on the controller prototype. It rests on the conceptual architecture. B gives frozen scope, exact obligation ownership, finding disposition, phase authority, and completion one structured source for post-freeze phases, where A keeps streak and budget as separate stopping concepts throughout and C discards bounded late repair earlier. B does not replace A's plan machinery. It inherits A's sealed plan-review controller, including its account and reserve model and weakly calibrated five-normal-plus-two-reserve values. That reasoning is strongest under Prefer the cleaner long-term architecture over the smallest diff, Make illegal states unrepresentable, and Structured data first, project for humans.
 
-Confidence is low under Minimal by default, Safe on existing projects, and Ground decisions in evidence. B has the largest schema, its clean cost scales with `|O|`, its inherited plan-review account/reserve values are weakly calibrated, an incomplete obligation set is a new safety risk, and five proof rounds found serious omissions in the prototype. The recommendation is advice for the human decision, not proof of eligibility and not a selection.
+Confidence remains low under Minimal by default, Safe on existing projects, and Ground decisions in evidence. B has the largest schema, its clean cost scales with `|O|`, its inherited plan-review account and reserve values are weakly calibrated, an incomplete obligation set is a new safety risk, and five proof rounds found serious omissions in the prototype. The decision therefore authorises only the blocking proof and does not establish eligibility for production implementation.
 
-## Blocking selected-option proof of concept
+## Blocking selected Option B proof of concept
 
-After the human selects A, B, or C, and before any implementation of that architecture, the later planner fold must materialise one complete executable proof of concept for the selected architecture only as a separate reviewed Roadmap unit. Its completion is an explicit blocker for every production implementation unit. The proof of concept is a blocking specification test, not production controller code, and it must converge through the ordinary risky review loop.
+The decision fold materialises `bounded-convergence-option-b-proof` as the complete executable proof of concept for selected Option B. Its completion is an explicit blocker for every later production implementation unit for bounded convergence. The proof of concept is a blocking specification test, not production controller code, and it must converge through the ordinary risky review loop.
 
 The proof of concept must:
 
@@ -208,17 +202,15 @@ The proof of concept must:
 
 If the selected architecture cannot satisfy every applicable triage verdict, cannot establish its stated bound, or admits a delivery path that violates the selected safety package, the proof of concept fails. Implementation remains blocked. The planner records the new evidence, Q-86 returns to the human, and the human may revise the selected architecture, choose another architecture and commission its own proof of concept, or abandon the redesign. No fallback architecture or terminal floor is selected automatically, and a failed proof never grants production authority.
 
-## Serious terminal-floor co-decision
+## Selected serious terminal floor
 
-The architecture choice does not settle the serious terminal floor.
+Q-91 records the three options `high`, `critical`, and `defer`. The recommendation and human choice are both `high`.
 
-- Choose `high`, recommended. Ordinary residual acceptance and ordinary narrowing are unavailable while a high or critical is open. The retained Q-78 triages show that this restriction would apply on passes three through six.
-- Choose `critical`, the mandatory minimum. An open critical blocks those choices, while a high may be accepted as residual risk.
-- Choose `defer`. A separate receipted floor decision is then required before the selected-option proof of concept can close and before implementation.
+At selected floor `high`, ordinary residual acceptance and ordinary narrowing are unavailable while a high or critical is open. The retained Q-78 triages show that this restriction would apply on passes three through six. At comparison floor `critical`, an open critical blocks those choices while a high may reach a receipted residual-risk or narrowing choice.
 
-`high` is recommended under Make illegal states unrepresentable because an unresolved serious finding has no delivery state, and Safe on existing projects because the stricter boundary fails closed on adoption. Its cost under Ground decisions in evidence and Minimal by default is that Q-78 supplies only descriptive, not prospective, evidence for the stricter boundary, which removes residual-acceptance and narrowing choices on passes three through six. The recommendation accepts that evidence and minimality cost in favour of the safer fail-closed boundary; it selects nothing.
+`high` is selected under Make illegal states unrepresentable because an unresolved serious finding has no ordinary delivery state, and Safe on existing projects because the stricter boundary fails closed on adoption. Its cost under Ground decisions in evidence and Minimal by default is that Q-78 supplies only descriptive, not prospective, evidence for the stricter boundary, which removes residual-acceptance and narrowing choices on passes three through six.
 
-The selected-option proof of concept must model both floor values even if the human selects one, so the safety difference remains executable and the rejected floor cannot hide an untested transition.
+The selected Option B proof must model both floor values so the safety difference remains executable. Only `high` is selected.
 
 ## Migration and documentation impact after proof
 
@@ -235,14 +227,10 @@ The Q-90 closure correction changes planning and prototype-status records only. 
 - Do not infer historical finding lineage, obligation membership, scope digest, stage, or closure.
 - Do not build a persistent workflow service, general workflow language, or new scheduler beyond the planned typed fleet.
 - Do not create authority from rename, rebuild, replan, narrowing, scope change, or human resume.
-- Do not implement an architecture, floor, or controller constant before the human decision and the selected-option proof gate.
+- Do not implement selected Option B, floor `high`, or any controller constant before the selected proof gate passes and the human separately authorises production implementation.
 
-## Exact human decision still required
+## Decisions and authority
 
-The human must choose one architecture through the human-input contract:
+Q-86 records the exact architecture options `A - Sealed phase budget`, `B - Frozen obligations with sealed phase campaigns`, and `C - Fixed-depth verification protocol`, with recommendation and chosen value Option B. Q-91 records the exact floor options `high`, `critical`, and `defer`, with recommendation and chosen value `high`.
 
-1. `A - Sealed phase budget`.
-2. `B - Frozen obligations with sealed phase campaigns`.
-3. `C - Fixed-depth verification protocol`.
-
-The human must also choose `high`, `critical`, or `defer` for the serious terminal floor. Q-86 remains `open` until those choices are made. The decision authorises only the selected architecture's proof of concept. It does not authorise production implementation.
+Both receipts use `task:"bounded-convergence-option-b-proof"`. The decisions authorise only that proof-of-concept unit. They do not authorise production implementation.

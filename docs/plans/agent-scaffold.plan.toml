@@ -481,7 +481,30 @@ increment = []
 waiver = []
 
 [step.provenance]
-decisions = ["Q-85"]
+decisions = ["Q-85", "Q-86", "Q-88", "Q-89", "Q-90", "Q-91"]
+
+[[step]]
+slug = "bounded-convergence-option-b-proof"
+title = "prove selected Option B before any bounded-convergence implementation (`Q-86`, `Q-91`)"
+status = "not-started"
+order = 36
+blocked_by = []
+folds = []
+waiver = []
+
+[step.provenance]
+decisions = ["Q-86", "Q-91", "Q-88", "Q-89", "Q-90"]
+findings = [
+  "agent-scaffold.reviews/q86-synthesis-r1-triage.md",
+  "agent-scaffold.reviews/q86-synthesis-r2-triage.md",
+  "agent-scaffold.reviews/q86-synthesis-r3-triage.md",
+  "agent-scaffold.reviews/q86-synthesis-r4-triage.md",
+  "agent-scaffold.reviews/q86-synthesis-r5-triage.md",
+]
+
+[[step.increment]]
+id = "bounded-convergence-option-b-proof-inc1"
+risk_class = "risky"
 
 [[step]]
 slug = "instrument-flag"
@@ -2558,28 +2581,30 @@ RECOMMENDATION AND DECISION (human): `Add a design pass to workflow-calibration`
 
 [[question]]
 id = "Q-86"
-status = "open"
-ask = """which bounded convergence architecture should replace or constrain the current repeated per-artefact cap windows and uncapped sequence of later acceptance passes without concealing unresolved critical findings. The narrowed decision artefact is `docs/plans/workflow-calibration.explorations/Q-86-synthesis.md`. Q-88 ended the capped proof-before-choice artefact and moved the complete executable proof to a blocking gate for the architecture the human later selects. Q-89 retired the capped narrowed counters and authorised focused verification of two low fixes. That verification found one low current-state wording defect in this structured ask. Q-90 authorised the exact correction and merge without another review. The narrowed decision artefact is closed while Q-86 remains open.
+status = "decided"
+folded_into = "bounded-convergence-option-b-proof"
+receipt = "Q-86"
+ask = """which bounded convergence architecture should replace or constrain the current repeated per-artefact cap windows and uncapped sequence of later acceptance passes without concealing unresolved critical findings. The narrowed decision artefact is `docs/plans/workflow-calibration.explorations/Q-86-synthesis.md`. Q-88 ended the capped proof-before-choice artefact and moved the complete executable proof to a blocking gate for the architecture later selected by Q-86. Q-89 retired the capped narrowed counters and authorised focused verification of two low fixes. That verification found one low current-state wording defect in this structured ask. Q-90 authorised the exact correction and merge without another review. The narrowed decision artefact is closed. The human has now selected Option B, and Q-91 separately records the selected serious floor.
 
 ARCHITECTURE OPTIONS.
 1. `A - Sealed phase budget`. Declare non-resettable authority for plan review, each work loop, and acceptance; let `m` be the work-loop count. The proposed maximum is `7(m + 2)` review batches and `34(m + 2)` automated-agent calls. A stays closest to current streak semantics, but its five-normal-plus-two-reserve values are weakly calibrated. On the descriptive Q-78 replay it stops at pass seven and leaves three later low shortfalls undiscovered.
 2. `B - Frozen obligations with sealed phase campaigns`. Freeze a finite canonical obligation set `O` and exact phase owners after a separately sealed plan review; let `n_q = |O_q|` be the count owned by post-freeze phase `q`, and let `r_plan` be the inherited plan-review clean-batch count, one at low risk and two at risky. The proposed post-freeze phase minimum is `n_q + 1` and maximum is `4n_q + 1`. The proposed whole-family minimum is `r_plan + |O| + m + 1`, the maximum is `4|O| + m + 8`, and the automated-agent maximum is `18|O| + 4m + 38`. B inherits A's sealed plan-review account/reserve model and weakly calibrated five-normal-plus-two-reserve values; it also has the largest schema and its clean cost scales with `|O|`. Under the explicit counterfactual assumption that four observed Q-78 folds each change its structured digest, it requires four terminal replans and four additional plan-review and freeze campaigns.
 3. `C - Fixed-depth verification protocol`. Give each phase forward-only discovery, two grouped repair-verification generations, and blind closure. The proposed maximum is `4(m + 2)` review batches and `15(m + 2)` automated-agent calls. C has the lowest fixed per-phase maximum, but on the descriptive Q-78 replay it stops at pass three and leaves 23 later shortfalls undiscovered, including further highs.
 
-RECOMMENDATION: `B - Frozen obligations with sealed phase campaigns`, at low confidence. The reasoning is architectural rather than derived from the broken controller prototype. B gives scope, obligation ownership, finding disposition, phase authority, and completion one structured source for post-freeze phases, but it inherits A's sealed plan-review controller, including its account/reserve model and weakly calibrated five-normal-plus-two-reserve values. The costs are that inherited machinery, its schema size, obligation-completeness risk, cardinality-dependent clean cost, difficult legacy adoption, and repeated serious defects in the prototype. The recommendation is advice only and does not select B.
+RECOMMENDATION AND DECISION (human): `B - Frozen obligations with sealed phase campaigns`. The recommendation and chosen value are both exactly `B - Frozen obligations with sealed phase campaigns`. The reasoning is architectural rather than derived from the broken controller prototype. B gives scope, obligation ownership, finding disposition, phase authority, and completion one structured source for post-freeze phases, but it inherits A's sealed plan-review controller, including its account/reserve model and weakly calibrated five-normal-plus-two-reserve values. The costs are that inherited machinery, its schema size, obligation-completeness risk, cardinality-dependent clean cost, difficult legacy adoption, and repeated serious defects in the prototype. Principle 1, Prefer the cleaner long-term architecture over the smallest diff, supports one structured authority model. Principle 5, Make illegal states unrepresentable, supports exact frozen obligations and owners. Principle 8, Structured data first, project for humans, supports one typed source for scope, ownership, disposition, phase authority, and completion. Principle 2, Minimal by default, Principle 3, Safe on existing projects, and Principle 6, Ground decisions in evidence, keep confidence low and require the blocking proof before implementation. Folded into `bounded-convergence-option-b-proof`. Decision receipt `type:"decision"` `q_id:"Q-86"` in `docs/metrics/workflow.jsonl`.
 
 PROTOTYPE BOUNDARY: `q86-controller-proof.py` and `q86-q78-scope-replay.sh` are retained adversarial prototypes. Round 5 established that they do not prove arbitrary finite maps, serious carry across families, scope and dismissal products, global family identity, fresh evidence, or every claimed route. Their zero counters and current replay output are not recommendation-eligibility evidence.
 
-SELECTED-OPTION PROOF GATE: after the human selects A, B, or C, the later planner fold must materialise one separate reviewed executable proof-of-concept Roadmap unit for that architecture. Its completion is an explicit blocker for every production implementation unit. It must soundly model arbitrary finite finding maps, cross-owner batches, cross-family serious carry, scope and dismissal products, global family identity, fresh evidence, legacy adoption, both terminal floors, and every selected-option transition and algebraic bound. It must carry a traceability matrix that closes every applicable valid verdict from `docs/plans/agent-scaffold.reviews/q86-synthesis-r1-triage.md` through `q86-synthesis-r5-triage.md`, with executable assertions and mutation controls. If the proof fails, implementation stays blocked and Q-86 returns to the human. No fallback architecture is automatic.
+SELECTED OPTION B PROOF GATE: this fold materialises `bounded-convergence-option-b-proof` as the separate reviewed executable proof-of-concept Roadmap unit. Its completion is an explicit blocker for every later production implementation unit for bounded convergence. It must soundly model selected Option B state, sealed plan review, finite frozen obligations, exact phase ownership, selected floor `high`, comparison floor `critical`, arbitrary finite finding maps, cross-owner and mixed products, cross-family serious carry, scope and dismissal products, global family identity, fresh evidence, legacy adoption, every terminal choice, and every selected transition and algebraic bound. It must carry exact commands and a traceability matrix that closes every applicable valid verdict from `docs/plans/agent-scaffold.reviews/q86-synthesis-r1-triage.md` through `q86-synthesis-r5-triage.md`, with executable assertions and mutation controls for every load-bearing transition and predicate. If the proof fails, implementation stays blocked and Q-86 returns to the human. No fallback architecture, floor, bound, or production step is automatic.
 
 SERIOUS-FLOOR CO-DECISION.
 1. `high`, recommended. Ordinary residual acceptance and ordinary narrowing are unavailable while a high or critical is open.
 2. `critical`, the mandatory minimum. An open critical blocks those choices, while the human may accept a high as residual risk.
 3. `defer`, which requires a separate receipted floor decision before the selected proof of concept can close and before implementation.
 
-`high` is recommended under Make illegal states unrepresentable because an unresolved serious finding has no delivery state, and Safe on existing projects because the stricter boundary fails closed on adoption. Its cost under Ground decisions in evidence and Minimal by default is that Q-78 is descriptive rather than prospective evidence and the stricter floor removes residual-acceptance and narrowing choices on passes three through six. The recommendation accepts that evidence and minimality cost for the safer fail-closed boundary; it selects nothing.
+Q-91 records the separate recommendation and human decision `high`. Under selected floor `high`, ordinary residual acceptance and ordinary narrowing are unavailable while a high or critical is open. The selected proof still models `critical` as a comparison so the safety difference remains executable. Q-91 is folded into `bounded-convergence-option-b-proof`. Decision receipt `type:"decision"` `q_id:"Q-91"` in `docs/metrics/workflow.jsonl`.
 
-NO-DECISION BOUNDARY: the resettable baseline remains non-admissible comparison evidence, the severity-decay gate remains excluded, Q-85 authorised the design pass, Q-88 authorised only the narrowed proof timing, Q-89 authorised only the two low repairs plus one focused mixed-model verification, and Q-90 authorised only the exact current-state wording correction and merge without another review. No architecture, serious floor, controller constant, current cap, acceptance rule, reset behaviour, pack change, or code change is approved. Q-86 remains open until the human chooses an architecture and a floor or explicit deferral through the human-input contract. That choice authorises only the selected architecture's proof of concept, not implementation."""
+AUTHORITY BOUNDARY: the resettable baseline remains non-admissible comparison evidence and the severity-decay gate remains excluded. Q-85 authorised the design pass. Q-88 authorised the narrowed proof timing. Q-89 authorised only the two low repairs plus one focused mixed-model verification. Q-90 authorised only the exact current-state wording correction and merge without another review. Q-86 selects Option B and Q-91 selects floor `high`. These choices authorise only the separate risky `bounded-convergence-option-b-proof` unit. No controller constant, current cap, acceptance rule, reset behaviour, pack change, production documentation, code change, or production implementation is approved. Every later production implementation unit for bounded convergence must be blocked by the completed proof."""
 
 [[question]]
 id = "Q-87"
@@ -2612,7 +2637,7 @@ RECOMMENDATION AND DECISION (human, 2026-08-28): `Narrow the proof scope`. The r
 
 JUDGEMENT AGAINST ALL PROJECT PRINCIPLES. Prefer the cleaner long-term architecture over the smallest diff supports proving the chosen controller completely rather than retaining three broad but unsound proof claims. Minimal by default supports not completing production-grade proofs for two architectures the human rejects. Safe on existing projects supports leaving the current workflow and code unchanged while proof remains incomplete. Idempotent supports retiring the capped artefact and recording one durable route rather than repeatedly resetting the same proof loop. Make illegal states unrepresentable supports a blocking selected-option proof gate that gives failed proof no path into implementation. Ground decisions in evidence supports treating five rounds of adversarial findings as evidence that the prototypes expose obligations rather than establish safety. Reproducible supports retaining the scripts, triages, commands, and explicit known-limitations boundary so the selected proof can reproduce and close each defect. Structured data first, project for humans supports recording Q-88 and its exact receipt as the structured source, then projecting the narrowed decision into Q-86 and `workflow-calibration`.
 
-The capped proof-before-choice counters retire. Q-86 remains open. No architecture or serious floor is selected. The later human architecture choice authorises only a complete proof of concept for that selected architecture, and production implementation remains blocked until that proof closes every applicable valid Q-86 synthesis finding."""
+At this decision point the capped proof-before-choice counters retired, Q-86 remained open, and no architecture or serious floor was selected. Q-86 later selected Option B and Q-91 selected floor `high`. Q-88 authorised only the selected-architecture proof timing, and production implementation remains blocked until that proof closes every applicable valid Q-86 synthesis finding."""
 
 [[question]]
 id = "Q-89"
@@ -2631,7 +2656,7 @@ RECOMMENDATION AND DECISION (human, 2026-08-28): `Fix, verify once, then close`.
 
 JUDGEMENT AGAINST ALL PROJECT PRINCIPLES. Prefer the cleaner long-term architecture over the smallest diff supports repairing the two known defects rather than accepting an internally inconsistent decision artefact. Minimal by default supports one focused verification instead of reopening an unbounded full loop for two low documentation defects. Safe on existing projects supports a planning-only repair that leaves the current workflow and code unchanged. Idempotent supports retiring the capped counters once and using one durable closure decision rather than repeatedly resetting the same artefact. Make illegal states unrepresentable supports making closure conditional on a verification that finds nothing new and routing any new valid finding back to the human. Ground decisions in evidence supports correcting the two reproduced round-5 defects before closure. Reproducible supports a focused mixed-model check of the named fixes and their direct residue. Structured data first, project for humans supports recording Q-89 and its exact receipt as the structured decision source while the sidecar and owning step explain it to readers.
 
-Q-89 is `decided -> folded into workflow-calibration`. Q-86 remains `open`. This decision selects no architecture or serious terminal floor and authorises no workflow, pack, or code change."""
+Q-89 is `decided -> folded into workflow-calibration`. At this decision point Q-86 remained `open`. Q-89 selected no architecture or serious terminal floor and authorised no workflow, pack, or code change. Q-86 and Q-91 later made those separate proof-only decisions."""
 
 [[question]]
 id = "Q-90"
@@ -2646,11 +2671,26 @@ ask = """how to close the narrowed Q-86 decision artefact after Q-89's focused v
 4. `Revert the narrowed synthesis`. Discard the narrowed decision artefact and return Q-86 to exploration.
 5. `Abandon the redesign`. End the convergence investigation without selecting or implementing a replacement mechanism.
 
-RECOMMENDATION AND DECISION (human, 2026-08-28): `Fix and merge`. The recommendation and chosen value are both exactly `Fix and merge`. Q-89 retired the capped counters and authorised the focused verification; that verification found one low current-state wording defect; Q-90 authorises the exact correction and merge without another review. The narrowed decision artefact closes while Q-86 remains open. No further review round follows this human-selected path.
+RECOMMENDATION AND DECISION (human, 2026-08-28): `Fix and merge`. The recommendation and chosen value are both exactly `Fix and merge`. Q-89 retired the capped counters and authorised the focused verification. That verification found one low current-state wording defect. Q-90 authorised the exact correction and merge without another review. At this decision point the narrowed decision artefact closed while Q-86 remained open. No further review round followed this human-selected path.
 
 JUDGEMENT AGAINST ALL PROJECT PRINCIPLES. Prefer the cleaner long-term architecture over the smallest diff supports making the structured source internally coherent before closure. Minimal by default supports one exact wording correction and no further review for one reproduced low defect. Safe on existing projects supports a planning-only correction that leaves the current workflow and code unchanged. Idempotent supports one terminal closure record without resetting retired counters or starting another loop. Make illegal states unrepresentable supports recording one unambiguous ordering instead of saying the artefact both ended and remained conditionally open. Ground decisions in evidence supports the correction reproduced by the focused verification and triage. Reproducible supports preserving the verification finding, exact correction, and decision receipt as durable evidence of the closure path. Structured data first, project for humans supports making Q-90 and its exact receipt the structured decision source while the sidecars project the resulting state for readers.
 
-Q-90 is `decided -> folded into workflow-calibration`. The narrowed Q-86 decision artefact is closed. Q-86 remains `open`. This decision selects no architecture or serious terminal floor and authorises no workflow, pack, or code implementation."""
+Q-90 is `decided -> folded into workflow-calibration`. At this decision point the narrowed Q-86 decision artefact closed and Q-86 remained `open`. Q-90 selected no architecture or serious terminal floor and authorised no workflow, pack, or code implementation. Q-86 and Q-91 later made those separate proof-only decisions."""
+
+[[question]]
+id = "Q-91"
+status = "decided"
+folded_into = "bounded-convergence-option-b-proof"
+receipt = "Q-91"
+ask = """which serious terminal floor governs the selected Option B proof and any later separately authorised bounded-convergence implementation. THREE OPTIONS WERE PRESENTED IN THIS ORDER.
+
+1. `high`. Ordinary residual acceptance and ordinary narrowing are unavailable while a high or critical remains open.
+2. `critical`. An open critical blocks those choices, while a high may reach a receipted residual-risk or narrowing choice.
+3. `defer`. A separate receipted floor decision would be required before the proof could close or implementation could be planned.
+
+RECOMMENDATION AND DECISION (human): `high`. The recommendation and chosen value are both exactly `high`. Principle 5, Make illegal states unrepresentable, supports removing ordinary delivery states for unresolved high or critical findings. Principle 3, Safe on existing projects, supports failing closed during legacy adoption. Principle 6, Ground decisions in evidence, requires the proof to model both floors and preserves the limit that Q-78 is descriptive rather than prospective evidence. Principle 2, Minimal by default, records the cost that `high` removes terminal flexibility which `critical` would retain. Principle 1, Prefer the cleaner long-term architecture over the smallest diff, supports one typed serious boundary across scope, dismissal, successor, terminal, and delivery states.
+
+Q-91 is `decided -> folded into bounded-convergence-option-b-proof`. The selected proof models both `high` and `critical`, but only `high` is selected. This decision authorises no production behaviour, controller constant, pack change, code change, or implementation step. Decision receipt `type:"decision"` `q_id:"Q-91"` in `docs/metrics/workflow.jsonl`."""
 
 [[principle]]
 n = 1
