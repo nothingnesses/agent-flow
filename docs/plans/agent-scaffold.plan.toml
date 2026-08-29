@@ -484,29 +484,6 @@ waiver = []
 decisions = ["Q-85", "Q-86", "Q-88", "Q-89", "Q-90", "Q-91"]
 
 [[step]]
-slug = "bounded-convergence-option-b-proof"
-title = "prove selected Option B before any bounded-convergence implementation (`Q-86`, `Q-91`)"
-status = "not-started"
-order = 117
-blocked_by = []
-folds = []
-waiver = []
-
-[step.provenance]
-decisions = ["Q-86", "Q-91", "Q-88", "Q-89", "Q-90"]
-findings = [
-  "agent-scaffold.reviews/q86-synthesis-r1-triage.md",
-  "agent-scaffold.reviews/q86-synthesis-r2-triage.md",
-  "agent-scaffold.reviews/q86-synthesis-r3-triage.md",
-  "agent-scaffold.reviews/q86-synthesis-r4-triage.md",
-  "agent-scaffold.reviews/q86-synthesis-r5-triage.md",
-]
-
-[[step.increment]]
-id = "bounded-convergence-option-b-proof-inc1"
-risk_class = "risky"
-
-[[step]]
 slug = "instrument-flag"
 title = "Opt-in workflow instrumentation"
 status = "complete"
@@ -1802,6 +1779,29 @@ findings = ["docs/plans/mealy-workflow-driver.explorations/r2-synthesis.md", "do
 
 [[step.increment]]
 id = "workflow-ready-frontier-scheduler-inc1"
+risk_class = "risky"
+
+[[step]]
+slug = "bounded-convergence-option-b-proof"
+title = "prove selected Option B before any bounded-convergence implementation (`Q-86`, `Q-91`)"
+status = "not-started"
+order = 117
+blocked_by = []
+folds = []
+waiver = []
+
+[step.provenance]
+decisions = ["Q-86", "Q-91", "Q-88", "Q-89", "Q-90"]
+findings = [
+  "agent-scaffold.reviews/q86-synthesis-r1-triage.md",
+  "agent-scaffold.reviews/q86-synthesis-r2-triage.md",
+  "agent-scaffold.reviews/q86-synthesis-r3-triage.md",
+  "agent-scaffold.reviews/q86-synthesis-r4-triage.md",
+  "agent-scaffold.reviews/q86-synthesis-r5-triage.md",
+]
+
+[[step.increment]]
+id = "bounded-convergence-option-b-proof-inc1"
 risk_class = "risky"
 
 [[question]]
