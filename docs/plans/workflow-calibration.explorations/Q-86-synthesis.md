@@ -57,8 +57,8 @@ Earlier rounds exposed additional obligations around complete finite finding map
 
 These are architecture requirements, not established prototype results.
 
-- Stable finding identity must survive reviewers, triage, repairs, verification, later phases, replans, and successor families.
-- One atomic triaged batch must carry an arbitrary finite map of owners to finding maps plus an unowned set. Each entry must retain severity, lineage, scope relation, disposition, evidence identity, and any parent identity.
+- Stable finding identity must survive reviewers, triage, repairs, verification, later phases, replans, and successor families. Every finding separately retains its discovery phase and canonical owner phase, and its current-, completed-prior-, future-, or unowned route is derived from those stable identities.
+- One atomic triaged batch must carry an arbitrary finite map of owners to finding maps plus an unowned set. Each entry must retain severity, lineage, scope relation, disposition, evidence identity, any parent identity, and its phase route. A batch retains all cross-owner entries but awards initial-attempt credit only to its one scheduled owner.
 - Duplicate reviewer reports must join one finding identity without erasing reviewer attribution.
 - Joint repair and verification must name the complete selected set. Partial verification must not silently resolve unverified findings.
 - A valid critical may leave the blocking set only after named repair and verification or a terminal non-delivery disposition. A dismissed high or critical requires the independent re-check.
@@ -96,9 +96,9 @@ A is closest to current streak semantics and preserves more bounded late discove
 
 ### Proposed controller and algebraic bound
 
-B reuses A's sealed controller for plan review. Plan convergence freezes a finite canonical set `O` of obligation rows, a finite set of `m` work-loop identities, acceptance, and one exact post-freeze phase owner for every obligation. A genuine in-scope finding with no canonical owner enters `UnownedInScopeFinding` and blocks ordinary completion.
+B reuses A's sealed controller for plan review. Plan convergence freezes a finite canonical set `O` of obligation rows, an ordered finite set of `m` work-loop identities plus acceptance, and one exact post-freeze phase owner for every obligation. Every finding records both the phase that discovered it and that canonical owner phase. A current-owner finding stays in that campaign. A finding for a completed prior owner stays live under that immutable owner but cannot transfer or replenish authority, so it routes to terminal non-delivery or a receipted replan. A future-owner finding stays live without early credit until that campaign. A genuine in-scope finding with no canonical owner enters `UnownedInScopeFinding` and blocks ordinary completion.
 
-For post-freeze phase `q`, let `n_q = |O_q|`. Each obligation has at most an initial attempt and verification, one materially-new-evidence reopen attempt and verification, while the phase has one non-transferable blind-closure batch. The proposed per-phase maximum and clean minimum are:
+For post-freeze phase `q`, let `n_q = |O_q|`. Each obligation has at most an initial attempt and verification, one materially-new-evidence reopen attempt and verification, while the phase has one non-transferable blind-closure batch. An atomic batch may retain findings for several owners, but only its one scheduled owner receives initial-attempt credit; every other untested owner still requires its own scheduled batch. The proposed per-phase maximum and clean minimum are:
 
 ```text
 C_q = 4n_q + 1
@@ -120,7 +120,7 @@ The proposed conservative automated-agent maximum is:
 I_B = 18|O| + 4m + 38
 ```
 
-These are algebraic design bounds. The controller prototype does not prove their safety premises. In particular, the selected-option proof must show arbitrary finite batch handling, exact owner-state composition, fresh-evidence reopen, globally unique successor identity, serious carry into successors, legacy adoption, blind closure, every floor outcome, and terminality without relying on the prototype's global finding cap.
+These are algebraic design bounds. The controller prototype does not prove their safety premises. The minimum `L_q = n_q + 1` depends on scheduled-owner-only initial credit: cross-owner retention cannot collapse the `n_q` initial batches, and blind closure contributes one. Discovery/owner routing adds no authority because a completed-prior-owner finding terminates delivery and a future-owner finding waits for its already-counted campaign. In particular, the selected-option proof must show arbitrary finite batch handling, exact owner-state and phase-route composition, fresh-evidence reopen, globally unique successor identity, serious carry into successors, legacy adoption, blind closure, every floor outcome, and terminality without relying on the prototype's global finding cap.
 
 ### Trade-off
 
@@ -187,13 +187,13 @@ The proof of concept must:
 
 1. Define the selected architecture's complete typed state and every legal transition, including plan review, work review, acceptance, repair, verification, re-check, exhaustion, terminal decision, resume reconstruction, narrowing, replan, revert, abandonment, and completion where the option permits them.
 2. Model arbitrary finite finding maps soundly. A finite interaction sweep may support the proof, but it must not cap persistent history in a way that removes fresh-finding, reopen, scope, or delivery transitions. The executable oracle must include settled history followed by fresh valid, serious-dismissal, and scope batches.
-3. Model atomic cross-owner batches, mixed owned and unowned findings, low plus critical, parent plus fix-induced child, valid plus serious-dismissal, scope plus dismissal, and multiple simultaneous scope re-checks without scalar erasure or bulk rewriting unrelated identities.
+3. Model atomic cross-owner batches, mixed owned and unowned findings, low plus critical, parent plus fix-induced child, valid plus serious-dismissal, scope plus dismissal, and multiple simultaneous scope re-checks without scalar erasure or bulk rewriting unrelated identities. Distinguish discovery phase from canonical owner phase; prove current-, completed-prior-, and future-owner routes with acceptance-to-completed-work, early-work-to-future-owner, and mixed out-of-phase fixtures and killing mutations. Retain every cross-owner finding while awarding initial-attempt credit only to the scheduled owner.
 4. Preserve serious findings across terminal replan and successor families as live delivery blockers until verified or given a terminal non-delivery disposition.
 5. Enforce a global append-only family identity registry, fresh successor identity across predecessors, ancestors, siblings, and unrelated existing families, one authorised successor per terminal predecessor, exact ancestry, and exact receipt binding.
 6. Require materially fresh evidence for reopen, retain the old evidence and root finding identity, and reject same-evidence relitigation.
 7. Model prospective and legacy adoption separately. A legacy task must not receive prospective authority, closure credit, a zero-obligation reinterpretation, or an inferred stage without an explicit legal adoption path.
 8. Model the `high` and `critical` terminal floors, every residual-delivery and non-delivery choice, every high-or-critical dismissal re-check, and every selected-option scope route. No unresolved critical may reach delivery under either floor.
-9. Prove every selected-option transition and algebraic bound, including reserve and clean-suffix foreclosure for A, the inherited plan controller, obligation ownership and blind campaigns for B, or fixed stages and mandatory acceptance blind closure for C.
+9. Prove every selected-option transition and algebraic bound, including reserve and clean-suffix foreclosure for A, the inherited plan controller, obligation ownership, scheduled-owner-only initial credit, phase routing and blind campaigns for B, or fixed stages and mandatory acceptance blind closure for C.
 10. Carry a traceability matrix for every valid verdict in `docs/plans/agent-scaffold.reviews/q86-synthesis-r1-triage.md` through `q86-synthesis-r5-triage.md`. Every valid finding must be marked applicable and closed by a named executable assertion, or inapplicable with a cited architecture-specific reason. Planning and documentation findings must point to their corrected durable text rather than being silently omitted.
 11. Include mutation controls that remove each load-bearing transition or predicate and demonstrate that the proof fails.
 12. State the exact finite-domain assumptions, the composition or induction argument for arbitrary finite data, the commands, the expected output, and the limitations that remain outside the model.
