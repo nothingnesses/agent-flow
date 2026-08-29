@@ -2559,7 +2559,7 @@ RECOMMENDATION AND DECISION (human): `Add a design pass to workflow-calibration`
 [[question]]
 id = "Q-86"
 status = "open"
-ask = """which bounded convergence architecture should replace or constrain the current repeated per-artefact cap windows and uncapped sequence of later acceptance passes without concealing unresolved critical findings. The narrowed decision artefact is `docs/plans/workflow-calibration.explorations/Q-86-synthesis.md`. Q-88 ended the capped proof-before-choice artefact and moved the complete executable proof to a blocking gate for the architecture the human later selects. Q-89 ended the capped narrowed artefact through two low fixes and one focused mixed-model verification; if that verification finds nothing new, the capped narrowed artefact closes, while any new valid finding returns to the human.
+ask = """which bounded convergence architecture should replace or constrain the current repeated per-artefact cap windows and uncapped sequence of later acceptance passes without concealing unresolved critical findings. The narrowed decision artefact is `docs/plans/workflow-calibration.explorations/Q-86-synthesis.md`. Q-88 ended the capped proof-before-choice artefact and moved the complete executable proof to a blocking gate for the architecture the human later selects. Q-89 retired the capped narrowed counters and authorised focused verification of two low fixes. That verification found one low current-state wording defect in this structured ask. Q-90 authorised the exact correction and merge without another review. The narrowed decision artefact is closed while Q-86 remains open.
 
 ARCHITECTURE OPTIONS.
 1. `A - Sealed phase budget`. Declare non-resettable authority for plan review, each work loop, and acceptance; let `m` be the work-loop count. The proposed maximum is `7(m + 2)` review batches and `34(m + 2)` automated-agent calls. A stays closest to current streak semantics, but its five-normal-plus-two-reserve values are weakly calibrated. On the descriptive Q-78 replay it stops at pass seven and leaves three later low shortfalls undiscovered.
@@ -2579,7 +2579,7 @@ SERIOUS-FLOOR CO-DECISION.
 
 `high` is recommended under Make illegal states unrepresentable because an unresolved serious finding has no delivery state, and Safe on existing projects because the stricter boundary fails closed on adoption. Its cost under Ground decisions in evidence and Minimal by default is that Q-78 is descriptive rather than prospective evidence and the stricter floor removes residual-acceptance and narrowing choices on passes three through six. The recommendation accepts that evidence and minimality cost for the safer fail-closed boundary; it selects nothing.
 
-NO-DECISION BOUNDARY: the resettable baseline remains non-admissible comparison evidence, the severity-decay gate remains excluded, Q-85 authorised the design pass, Q-88 authorised only the narrowed proof timing, and Q-89 authorised only the two low repairs plus one focused mixed-model verification. No architecture, serious floor, controller constant, current cap, acceptance rule, reset behaviour, pack change, or code change is approved. Q-86 remains open until the human chooses an architecture and a floor or explicit deferral through the human-input contract. That choice authorises only the selected architecture's proof of concept, not implementation."""
+NO-DECISION BOUNDARY: the resettable baseline remains non-admissible comparison evidence, the severity-decay gate remains excluded, Q-85 authorised the design pass, Q-88 authorised only the narrowed proof timing, Q-89 authorised only the two low repairs plus one focused mixed-model verification, and Q-90 authorised only the exact current-state wording correction and merge without another review. No architecture, serious floor, controller constant, current cap, acceptance rule, reset behaviour, pack change, or code change is approved. Q-86 remains open until the human chooses an architecture and a floor or explicit deferral through the human-input contract. That choice authorises only the selected architecture's proof of concept, not implementation."""
 
 [[question]]
 id = "Q-87"
@@ -2632,6 +2632,25 @@ RECOMMENDATION AND DECISION (human, 2026-08-28): `Fix, verify once, then close`.
 JUDGEMENT AGAINST ALL PROJECT PRINCIPLES. Prefer the cleaner long-term architecture over the smallest diff supports repairing the two known defects rather than accepting an internally inconsistent decision artefact. Minimal by default supports one focused verification instead of reopening an unbounded full loop for two low documentation defects. Safe on existing projects supports a planning-only repair that leaves the current workflow and code unchanged. Idempotent supports retiring the capped counters once and using one durable closure decision rather than repeatedly resetting the same artefact. Make illegal states unrepresentable supports making closure conditional on a verification that finds nothing new and routing any new valid finding back to the human. Ground decisions in evidence supports correcting the two reproduced round-5 defects before closure. Reproducible supports a focused mixed-model check of the named fixes and their direct residue. Structured data first, project for humans supports recording Q-89 and its exact receipt as the structured decision source while the sidecar and owning step explain it to readers.
 
 Q-89 is `decided -> folded into workflow-calibration`. Q-86 remains `open`. This decision selects no architecture or serious terminal floor and authorises no workflow, pack, or code change."""
+
+[[question]]
+id = "Q-90"
+status = "decided"
+folded_into = "workflow-calibration"
+receipt = "Q-90"
+ask = """how to close the narrowed Q-86 decision artefact after Q-89's focused verification found one valid low current-state wording defect in the structured Q-86 ask. FIVE OPTIONS WERE PRESENTED IN THIS ORDER.
+
+1. `Fix and merge`. Correct only the Q-86 ask's ordering, merge the planning fold, and close the narrowed decision artefact without another review.
+2. `Fix and verify again`. Make the same correction, then run another focused verification before closure.
+3. `Accept the wording defect`. Close the narrowed decision artefact while leaving the contradictory current-state wording in the structured source.
+4. `Revert the narrowed synthesis`. Discard the narrowed decision artefact and return Q-86 to exploration.
+5. `Abandon the redesign`. End the convergence investigation without selecting or implementing a replacement mechanism.
+
+RECOMMENDATION AND DECISION (human, 2026-08-28): `Fix and merge`. The recommendation and chosen value are both exactly `Fix and merge`. Q-89 retired the capped counters and authorised the focused verification; that verification found one low current-state wording defect; Q-90 authorises the exact correction and merge without another review. The narrowed decision artefact closes while Q-86 remains open. No further review round follows this human-selected path.
+
+JUDGEMENT AGAINST ALL PROJECT PRINCIPLES. Prefer the cleaner long-term architecture over the smallest diff supports making the structured source internally coherent before closure. Minimal by default supports one exact wording correction and no further review for one reproduced low defect. Safe on existing projects supports a planning-only correction that leaves the current workflow and code unchanged. Idempotent supports one terminal closure record without resetting retired counters or starting another loop. Make illegal states unrepresentable supports recording one unambiguous ordering instead of saying the artefact both ended and remained conditionally open. Ground decisions in evidence supports the correction reproduced by the focused verification and triage. Reproducible supports preserving the verification finding, exact correction, and decision receipt as durable evidence of the closure path. Structured data first, project for humans supports making Q-90 and its exact receipt the structured decision source while the sidecars project the resulting state for readers.
+
+Q-90 is `decided -> folded into workflow-calibration`. The narrowed Q-86 decision artefact is closed. Q-86 remains `open`. This decision selects no architecture or serious terminal floor and authorises no workflow, pack, or code implementation."""
 
 [[principle]]
 n = 1

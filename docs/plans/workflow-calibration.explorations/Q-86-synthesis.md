@@ -4,9 +4,9 @@
 
 Q-86 remains `open` for a human architecture decision and a serious terminal-floor decision. The five-round review loop on the earlier proof-before-choice synthesis ended at its cap with valid findings in every round. Q-88 records the human decision to narrow the proof scope rather than open a sixth ordinary review round.
 
-The narrowed decision artefact then reached its own five-round cap with valid findings in every round and two low findings in round 5. Q-89 records the human choice `Fix, verify once, then close`. The capped narrowed counters retire. After the two fixes below, one focused mixed-model verification checks only those fixes and their direct residue; if it finds nothing new, the capped narrowed artefact closes without resuming the full review loop. Any new valid finding returns to the human. Q-89 selects no architecture or serious terminal floor.
+The narrowed decision artefact then reached its own five-round cap with valid findings in every round and two low findings in round 5. Q-89 records the human choice `Fix, verify once, then close`: it retired the capped narrowed counters and authorised focused mixed-model verification of the two low fixes. That verification found one valid low current-state wording defect in the structured Q-86 ask and returned it to the human as Q-89 required. Q-90 records the human choice `Fix and merge`; it authorises the exact correction and merge without another review. The narrowed decision artefact is closed while Q-86 remains `open`. Neither Q-89 nor Q-90 selects an architecture or serious terminal floor.
 
-This narrowed decision artefact retains three bounded architecture proposals and their algebraic finite bounds, but it does not present the executable controller or replay scripts as recommendation-eligibility proofs. Those scripts are adversarial prototypes that exposed proof obligations. The architecture the human later selects must receive a complete executable proof of concept before implementation. No workflow or production behaviour changes in either cap decision or this repair. The Q-88 narrowing pass and Q-89 cap-decision fold each append exactly one `type: "decision"` event to the metrics log without changing the metrics schema or behaviour. The generated plan changes only as the required projection of the Q-86, Q-88, and Q-89 planning sources.
+This narrowed decision artefact retains three bounded architecture proposals and their algebraic finite bounds, but it does not present the executable controller or replay scripts as recommendation-eligibility proofs. Those scripts are adversarial prototypes that exposed proof obligations. The architecture the human later selects must receive a complete executable proof of concept before implementation. No workflow or production behaviour changes in either cap decision, the focused verification repair, or Q-90's closure correction. The Q-88 narrowing pass, Q-89 cap-decision fold, and Q-90 closure fold each append exactly one `type: "decision"` event to the metrics log without changing the metrics schema or behaviour. The generated plan remains only a projection of the Q-86, Q-88, Q-89, and Q-90 planning sources.
 
 The architecture options remain:
 
@@ -16,7 +16,7 @@ The architecture options remain:
 
 The source proposal labels map as follows. Option A maps to state-machine Candidate A in `Q-86-state-machine.md` and safety M1 in `Q-86-safety-process.md`. Option B maps to safety M2 plus the state-machine proposal's sealed authority envelope. Option C maps to state-machine Candidate B. Safety M3 remains excluded. These proposals remain design inputs under the prototype caveats below, and this provenance map does not revive any proof or recommendation-eligibility claim.
 
-No architecture, serious terminal floor, or controller constant has been selected. Q-85 authorised the design pass. Q-88 changed only the proof timing and gate. Q-89 changed only how the capped narrowed artefact is repaired and verified.
+No architecture, serious terminal floor, or controller constant has been selected. Q-85 authorised the design pass. Q-88 changed only the proof timing and gate. Q-89 retired the capped narrowed counters and authorised only the two low repairs plus one focused mixed-model verification. Q-90 authorised only the exact current-state wording correction and merge without another review.
 
 ## Evidence that constrains the choice
 
@@ -224,7 +224,7 @@ The selected-option proof of concept must model both floor values even if the hu
 
 Only after the selected proof of concept passes may the implementation plan schedule changes to `.agents/workflow.toml`, `pack/workflow.toml`, `WorkflowSpec`, shared `ReviewProcess` reconstruction, metrics, plan state, ledger projection, `validate --workflow`, `next`, pack guidance, prompts, templates, generated copies, README, and changelog. Historical records remain append-only and receive explicit legacy treatment rather than inferred structure.
 
-The current narrowing pass changes planning and prototype-status records only. It makes no shipped product documentation stale because no workflow behaviour changes.
+The Q-90 closure correction changes planning and prototype-status records only. It makes no shipped product documentation stale because no workflow behaviour changes.
 
 ## YAGNI boundary
 
