@@ -444,12 +444,12 @@ Run:
 ```sh
 CHECKER=docs/plans/workflow-calibration.explorations/q86-controller-proof.py
 export PYTHONDONTWRITEBYTECODE=1
-nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode A --phase acceptance --risk risky --floor high
-nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode A --phase work_review --risk risky --floor high
-nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase acceptance --risk risky --floor high
-nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase acceptance --risk low_risk --floor high
-nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase work_review --risk low_risk --floor high
-nix shell nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase work_review --risk risky --floor high
+nix shell --inputs-from . nixpkgs#python3 -c python3 "$CHECKER" --mode A --phase acceptance --risk risky --floor high
+nix shell --inputs-from . nixpkgs#python3 -c python3 "$CHECKER" --mode A --phase work_review --risk risky --floor high
+nix shell --inputs-from . nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase acceptance --risk risky --floor high
+nix shell --inputs-from . nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase acceptance --risk low_risk --floor high
+nix shell --inputs-from . nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase work_review --risk low_risk --floor high
+nix shell --inputs-from . nixpkgs#python3 -c python3 "$CHECKER" --mode C --phase work_review --risk risky --floor high
 sha256sum "$CHECKER"
 ```
 

@@ -4,7 +4,7 @@ Lens: the concrete Rust ARCHITECTURE for the FULL driver (the human's target, Op
 
 Numbering note: "Principle N" below is the plan's numbered Project Principles (1 cleaner-long-term-architecture, 2 minimal-by-default, 3 safe-on-existing-projects, 4 idempotent, 5 illegal-states-unrepresentable, 6 evidence-first, 7 reproducible, 8 structured-data-first). Where I mean an AGENTS.md workflow principle (for example small-and-reviewable changes) I say "Workflow Principle".
 
-Grounding (files this design reuses or extends): `src/plan/source.rs` (the `PlanToml` / `Step` / `Increment` / `StepStatus` schema, authoritative `[[step.increment]].risk_class`, scheduled `[[task_loop]]` declarations, migration-only Q-81 increment-plan, exact-step-plan, and unowned-work-review rows, the `[[active_work]]` union, `step_views` / `question_views`, and typed `blocked_by` DAG); `src/plan/render.rs` (the render closure: `render_plan`, `assemble`, and the already-working generated fragments `vocabulary_section` / `status_line` / `principles_section`, plus the `render --check` byte-compare); `src/metrics.rs` (`RiskClass`, auditable `Round.risk_class`, phase-bearing `Round`/`Escalation`, `RoundOutcome` / `Decision` / `Waiver`, `parse_rounds`); `src/workflow.rs` (W3/W4/W5 and the scheduled shared `ReviewProcessHistory` reconstruction); `src/main.rs` (the clap subcommand surface); `src/manifest.rs` + `src/main.rs::build_assets` (the pack `{{...}}` slot mechanism that generates `AGENTS.md` at scaffold time). Q-83 supersedes this retained design's earlier first-round-authority assumption: the applicable Roadmap increment or task-plan declaration exists before round one, while Q-81 increment-plan and exact-step-plan history are digest-pinned and non-active; phase stays in the loop identity; every convergence snapshot must match; and missing declarations fail closed. The exact active-work row, not declaration order or round recency, identifies an open loop.
+Grounding (files this design reuses or extends): `src/plan/source.rs` (the `PlanToml` / `Step` / `Increment` / `StepStatus` schema, authoritative `[[step.increment]].risk_class`, scheduled `[[task_loop]]` declarations, migration-only Q-81 increment-plan, exact-step-plan, and unowned-work-review rows, the `[[active_work]]` union, `step_views` / `question_views`, and the ordinary `blocked_by` plus typed blocker-policy DAG); `src/plan/render.rs` (the render closure: `render_plan`, `assemble`, and the already-working generated fragments `vocabulary_section` / `status_line` / `principles_section`, plus the `render --check` byte-compare); `src/metrics.rs` (`RiskClass`, auditable `Round.risk_class`, phase-bearing `Round`/`Escalation`, `RoundOutcome` / `Decision` / `Waiver`, `parse_rounds`); `src/workflow.rs` (W3/W4/W5 and the scheduled shared `ReviewProcessHistory` reconstruction); `src/main.rs` (the clap subcommand surface); `src/manifest.rs` + `src/main.rs::build_assets` (the pack `{{...}}` slot mechanism that generates `AGENTS.md` at scaffold time). Q-83 supersedes this retained design's earlier first-round-authority assumption: the applicable Roadmap increment or task-plan declaration exists before round one, while Q-81 increment-plan and exact-step-plan history are digest-pinned and non-active; phase stays in the loop identity; every convergence snapshot must match; and missing declarations fail closed. The exact active-work row, not declaration order or round recency, identifies an open loop.
 
 ## 1. The load-bearing architectural facts
 
@@ -88,12 +88,12 @@ src/workflow/spec.rs       NEW (Stage 0): WorkflowSpec parse + accessors; the si
 src/driver/mod.rs          NEW (Stage 1+): the `next` entry; output types (JSON + human); stateless recompute orchestration
 src/driver/reconstruct.rs  NEW (Stage 2): build the per-unit fleet from PlanToml + round log + ledger + spec
 src/driver/fsm.rs          NEW (Stage 2): disjoint Convergence ReviewLoop / SinglePassReview machines with total typed transitions; TaskMachine; QuestionMachine; StepMachine
-src/driver/schedule.rs     NEW (Stage 3): the ready-frontier scheduler over blocked_by
+src/driver/schedule.rs     NEW (Stage 3): the ready-frontier scheduler over blocker policies
 src/driver/emit.rs         NEW (Stage 2): fill the next-instruction prompt from the spec's role/path templates
 src/driver/record.rs       NEW (Stage 5): the guarded, transition-validating record-* write-path
 ```
 
-The driver lives in its own `src/driver/` tree (parallel to `src/plan/`), reusing `plan::` (status, risk class, `blocked_by`), `metrics::` (round parsing), `workflow::` (the shared reconstructor), and `workflow::spec::WorkflowSpec`. It owns no JSON parsing of its own (reuses `metrics::parse_rounds`) and no plan parsing of its own (reuses `PlanToml`), mirroring how `workflow.rs` already reuses both.
+The driver lives in its own `src/driver/` tree (parallel to `src/plan/`), reusing `plan::` (status, risk class, ordinary `blocked_by`, and typed blocker policies), `metrics::` (round parsing), `workflow::` (the shared reconstructor), and `workflow::spec::WorkflowSpec`. It owns no JSON parsing of its own (reuses `metrics::parse_rounds`) and no plan parsing of its own (reuses `PlanToml`), mirroring how `workflow.rs` already reuses both.
 
 ### 3.2 The review-process machines (the core types)
 
@@ -188,7 +188,7 @@ fn ready_frontier(steps: &[StepMachine]) -> Vec<&StepMachine>;
 // a blocker is satisfied exactly when its status is Complete or Skipped.
 ```
 
-The pure function operates over one domain: declaration-ordered `NotStarted`/`Next` steps whose typed `blocked_by` targets are all `Complete` or `Skipped`. `Optional`, `Deferred`, `InProgress`, `NotStarted`, and `Next` blockers remain unsatisfied. Task/Roadmap plan review, task acceptance/review, question exploration, and in-progress step actions sit outside this pending-step frontier. An explicit active-unit action takes selected-action precedence and the ready frontier is reported beside it as advisory parallel work; only when no explicit unit is actionable does the first frontier member replace the Stage-1 pending fallback as serial selection. Therefore selected-action membership is conditional on selection origin, not universal. The tool proposes; the orchestrator decides fan-out against its isolation budget. Step granularity only: increments carry no `blocked_by`, so no increment-level scheduling.
+The pure function operates over one domain: declaration-ordered `NotStarted`/`Next` steps whose ordinary `blocked_by` targets are all `Complete` or `Skipped` and whose typed complete-only targets are all `Complete`. `Optional`, `Deferred`, `InProgress`, `NotStarted`, and `Next` blockers remain unsatisfied for either policy, and `Skipped` remains unsatisfied for complete-only. Task/Roadmap plan review, task acceptance/review, question exploration, and in-progress step actions sit outside this pending-step frontier. An explicit active-unit action takes selected-action precedence and the ready frontier is reported beside it as advisory parallel work; only when no explicit unit is actionable does the first frontier member replace the Stage-1 pending fallback as serial selection. Therefore selected-action membership is conditional on selection origin, not universal. The tool proposes; the orchestrator decides fan-out against its isolation budget. Step granularity only: increments carry no blocker edge or policy, so no increment-level scheduling.
 
 ### 3.5 The instruction-emission layer
 
@@ -210,7 +210,7 @@ Read-only advisory command, reusing the existing clap patterns (`--source`, `--m
 
 ```
 agent-scaffold next
-  --source docs/plans/<task>.plan.toml     # PlanToml (step status, risk class, blocked_by)
+  --source docs/plans/<task>.plan.toml     # PlanToml (step status, risk class, blocker policies)
   --metrics docs/metrics/workflow.jsonl     # round/escalation/decision log (defaulted)
   [--ledger docs/plans/<task>.ledger.md]    # the transient RESUME STATE + in-flight round
   [--workflow-spec .agents/workflow.toml]   # defaulted; falls back to WorkflowSpec::builtin()
@@ -274,7 +274,7 @@ This honours the human's "full driver as the target" while staging it so no stag
 
 - No persisted FSM state and no stateful `drive` daemon/REPL; recompute statelessly from the files each call.
 - No global product FSM and no Harel statechart; the nested fleet + stateless recompute has the needed power with less machinery.
-- No increment-level DAG scheduling; the scheduler is step-granularity only (increments carry no `blocked_by`).
+- No increment-level DAG scheduling; the scheduler is step-granularity only (increments carry no blocker edge or policy).
 - No general workflow DSL; `workflow.toml` holds THIS workflow's fixed constants/sequences/paths/tiers, not arbitrary process logic. A new transition KIND is a code change, not a spec field.
 - No judgment in the spec or in `step`; verdicts and human decisions are only ever typed inputs, and a risk class enters only from the plan declaration selected for the exact convergence-loop identity. No first-round, declaration-order or latest-round inference.
 - Do not generate the WHOLE AGENTS.md workflow section; generate only the control fragments and keep the rationale/role/contract prose hand-authored (0b/Stage 4 are the constant fragments, not the "why").
