@@ -1789,7 +1789,7 @@ risk_class = "risky"
 [[step]]
 slug = "bounded-convergence-option-b-proof"
 title = "prove selected Option B before any bounded-convergence implementation (`Q-86`, `Q-91`)"
-status = "not-started"
+status = "in-progress"
 order = 117
 blocked_by = []
 folds = []
