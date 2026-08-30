@@ -76,7 +76,7 @@ The audit and methods records remain easy to find because they have stable `docs
 
 ## Salvage test
 
-The salvage window starts when the cleanup migration lands and ends at the earlier of seven calendar days or the third accepted product commit. A product commit must touch `src/`, `pack/`, `tests/`, `Cargo.toml`, `Cargo.lock`, or `build.rs`, pass its step acceptance test, and complete the independent product review above.
+The salvage window starts when the cleanup migration lands and ends at the earlier of seven calendar days or completion of delivery step 4. A product commit must touch `src/`, `pack/`, `tests/`, `Cargo.toml`, `Cargo.lock`, or `build.rs`, pass its step acceptance test, and complete the independent product review above.
 
 The repository passes only if all of these are true at the deadline:
 
