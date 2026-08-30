@@ -27,11 +27,11 @@
 
 use {
 	crate::metrics::{
+		question_id_index,
 		EvidenceTier,
 		RiskClass,
 		WaiverReason,
 		WaiverUnit,
-		question_id_index,
 	},
 	serde::{
 		Deserialize,
@@ -489,7 +489,8 @@ fn is_safe_sidecar_ref(reference: &str) -> bool {
 /// does not confirm the JSONL receipt exists). Reject uppercase so the accepted form
 /// has one spelling.
 fn is_commit_shaped(hash: &str) -> bool {
-	(7..=40).contains(&hash.len()) && hash.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+	(7 ..= 40).contains(&hash.len())
+		&& hash.bytes().all(|b| b.is_ascii_digit() || (b'a' ..= b'f').contains(&b))
 }
 
 /// Validate a `<task>.plan.toml`'s schema (types and enums, via `parse_toml`) and

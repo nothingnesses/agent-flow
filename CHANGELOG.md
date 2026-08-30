@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- The built-in default scaffold is now a minimal bounded workflow: one compact `.agents/work.toml`, one implementation branch, and five bounded delivery passes, with no generated plan tree, ledger, metrics log, review directory, or convergence loop.
+- Bounded `next` reads that work file directly, deterministically lists all active units, and emits one selected action without legacy ledger or resume prose. An all-complete file may omit `selected_action` and yields an explicit completed result.
+- Bounded `validate` and `status` now check and project the real work state, including closed statuses, dependencies, size and step limits, selected-action rules, and the all-complete terminal state; self-authored review records do not affect the result.
+- Existing plan, metrics, workflow, render, resume, audit, custom-pack, and checks interfaces remain available through their explicit legacy or opt-in paths; projects without `.agents/work.toml` retain the legacy fallback.
+
 ## [0.0.4] - 2026-08-18
 
 CORRECTION TO 0.0.3. The 0.0.3 section below is left exactly as published, so that this file and the immutable crates.io tarball keep saying the same thing, and the correction is made here instead. That section states that "Every subcommand, flag, option, pack format and scaffolded file layout is the same as 0.0.2". The scaffolded file layout was not: 0.0.3 added one file to it, `.agents/user-prompts/audit.md`, which the Added entry below records. The `dest` set of `pack/pack.toml` at the two tags differs by that one addition and by nothing else, so this corrects the scaffolded-file-layout clause alone. The subcommand, flag, option and pack format clauses are not re-checked here.

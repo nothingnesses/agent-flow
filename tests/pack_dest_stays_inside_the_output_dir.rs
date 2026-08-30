@@ -25,8 +25,8 @@ use std::{
 
 /// A unique scratch root for one test, removed and recreated so a rerun starts clean.
 fn scratch(name: &str) -> PathBuf {
-	let dir = std::env::temp_dir()
-		.join(format!("agent-flow-packdest-{}-{name}", std::process::id()));
+	let dir =
+		std::env::temp_dir().join(format!("agent-flow-packdest-{}-{name}", std::process::id()));
 	let _ = fs::remove_dir_all(&dir);
 	fs::create_dir_all(&dir).unwrap();
 	dir

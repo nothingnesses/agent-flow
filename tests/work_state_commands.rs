@@ -13,6 +13,7 @@ use std::{
 };
 
 const MAX_STATUS_BYTES: usize = 16_384;
+const MAX_NEXT_BYTES: usize = 8_192;
 
 fn scratch(name: &str) -> PathBuf {
 	let dir = std::env::temp_dir().join(format!(
@@ -68,6 +69,15 @@ fn clean_work() -> String {
 	)
 }
 
+fn completed_work() -> String {
+	format!(
+		"version = 1\n\n{}{}{}",
+		step("first", "complete", &[]),
+		step("second", "complete", &["first"]),
+		step("third", "complete", &["first", "second"]),
+	)
+}
+
 fn write_work(
 	root: &Path,
 	contents: &str,
@@ -113,6 +123,82 @@ fn a_fresh_minimal_scaffold_validates_without_legacy_state() {
 		assert!(status.stderr.is_empty());
 		assert!(status.stdout.len() <= MAX_STATUS_BYTES);
 	}
+	fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn all_complete_work_without_a_selection_is_projected_by_every_real_command() {
+	let root = scratch("all-complete");
+	write_work(&root, &completed_work());
+
+	let validate = run(&root, &["validate"]);
+	assert!(validate.status.success(), "{}", String::from_utf8_lossy(&validate.stderr));
+	assert!(validate.stderr.is_empty());
+	assert_eq!(validate.stdout, b".agents/work.toml: 3 steps, all complete, valid\n");
+
+	for args in [&["status"][..], &["status", "--json"][..], &["next"][..], &["next", "--json"][..]]
+	{
+		let one = run(&root, args);
+		let two = run(&root, args);
+		assert!(one.status.success(), "{args:?}: {}", String::from_utf8_lossy(&one.stderr));
+		assert!(one.stderr.is_empty(), "{args:?}");
+		assert_eq!(one.stdout, two.stdout, "{args:?}");
+		let limit = if args[0] == "next" { MAX_NEXT_BYTES } else { MAX_STATUS_BYTES };
+		assert!(one.stdout.len() <= limit, "{args:?}: {} bytes", one.stdout.len());
+	}
+
+	let status_human = String::from_utf8(run(&root, &["status"]).stdout).unwrap();
+	assert!(status_human.contains("selected action: none"), "{status_human}");
+	for (position, id) in [(1, "first"), (2, "second"), (3, "third")] {
+		assert!(status_human.contains(&format!("{position}. {id} [complete]")), "{status_human}");
+	}
+	let status_json: serde_json::Value =
+		serde_json::from_slice(&run(&root, &["status", "--json"]).stdout).unwrap();
+	assert!(status_json["selected_action"].is_null());
+	assert!(status_json["steps"]
+		.as_array()
+		.unwrap()
+		.iter()
+		.all(|step| step["status"] == "complete"));
+
+	let next_human = String::from_utf8(run(&root, &["next"]).stdout).unwrap();
+	assert!(next_human.contains("ACTIVE UNITS (0)"), "{next_human}");
+	assert!(next_human.contains("SELECTED ACTION\nnone"), "{next_human}");
+	assert!(next_human.contains("RESULT\ncompleted"), "{next_human}");
+	let next_json: serde_json::Value =
+		serde_json::from_slice(&run(&root, &["next", "--json"]).stdout).unwrap();
+	assert_eq!(next_json["active_units"], serde_json::json!([]));
+	assert!(next_json["selected_action"].is_null());
+	assert_eq!(next_json["result"], "completed");
+
+	fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn every_real_work_command_rejects_an_absent_selection_while_work_remains() {
+	let root = scratch("unfinished-without-selection");
+	let unfinished = clean_work().replace("selected_action = \"selected\"\n", "");
+	write_work(&root, &unfinished);
+
+	for args in [
+		&["validate"][..],
+		&["status"][..],
+		&["status", "--json"][..],
+		&["next"][..],
+		&["next", "--json"][..],
+	] {
+		let output = run(&root, args);
+		let stderr = String::from_utf8(output.stderr).unwrap();
+		assert_eq!(output.status.code(), Some(1), "{args:?}: {stderr}");
+		assert!(output.stdout.is_empty(), "{args:?}: invalid state wrote stdout");
+		assert!(
+			stderr.contains(
+				".agents/work.toml: selected_action is required while work remains; found 2 active and 1 pending steps"
+			),
+			"{args:?}: {stderr}"
+		);
+	}
+
 	fs::remove_dir_all(root).unwrap();
 }
 
@@ -296,6 +382,10 @@ fn work_status_is_deterministic_bounded_and_truthful_in_both_formats() {
 	assert!(validate.status.success() && explicit_validate.status.success());
 	assert!(validate.stderr.is_empty() && explicit_validate.stderr.is_empty());
 	assert_eq!(validate.stdout, explicit_validate.stdout);
+	assert_eq!(
+		validate.stdout, b".agents/work.toml: 4 steps, selected action `selected`, valid\n",
+		"the current nonterminal validate projection must stay compatible"
+	);
 
 	for args in [
 		&["status"][..],

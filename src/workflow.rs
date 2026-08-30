@@ -35,6 +35,7 @@ use {
 	crate::{
 		metrics::{
 			self,
+			question_id_index,
 			Baseline,
 			Decision,
 			Escalation,
@@ -44,14 +45,13 @@ use {
 			RoundOutcome,
 			Waiver,
 			WaiverUnit,
-			question_id_index,
 		},
 		plan::{
 			self,
-			QUEUE_FOLD_PREFIX,
+			source::PlanToml,
 			Question,
 			Step,
-			source::PlanToml,
+			QUEUE_FOLD_PREFIX,
 		},
 		workflow_spec::WorkflowSpec,
 	},

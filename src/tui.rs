@@ -16,7 +16,6 @@
 use {
 	crate::pack::Principle,
 	ratatui::{
-		Frame,
 		crossterm::event::{
 			self,
 			Event as CtEvent,
@@ -50,6 +49,7 @@ use {
 			Paragraph,
 			Wrap,
 		},
+		Frame,
 	},
 	std::io,
 };

@@ -35,16 +35,16 @@ pub(crate) mod render;
 
 pub(crate) use {
 	render::{
-		CheckOutcome,
 		check_render,
 		render_plan,
 		rendered_path,
 		write_rendered,
+		CheckOutcome,
 	},
 	source::{
-		PlanToml,
 		parse_toml,
 		validate_source,
+		PlanToml,
 	},
 };
 
