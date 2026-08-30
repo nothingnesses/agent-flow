@@ -1774,12 +1774,12 @@ folds = []
 waiver = []
 
 [step.provenance]
-decisions = ["Q-51", "Q-82", "Q-92"]
+decisions = ["Q-51", "Q-82", "Q-92", "Q-93"]
 findings = [
   "docs/plans/mealy-workflow-driver.explorations/r2-synthesis.md",
   "docs/plans/mealy-workflow-driver.explorations/r2-architecture-build-path.md",
   "docs/plans/agent-scaffold.reviews/q86-decision-r4-triage.md",
-  "docs/plans/agent-scaffold.reviews/q86-decision-r5-triage.md",
+  "agent-scaffold.reviews/q86-decision-r5-triage.md",
 ]
 
 [[step.increment]]
@@ -1796,7 +1796,7 @@ folds = []
 waiver = []
 
 [step.provenance]
-decisions = ["Q-86", "Q-91", "Q-88", "Q-89", "Q-90", "Q-92"]
+decisions = ["Q-86", "Q-91", "Q-88", "Q-89", "Q-90", "Q-92", "Q-93"]
 findings = [
   "agent-scaffold.reviews/q86-synthesis-r1-triage.md",
   "agent-scaffold.reviews/q86-synthesis-r2-triage.md",
@@ -2716,6 +2716,25 @@ RECOMMENDATION AND DECISION (human, 2026-08-30): `Fix, verify once, then close`.
 JUDGEMENT AGAINST ALL PROJECT PRINCIPLES. Prefer the cleaner long-term architecture over the smallest diff supports repairing the proof gate at its typed scheduler and workflow-validation boundary rather than accepting a status-only shortcut. Minimal by default supports one focused verification of four fixed findings instead of resetting the entire loop. Safe on existing projects supports planning-only repairs that leave the current workflow and code unchanged and keep production blocked. Idempotent supports retiring the capped counters once under one durable closure path rather than repeatedly resetting the same artefact. Make illegal states unrepresentable supports a production-readiness predicate that cannot be satisfied by any convergence waiver or non-complete proof state. Ground decisions in evidence supports applying exactly the four reproduced triage corrections before closure. Reproducible supports manifest-resolved mutation results, identical ordered-event replay, and focused independent verification of the named fixes. Structured data first, project for humans supports recording Q-92 and its exact receipt as the decision source while the question sidecar and proof plan project the closure path.
 
 Q-92 is `decided -> folded into bounded-convergence-option-b-proof`. It changes only the capped plan-review closure path and the proof plan's safety requirements. Q-86 remains Option B, Q-91 remains floor `high`, and neither Q-92 nor the focused verification authorises production behaviour, a controller constant, a pack or code change, or a production implementation unit. Decision receipt `type:"decision"` `q_id:"Q-92"` in `docs/metrics/workflow.jsonl`."""
+
+[[question]]
+id = "Q-93"
+status = "decided"
+folded_into = "bounded-convergence-option-b-proof"
+receipt = "Q-93"
+ask = """how to close the Q-86/Q-91 proof-plan decision fold after Q-92's focused verification returned two valid low findings in `agent-scaffold.reviews/q86-decision-cap-triage.md`. FIVE OPTIONS WERE PRESENTED IN THIS ORDER.
+
+1. `Fix and merge`. Apply exactly the two valid low corrections: make the traceability checker import or invoke the mutation runner against the named manifest in the same command, resolve every executable row's named mutations from that run, assert and report resolved, exercised, and killed row counts, and fail unknown, surviving, or unexercised names; and correct only the scheduler's round-5 provenance pointer to task-relative `agent-scaffold.reviews/q86-decision-r5-triage.md`. Then merge without another review.
+2. `Fix and verify again`. Apply the same two corrections, then run another focused verification before merge. TRADE-OFF: this adds independent evidence, but extends a capped artefact after the two remaining low defects and their exact fixes are already adjudicated.
+3. `Accept the low residuals`. Merge without either correction. TRADE-OFF: this avoids further edits, but leaves the mutation-result join independently unobservable and one durable scheduler evidence pointer unresolved under its documented task-relative convention.
+4. `Revert the proof-plan fold`. Remove the Q-86/Q-91 proof plan and return the architecture decision to its pre-fold state. TRADE-OFF: this removes the two residual defects by discarding the reviewed proof obligations and selected proof path.
+5. `Abandon the redesign`. End the bounded-convergence redesign without proof or implementation. TRADE-OFF: this stops further cost and leaves production unchanged, but also leaves the known unbounded convergence problem without a planned replacement.
+
+RECOMMENDATION AND DECISION (human, 2026-08-30): `Fix and merge`. The recommendation and chosen value are both exactly `Fix and merge`. Q-93 authorises only the two corrections above and merge without another review. The traceability command must independently expose the real in-process mutation-result join through its exact runner and manifest arguments and its computed resolved, exercised, and killed executable-row counts. The scheduler correction changes only the round-5 pointer identified by the focused triage; pre-existing sibling paths are outside scope. The proof step remains `not-started`, and bounded-convergence production implementation remains blocked.
+
+JUDGEMENT AGAINST ALL PROJECT PRINCIPLES. Prefer the cleaner long-term architecture over the smallest diff supports one explicit in-process result contract rather than an implicit cross-command handoff. Minimal by default supports exactly two low corrections and no further review. Safe on existing projects supports planning-only edits that leave current workflow and production code unchanged. Idempotent supports one terminal closure decision without resetting retired counters or starting another verification chain. Make illegal states unrepresentable supports failing every unknown, surviving, or unexercised mutation name and asserting all three row counts. Ground decisions in evidence supports applying exactly the two reproduced findings from the focused triage. Reproducible supports one invocation whose arguments and output make the matrix-to-mutation-result join observable. Structured data first, project for humans supports recording Q-93 and its exact receipt as the structured decision source while this question and its sidecar explain the closure.
+
+Q-93 is `decided -> folded into bounded-convergence-option-b-proof`. It authorises these exact fixes and merge without another review. It changes neither Q-86's selected Option B architecture nor Q-91's selected `high` floor, grants no proof result or convergence credit, and authorises no production behaviour, controller constant, pack or code change, or production implementation unit. Decision receipt `type:"decision"` `q_id:"Q-93"` in `docs/metrics/workflow.jsonl`."""
 
 [[principle]]
 n = 1
