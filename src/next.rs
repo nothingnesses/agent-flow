@@ -65,7 +65,9 @@ pub(crate) const MAX_OUTPUT_BYTES: usize = 8_192;
 pub(crate) struct WorkProjection {
 	pub(crate) source: String,
 	pub(crate) active_units: Vec<ActiveUnit>,
-	pub(crate) selected_action: SelectedAction,
+	pub(crate) selected_action: Option<SelectedAction>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub(crate) result: Option<WorkResult>,
 }
 
 /// One active unit: its id, its status, and its declared predecessors WITH their statuses.
@@ -88,11 +90,24 @@ pub(crate) struct SelectedAction {
 	pub(crate) why_next: String,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum WorkResult {
+	Completed,
+}
+
 pub(crate) fn project_work(
 	source: String,
 	work: &WorkFile,
 ) -> WorkProjection {
-	let selected = work.selected_step();
+	let selected_action = work.selected_step().map(|selected| SelectedAction {
+		id: selected.id.clone(),
+		user_problem: selected.user_problem.clone(),
+		change: selected.change.clone(),
+		acceptance: selected.acceptance.clone(),
+		why_next: selected.why_next.clone(),
+	});
+	let result = selected_action.is_none().then_some(WorkResult::Completed);
 	WorkProjection {
 		source,
 		active_units: work
@@ -105,13 +120,8 @@ pub(crate) fn project_work(
 				dependencies: work.dependencies(step),
 			})
 			.collect(),
-		selected_action: SelectedAction {
-			id: selected.id.clone(),
-			user_problem: selected.user_problem.clone(),
-			change: selected.change.clone(),
-			acceptance: selected.acceptance.clone(),
-			why_next: selected.why_next.clone(),
-		},
+		selected_action,
+		result,
 	}
 }
 
@@ -140,16 +150,19 @@ pub(crate) fn render_work_human(projection: &WorkProjection) -> String {
 		));
 	}
 
-	let action = &projection.selected_action;
 	out.push_str("\nSELECTED ACTION\n");
-	out.push_str(&format!("id: {}\n", action.id));
-	out.push_str(&format!("user problem: {}\n", action.user_problem));
-	out.push_str(&format!("change: {}\n", action.change));
-	out.push_str("acceptance:\n");
-	for criterion in &action.acceptance {
-		out.push_str(&format!("- {criterion}\n"));
+	if let Some(action) = &projection.selected_action {
+		out.push_str(&format!("id: {}\n", action.id));
+		out.push_str(&format!("user problem: {}\n", action.user_problem));
+		out.push_str(&format!("change: {}\n", action.change));
+		out.push_str("acceptance:\n");
+		for criterion in &action.acceptance {
+			out.push_str(&format!("- {criterion}\n"));
+		}
+		out.push_str(&format!("why next: {}", action.why_next));
+	} else {
+		out.push_str("none\n\nRESULT\ncompleted");
 	}
-	out.push_str(&format!("why next: {}", action.why_next));
 	out
 }
 
@@ -1402,18 +1415,20 @@ mod tests {
 			projection.active_units.iter().map(|unit| unit.id.as_str()).collect::<Vec<_>>(),
 			["first-active", "selected-active", "third-active"]
 		);
-		assert_eq!(projection.selected_action.id, "selected-active");
-		assert_eq!(projection.selected_action.user_problem, "Selected problem");
-		assert_eq!(projection.selected_action.change, "Selected change");
-		assert_eq!(projection.selected_action.acceptance, ["Acceptance one", "Acceptance two"]);
-		assert_eq!(projection.selected_action.why_next, "Selected why");
+		let selected = projection.selected_action.as_ref().unwrap();
+		assert_eq!(selected.id, "selected-active");
+		assert_eq!(selected.user_problem, "Selected problem");
+		assert_eq!(selected.change, "Selected change");
+		assert_eq!(selected.acceptance, ["Acceptance one", "Acceptance two"]);
+		assert_eq!(selected.why_next, "Selected why");
+		assert!(projection.result.is_none());
 	}
 
 	#[test]
 	fn selected_action_can_follow_an_earlier_active_unit() {
 		let projection = project_work("work.toml".to_string(), &work_fixture("third-active"));
 		assert_eq!(projection.active_units[0].id, "first-active");
-		assert_eq!(projection.selected_action.id, "third-active");
+		assert_eq!(projection.selected_action.as_ref().unwrap().id, "third-active");
 	}
 
 	#[test]
@@ -1472,6 +1487,34 @@ mod tests {
 			 acceptance = [\"Pending acceptance\"]\n\
 			 why_next = \"Pending why\"\n";
 		crate::work::parse(source).unwrap()
+	}
+
+	#[test]
+	fn completed_work_projects_no_action_and_an_explicit_result() {
+		let source = "version = 1\n\
+			 [[step]]\n\
+			 id = \"done\"\n\
+			 status = \"complete\"\n\
+			 blocked_by = []\n\
+			 user_problem = \"Done problem\"\n\
+			 change = \"Done change\"\n\
+			 acceptance = [\"Done acceptance\"]\n\
+			 why_next = \"Done why\"\n";
+		let work = crate::work::parse(source).unwrap();
+		let projection = project_work(".agents/work.toml".to_string(), &work);
+		assert!(projection.active_units.is_empty());
+		assert!(projection.selected_action.is_none());
+		assert!(matches!(projection.result, Some(WorkResult::Completed)));
+
+		let human = render_work_human(&projection);
+		assert!(human.contains("ACTIVE UNITS (0)"), "{human}");
+		assert!(human.contains("SELECTED ACTION\nnone"), "{human}");
+		assert!(human.contains("RESULT\ncompleted"), "{human}");
+		let value: serde_json::Value =
+			serde_json::from_str(&render_work_json(&projection).unwrap()).unwrap();
+		assert_eq!(value["active_units"], serde_json::json!([]));
+		assert!(value["selected_action"].is_null());
+		assert_eq!(value["result"], "completed");
 	}
 
 	#[test]

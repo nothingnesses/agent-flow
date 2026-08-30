@@ -4,7 +4,7 @@ This is the canonical, harness-agnostic guidance for agents working in this repo
 
 ## Start here
 
-The human keeps delivery state in `.agents/work.toml`. It contains at most five ordered steps, uses only `active`, `pending`, and `complete` statuses, and names exactly one active step with `selected_action`. Before work starts, replace the starter text with a bounded user problem, change, acceptance criteria, and why-next rationale. Run `agent-flow next` for the current brief.
+The human keeps delivery state in `.agents/work.toml`. It contains at most five ordered steps and uses only `active`, `pending`, and `complete` statuses. While work remains, `selected_action` names exactly one active step; it is omitted only after every step is complete. Before work starts, replace the starter text with a bounded user problem, change, acceptance criteria, and why-next rationale. Run `agent-flow next` for the current brief.
 
 To start the selected action, copy `.agents/user-prompts/kickoff.md`, fill in its optional context, and paste it to the agent.
 

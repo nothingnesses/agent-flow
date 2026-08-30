@@ -33,8 +33,8 @@ use std::{
 
 /// A unique scratch root for one test, removed and recreated so a rerun starts clean.
 fn scratch(name: &str) -> PathBuf {
-	let dir = std::env::temp_dir()
-		.join(format!("agent-flow-packsource-{}-{name}", std::process::id()));
+	let dir =
+		std::env::temp_dir().join(format!("agent-flow-packsource-{}-{name}", std::process::id()));
 	let _ = fs::remove_dir_all(&dir);
 	fs::create_dir_all(&dir).unwrap();
 	dir
@@ -51,7 +51,9 @@ fn write_pack(
 	fs::create_dir_all(&pack).unwrap();
 	fs::write(
 		pack.join("pack.toml"),
-		format!("[[asset]]\nsource = \"{source}\"\ndest = \"leaked.md\"\nownership = \"working\"\n"),
+		format!(
+			"[[asset]]\nsource = \"{source}\"\ndest = \"leaked.md\"\nownership = \"working\"\n"
+		),
 	)
 	.unwrap();
 	pack
@@ -291,7 +293,12 @@ fn a_pack_internal_symlink_still_scaffolds() {
 	fs::create_dir_all(&out).unwrap();
 
 	let output = scaffold(&pack, &out, "--write");
-	assert_eq!(output.status.code(), Some(0), "stderr: {}", String::from_utf8_lossy(&output.stderr));
+	assert_eq!(
+		output.status.code(),
+		Some(0),
+		"stderr: {}",
+		String::from_utf8_lossy(&output.stderr)
+	);
 	assert_eq!(fs::read_to_string(out.join("leaked.md")).unwrap(), "REAL BODY\n");
 	let _ = fs::remove_dir_all(&root);
 }

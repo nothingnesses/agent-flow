@@ -122,6 +122,7 @@ fn default_and_explicit_work_sources_are_small_deterministic_and_truthful() {
 	assert!(human.contains("user problem: Selected problem"));
 	assert!(human.contains("change: Selected change"));
 	assert!(human.contains("why next: Selected why"));
+	assert!(!human.contains("\nRESULT\n"), "nonterminal human output changed: {human}");
 
 	let json_one = run(&root, &["next", "--json"]);
 	let json_two = run(&root, &["next", "--json"]);
@@ -142,6 +143,7 @@ fn default_and_explicit_work_sources_are_small_deterministic_and_truthful() {
 		value.as_object().unwrap().keys().filter(|key| *key == "selected_action").count(),
 		1
 	);
+	assert!(value.get("result").is_none(), "nonterminal JSON output gained a result field");
 	let json = String::from_utf8(json_one.stdout).unwrap();
 	assert!(!json.contains("PENDING PROSE MUST STAY HIDDEN"));
 	assert!(!json.contains("VERBATIM LEDGER SENTINEL"));

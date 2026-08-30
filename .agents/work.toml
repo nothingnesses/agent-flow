@@ -1,5 +1,4 @@
 version = 1
-selected_action = "establish-release-baseline"
 
 [[step]]
 id = "make-next-small-and-truthful"
@@ -48,11 +47,12 @@ why_next = "The minimal workflow needs a mechanical boundary that checks real st
 
 [[step]]
 id = "establish-release-baseline"
-status = "active"
+status = "complete"
 blocked_by = ["validate-real-work-state"]
 user_problem = "Process churn obscures whether the retained product still works end to end."
-change = "Align user documentation with minimal behaviour, remove only proven unreachable product code, and prepare a local release candidate."
+change = "Add the all-complete terminal work state, align user documentation with minimal behaviour, normalise the Rust formatting baseline, remove only proven unreachable product code, and prepare a local release candidate."
 acceptance = [
+  "An all-complete work file with no selected action validates, and validate, status, and next project its terminal state.",
   "Formatting checks, Clippy with warnings denied, and all tests pass.",
   "A local install succeeds.",
   "An empty-directory scaffold is byte-idempotent across two runs.",

@@ -37,7 +37,7 @@ AGENTS.md                          compact canonical guidance (working file)
     kickoff.md                    start the selected action
 ```
 
-The default creates no ledger, JSON Lines round log, `docs/plans/` process tree, review directory, plan-review loop, or convergence-round state. `.agents/work.toml` contains at most five ordered delivery steps and one `selected_action` that names an active step; several steps may be active at once. `agent-flow validate`, `status`, and `next` use that state by default.
+The default creates no ledger, JSON Lines round log, `docs/plans/` process tree, review directory, plan-review loop, or convergence-round state. `.agents/work.toml` contains at most five ordered delivery steps. While work remains, `selected_action` names one active step and several steps may be active at once; after every step is complete, the field is omitted. `agent-flow validate`, `status`, and `next` use that state by default.
 
 `AGENTS.md` is rendered from the selected principles. The root guidance and `.agents/work.toml` are working files, created only when absent unless `--force` is used. Tool-owned references under `.agents/` refresh on each run.
 
@@ -176,11 +176,11 @@ agent-flow render --check --strict docs/plans/my-task.plan.toml
 
 `validate`, `status`, and `next` are read-only: they inspect workflow state and never write anything. A fourth command, `audit` (below), is advisory and read-mostly: it writes only its own report.
 
-When `.agents/work.toml` exists, bounded work mode is the default. The same source can be selected explicitly with `--source .agents/work.toml`. The version-1 file is at most 4,096 bytes, contains at most five total ordered `[[step]]` entries, uses only `active`, `pending`, and `complete`, and has one `selected_action` naming an active step. Several steps may be active, but every blocker id must exist and an active step's blockers must already be complete; pending steps may depend on active or pending predecessors.
+When `.agents/work.toml` exists, bounded work mode is the default. The same source can be selected explicitly with `--source .agents/work.toml`. The version-1 file is at most 4,096 bytes, contains at most five total ordered `[[step]]` entries, and uses only `active`, `pending`, and `complete`. While any step remains active or pending, `selected_action` is required and names an active step; it may be absent only when every step is complete. Several steps may be active, but every blocker id must exist and an active step's blockers must already be complete; pending steps may depend on active or pending predecessors.
 
-`validate` checks those invariants and exits nonzero with source-prefixed diagnostics on a violation. It does not read plans, ledgers, workflow specs, review directories, or metrics logs in work mode, so a self-authored review record cannot change the result.
+`validate` checks those invariants and exits nonzero with source-prefixed diagnostics on a violation. For an all-complete file it reports valid completion. It does not read plans, ledgers, workflow specs, review directories, or metrics logs in work mode, so a self-authored review record cannot change the result.
 
-`status` projects every ordered step, its status, and dependency ids with their current statuses, plus the selected action. Human and `--json` forms are deterministic and fail rather than truncate above 16,384 bytes. `next` lists every active unit in file order and one selected action with its user problem, change, acceptance criteria, and why-next rationale. Pending-step prose and all legacy process files are not read by this path. Both `next` formats retain their 8,192-byte fail-rather-than-truncate limit.
+`status` projects every ordered step, its status, and dependency ids with their current statuses, plus the selected action or no action after completion. Human and `--json` forms are deterministic and fail rather than truncate above 16,384 bytes. `next` lists every active unit in file order and one selected action with its user problem, change, acceptance criteria, and why-next rationale; after completion it lists no active units, no selected action, and an explicit completed result (`selected_action` is `null` in JSON). Pending-step prose and all legacy process files are not read by this path. Both `next` formats retain their 8,192-byte fail-rather-than-truncate limit.
 
 ```sh
 # Bounded human brief from .agents/work.toml:

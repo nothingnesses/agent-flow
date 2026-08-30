@@ -439,11 +439,11 @@ struct Cli {
 enum Command {
 	/// Scaffold the agent workflow into a project. On a terminal the principle selector opens unless --write or --dry-run is given.
 	Scaffold(ScaffoldArgs),
-	/// Validate bounded `.agents/work.toml` state by default. Explicit legacy plan, metrics, or workflow inputs, or no work file, retain the legacy validator.
+	/// Validate bounded `.agents/work.toml` state, including its all-complete terminal state, by default. Explicit legacy plan, metrics, or workflow inputs, or no work file, retain the legacy validator.
 	Validate(ValidateArgs),
-	/// Project every bounded work step, dependency status, and the selected action. Explicit legacy plan, metrics, or resume inputs, or no work file, retain the legacy projection.
+	/// Project every bounded work step, dependency status, and its selected action or completed terminal state. Explicit legacy plan, metrics, or resume inputs, or no work file, retain the legacy projection.
 	Status(StatusArgs),
-	/// Project every active unit and one selected action from `.agents/work.toml`. Falls back to the legacy plan projection when an old plan is explicitly selected or no work file exists. Human text, or --json.
+	/// Project every active unit and one selected action, or an explicit completed result, from `.agents/work.toml`. Falls back to the legacy plan projection when an old plan is explicitly selected or no work file exists. Human text, or --json.
 	Next(NextArgs),
 	/// Run the project's `.agents/checks.toml` lint and format checks in a temporary, isolated git worktree of the current tracked working-tree state, so a relative-path check cannot mutate the live tree (this is isolation, not a security sandbox: a check that writes an absolute path or mutates git metadata is trusted-config self-harm and out of contract). Exits 0 iff every check that ran passed.
 	Checks(ChecksArgs),
@@ -506,7 +506,7 @@ struct ValidateArgs {
 	/// Legacy mode: path to a Markdown plan to validate (its Roadmap and Open Questions regions). When omitted, only the metrics log is validated.
 	#[arg(long)]
 	plan: Option<PathBuf>,
-	/// Path to `.agents/work.toml`, or in legacy mode a `<task>.plan.toml` structured source. With no legacy flags, the existing default `.agents/work.toml` is used automatically.
+	/// Path to `.agents/work.toml`, or in legacy mode a `<task>.plan.toml` structured source. With no legacy flags, the existing default `.agents/work.toml` is used automatically. A bounded work file omits `selected_action` only when every step is complete.
 	#[arg(long)]
 	source: Option<PathBuf>,
 	/// Legacy mode: cross-reference the plan's Roadmap status against the round log (the workflow invariants): every `complete` step must have converged round records. Reads the plan from a TOML source (via --source) when it declares `[meta].primary = "toml"`, else from the Markdown --plan; the round log comes from --metrics (see that flag's help for the rule). A TOML-primary --source needs no --plan (a TOML-only project has no Markdown plan); the Markdown path still needs --plan present. Requesting --workflow with neither a TOML-primary --source nor a --plan is an error, and so is a round log that lies outside the project root of the plan being checked: the tool cannot vouch that such a log's records belong to that plan, so it REFUSES the pairing and exits non-zero rather than reporting on it. So is no round log at the resolved path at all, or a path the check cannot answer that question for: the check cannot run, and a check that did not run must not report success.
@@ -523,7 +523,7 @@ struct StatusArgs {
 	/// Legacy mode: path to a Markdown plan to project (its Roadmap steps and Open Questions items). When omitted, the plan part of the projection is empty.
 	#[arg(long)]
 	plan: Option<PathBuf>,
-	/// Path to `.agents/work.toml`, or in legacy mode a `<task>.plan.toml` structured source. With no legacy flags, the existing default `.agents/work.toml` is used automatically.
+	/// Path to `.agents/work.toml`, or in legacy mode a `<task>.plan.toml` structured source. With no legacy flags, the existing default `.agents/work.toml` is used automatically. A bounded work file reports no selected action after every step is complete.
 	#[arg(long)]
 	source: Option<PathBuf>,
 	/// Legacy mode: path to the JSONL metrics log to summarise (a record count). An explicit value is used verbatim. When omitted, the log is `docs/metrics/workflow.jsonl` under the project root derived from the plan source: the nearest `<root>/docs/plans/` ancestor of --source (else of --plan), or the source's own directory when it has no such ancestor. With neither --source nor --plan there is nothing to anchor to and the path stays `docs/metrics/workflow.jsonl` relative to the current directory.
@@ -547,7 +547,7 @@ struct NextArgs {
 	/// Path to a legacy Markdown plan to project (its Roadmap steps). An explicit legacy plan bypasses the default `.agents/work.toml` source.
 	#[arg(long)]
 	plan: Option<PathBuf>,
-	/// Path to `.agents/work.toml` or a legacy `<task>.plan.toml` source. The work source is strict and does not read legacy metrics, ledger, resume-state, or workflow-spec inputs.
+	/// Path to `.agents/work.toml` or a legacy `<task>.plan.toml` source. The work source is strict, projects an explicit completed result for terminal work, and does not read legacy metrics, ledger, resume-state, or workflow-spec inputs.
 	#[arg(long)]
 	source: Option<PathBuf>,
 	/// Legacy plan mode only: path to the JSONL metrics log the round evidence is read from. An explicit value is used verbatim. When omitted, the log is `docs/metrics/workflow.jsonl` under the project root derived from the plan source: the nearest `<root>/docs/plans/` ancestor of --source (else of --plan), or the source's own directory when it has no such ancestor. With neither --source nor --plan there is nothing to anchor to and the path stays `docs/metrics/workflow.jsonl` relative to the current directory.
@@ -1825,11 +1825,13 @@ fn emit_complete_output(output: &str) -> io::Result<()> {
 fn run_work_validate(path: &Path) -> io::Result<()> {
 	let source = work_source_label(path);
 	let work = load_work_source(path);
-	let output = format!(
-		"{source}: {} steps, selected action `{}`, valid",
-		work.steps.len(),
-		work.selected_action
-	);
+	let output = match &work.selected_action {
+		Some(selected_action) => format!(
+			"{source}: {} steps, selected action `{selected_action}`, valid",
+			work.steps.len()
+		),
+		None => format!("{source}: {} steps, all complete, valid", work.steps.len()),
+	};
 	let bytes = output.len().saturating_add(1);
 	if bytes > work::MAX_STATUS_OUTPUT_BYTES {
 		return Err(io::Error::other(format!(

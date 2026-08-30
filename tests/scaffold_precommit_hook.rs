@@ -11,11 +11,8 @@ use std::{
 
 /// A unique scratch directory under the system temp dir for one test.
 fn scratch(name: &str) -> PathBuf {
-	let dir = std::env::temp_dir().join(format!(
-		"agent-flow-e2ehook-{}-{}",
-		std::process::id(),
-		name
-	));
+	let dir =
+		std::env::temp_dir().join(format!("agent-flow-e2ehook-{}-{}", std::process::id(), name));
 	let _ = fs::remove_dir_all(&dir);
 	dir
 }

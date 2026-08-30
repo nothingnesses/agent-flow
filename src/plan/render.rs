@@ -29,8 +29,6 @@
 
 use {
 	super::{
-		ROADMAP_BLOCKED_PREFIX,
-		ROADMAP_STATUSES,
 		parse_toml,
 		source::{
 			PlanToml,
@@ -43,11 +41,13 @@ use {
 			Waiver,
 		},
 		validate_source,
+		ROADMAP_BLOCKED_PREFIX,
+		ROADMAP_STATUSES,
 	},
 	crate::metrics::{
+		question_id_index,
 		WaiverReason,
 		WaiverUnit,
-		question_id_index,
 	},
 	std::{
 		fmt::Write as _,
@@ -439,7 +439,8 @@ fn questions_section(question_blobs: &[(&Question, String)]) -> String {
 			Some(receipt) => format!(" Receipt: `{receipt}`."),
 			None => String::new(),
 		};
-		let _ = write!(out, "\n- `{}` ({status}) {}{receipt}", question.id, one_line(&question.ask));
+		let _ =
+			write!(out, "\n- `{}` ({status}) {}{receipt}", question.id, one_line(&question.ask));
 	}
 	out
 }
@@ -661,8 +662,8 @@ mod tests {
 
 	/// A scratch directory for a single test that writes files, kept off the live tree.
 	fn scratch(name: &str) -> PathBuf {
-		let dir = std::env::temp_dir()
-			.join(format!("agent-flow-render-{}-{name}", std::process::id()));
+		let dir =
+			std::env::temp_dir().join(format!("agent-flow-render-{}-{name}", std::process::id()));
 		let _ = fs::remove_dir_all(&dir);
 		fs::create_dir_all(&dir).unwrap();
 		dir
@@ -1248,9 +1249,7 @@ mod tests {
 		let headings: Vec<&&str> = lines.iter().filter(|line| line.starts_with("# ")).collect();
 		assert_eq!(
 			headings,
-			vec![
-				&"# Fixture | title - `Q-98` (undecided) a fabricated heading line plan"
-			],
+			vec![&"# Fixture | title - `Q-98` (undecided) a fabricated heading line plan"],
 			"{out}"
 		);
 
@@ -1283,8 +1282,10 @@ mod tests {
 		assert_eq!(table.len(), 3, "header, delimiter, and one data row: {out}");
 		let row = table[2];
 		assert_eq!(row.replace("\\|", "").matches('|').count(), 4, "row: {row}");
-		assert!(row.contains("A note \\| with a pipe - `Q-97` (undecided) a fabricated row line"),
-			"row: {row}");
+		assert!(
+			row.contains("A note \\| with a pipe - `Q-97` (undecided) a fabricated row line"),
+			"row: {row}"
+		);
 
 		// No injected fragment reached the start of a line, at any of the four sites.
 		for fabricated in ["- `Q-98`", "- `Q-97`", "- `Q-96`", "- `Q-95`", "- `Q-42`"] {

@@ -43,7 +43,7 @@ impl WorkStatus {
 #[serde(deny_unknown_fields)]
 pub(crate) struct WorkFile {
 	pub(crate) version: u64,
-	pub(crate) selected_action: String,
+	pub(crate) selected_action: Option<String>,
 	#[serde(rename = "step")]
 	pub(crate) steps: Vec<WorkStep>,
 }
@@ -61,11 +61,13 @@ pub(crate) struct WorkStep {
 }
 
 impl WorkFile {
-	pub(crate) fn selected_step(&self) -> &WorkStep {
-		self.steps
-			.iter()
-			.find(|step| step.id == self.selected_action)
-			.expect("validated work file has a selected step")
+	pub(crate) fn selected_step(&self) -> Option<&WorkStep> {
+		self.selected_action.as_ref().map(|selected_action| {
+			self.steps
+				.iter()
+				.find(|step| step.id == *selected_action)
+				.expect("validated nonterminal work file has a selected step")
+		})
 	}
 
 	/// A step's declared predecessors paired with their statuses, in declaration order.
@@ -106,6 +108,7 @@ pub(crate) enum ParseError {
 	PendingBlockerComplete { step: usize, id: String, blocker: String },
 	SelectedActionNotFound(String),
 	SelectedActionNotActive { id: String, status: WorkStatus },
+	SelectedActionMissingWithUnfinishedWork { active: usize, pending: usize },
 }
 
 impl std::fmt::Display for ParseError {
@@ -189,6 +192,13 @@ impl std::fmt::Display for ParseError {
 				"selected_action `{id}` has status `{}`; expected `active`",
 				status.label()
 			),
+			Self::SelectedActionMissingWithUnfinishedWork {
+				active,
+				pending,
+			} => write!(
+				f,
+				"selected_action is required while work remains; found {active} active and {pending} pending steps"
+			),
 		}
 	}
 }
@@ -231,7 +241,9 @@ pub(crate) fn parse(source: &str) -> Result<WorkFile, ParseError> {
 		return Err(ParseError::TooManySteps(work.steps.len()));
 	}
 
-	reject_control_characters(&work.selected_action, None, "selected_action", None)?;
+	if let Some(selected_action) = &work.selected_action {
+		reject_control_characters(selected_action, None, "selected_action", None)?;
+	}
 
 	let mut positions = BTreeMap::new();
 	for (index, step) in work.steps.iter().enumerate() {
@@ -309,16 +321,27 @@ pub(crate) fn parse(source: &str) -> Result<WorkFile, ParseError> {
 		}
 	}
 
-	let selected = work
-		.steps
-		.iter()
-		.find(|step| step.id == work.selected_action)
-		.ok_or_else(|| ParseError::SelectedActionNotFound(work.selected_action.clone()))?;
-	if selected.status != WorkStatus::Active {
-		return Err(ParseError::SelectedActionNotActive {
-			id: selected.id.clone(),
-			status: selected.status,
-		});
+	if let Some(selected_action) = &work.selected_action {
+		let selected = work
+			.steps
+			.iter()
+			.find(|step| step.id == *selected_action)
+			.ok_or_else(|| ParseError::SelectedActionNotFound(selected_action.clone()))?;
+		if selected.status != WorkStatus::Active {
+			return Err(ParseError::SelectedActionNotActive {
+				id: selected.id.clone(),
+				status: selected.status,
+			});
+		}
+	} else {
+		let active = work.steps.iter().filter(|step| step.status == WorkStatus::Active).count();
+		let pending = work.steps.iter().filter(|step| step.status == WorkStatus::Pending).count();
+		if active != 0 || pending != 0 {
+			return Err(ParseError::SelectedActionMissingWithUnfinishedWork {
+				active,
+				pending,
+			});
+		}
 	}
 	Ok(work)
 }
@@ -413,7 +436,7 @@ pub(crate) fn load(path: &Path) -> Result<WorkFile, LoadError> {
 #[derive(Debug, Serialize)]
 pub(crate) struct StatusProjection {
 	pub(crate) source: String,
-	pub(crate) selected_action: String,
+	pub(crate) selected_action: Option<String>,
 	pub(crate) steps: Vec<StatusStep>,
 }
 
@@ -450,10 +473,10 @@ pub(crate) fn project_status(
 }
 
 pub(crate) fn render_status_human(projection: &StatusProjection) -> String {
+	let selected_action = projection.selected_action.as_deref().unwrap_or("none");
 	let mut output = format!(
-		"source: {}\nselected action: {}\nsteps ({})\n",
+		"source: {}\nselected action: {selected_action}\nsteps ({})\n",
 		projection.source,
-		projection.selected_action,
 		projection.steps.len()
 	);
 	for (index, step) in projection.steps.iter().enumerate() {
@@ -569,7 +592,7 @@ mod tests {
 	fn parser_preserves_step_order_and_action_fields() {
 		let work = parse(&source(Some("alpha"))).unwrap();
 		assert_eq!(work.version, 1);
-		assert_eq!(work.selected_action, "alpha");
+		assert_eq!(work.selected_action.as_deref(), Some("alpha"));
 		assert_eq!(
 			work.steps.iter().map(|step| step.id.as_str()).collect::<Vec<_>>(),
 			["alpha", "beta"]
@@ -654,9 +677,19 @@ mod tests {
 	}
 
 	#[test]
-	fn an_absent_selected_action_is_rejected() {
+	fn an_absent_selected_action_is_valid_only_when_every_step_is_complete() {
+		let complete = source(None)
+			.replacen("status = \"active\"", "status = \"complete\"", 1)
+			.replacen("status = \"pending\"", "status = \"complete\"", 1);
+		let work = parse(&complete).unwrap();
+		assert_eq!(work.selected_action, None);
+		assert!(work.steps.iter().all(|step| step.status == WorkStatus::Complete));
+
 		let error = parse(&source(None)).unwrap_err().to_string();
-		assert!(error.contains("missing field `selected_action`"), "{error}");
+		assert_eq!(
+			error,
+			"selected_action is required while work remains; found 1 active and 1 pending steps"
+		);
 	}
 
 	#[test]

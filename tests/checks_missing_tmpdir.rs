@@ -53,8 +53,7 @@ fn checks_with_tmpdir(
 
 #[test]
 fn checks_runs_under_a_tmpdir_that_does_not_exist_yet() {
-	let dir =
-		std::env::temp_dir().join(format!("agent-flow-missingtmp-{}", std::process::id()));
+	let dir = std::env::temp_dir().join(format!("agent-flow-missingtmp-{}", std::process::id()));
 	let _ = fs::remove_dir_all(&dir);
 	fs::create_dir_all(&dir).unwrap();
 	git(&dir, &["init", "-q"]);
