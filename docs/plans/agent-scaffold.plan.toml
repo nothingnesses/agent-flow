@@ -481,7 +481,7 @@ increment = []
 waiver = []
 
 [step.provenance]
-decisions = ["Q-85", "Q-86", "Q-88", "Q-89", "Q-90", "Q-91"]
+decisions = ["Q-85", "Q-86", "Q-88", "Q-89", "Q-90", "Q-91", "Q-92"]
 
 [[step]]
 slug = "instrument-flag"
@@ -1774,11 +1774,12 @@ folds = []
 waiver = []
 
 [step.provenance]
-decisions = ["Q-51", "Q-82"]
+decisions = ["Q-51", "Q-82", "Q-92"]
 findings = [
   "docs/plans/mealy-workflow-driver.explorations/r2-synthesis.md",
   "docs/plans/mealy-workflow-driver.explorations/r2-architecture-build-path.md",
   "docs/plans/agent-scaffold.reviews/q86-decision-r4-triage.md",
+  "docs/plans/agent-scaffold.reviews/q86-decision-r5-triage.md",
 ]
 
 [[step.increment]]
@@ -1795,13 +1796,14 @@ folds = []
 waiver = []
 
 [step.provenance]
-decisions = ["Q-86", "Q-91", "Q-88", "Q-89", "Q-90"]
+decisions = ["Q-86", "Q-91", "Q-88", "Q-89", "Q-90", "Q-92"]
 findings = [
   "agent-scaffold.reviews/q86-synthesis-r1-triage.md",
   "agent-scaffold.reviews/q86-synthesis-r2-triage.md",
   "agent-scaffold.reviews/q86-synthesis-r3-triage.md",
   "agent-scaffold.reviews/q86-synthesis-r4-triage.md",
   "agent-scaffold.reviews/q86-synthesis-r5-triage.md",
+  "agent-scaffold.reviews/q86-decision-r5-triage.md",
 ]
 
 [[step.increment]]
@@ -2599,7 +2601,7 @@ RECOMMENDATION AND DECISION (human): `B - Frozen obligations with sealed phase c
 
 PROTOTYPE BOUNDARY: `q86-controller-proof.py` and `q86-q78-scope-replay.sh` are retained adversarial prototypes. Round 5 established that they do not prove arbitrary finite maps, serious carry across families, scope and dismissal products, global family identity, fresh evidence, or every claimed route. Their zero counters and current replay output are not recommendation-eligibility evidence.
 
-SELECTED OPTION B PROOF GATE: this fold materialises `bounded-convergence-option-b-proof` as the separate reviewed executable proof-of-concept Roadmap unit. Its `complete` status is an explicit complete-only blocker for every later production implementation unit for bounded convergence; `skipped` and every other non-complete proof status remain blocking. Future production units must use the typed `[[step.blocker]]` policy planned in `workflow-ready-frontier-scheduler`, while ordinary `blocked_by` keeps its intentional complete-or-skipped semantics. No production unit is added by this fold. The proof must soundly model selected Option B state, sealed plan review, finite frozen obligations, exact phase ownership, selected floor `high`, comparison floor `critical`, arbitrary finite finding maps, cross-owner and mixed products, cross-family serious carry, global family identity, fresh evidence, legacy adoption, every terminal choice, and every selected transition and algebraic bound. Its blind-closure model must compose owner, scope, and dismissal axes: low backlog, medium terminal scope decision, high pending/upheld/overturned scope re-check with an overturned high taking its applicable owner route, critical `SeriousBlocked` on either scope result, closure pending for either scope or dismissal re-check, and atomic scope-plus-dismissal products with per-id reducers and killing mutations. It must carry repository-lock-bound exact commands and a traceability matrix that closes every applicable valid verdict from `docs/plans/agent-scaffold.reviews/q86-synthesis-r1-triage.md` through `q86-synthesis-r5-triage.md`, with executable assertions and mutation controls for every load-bearing transition and predicate. If the proof fails, implementation stays blocked and Q-86 returns to the human. No fallback architecture, floor, bound, or production step is automatic.
+SELECTED OPTION B PROOF GATE: this fold materialises `bounded-convergence-option-b-proof` as the separate reviewed executable proof-of-concept Roadmap unit. Future production readiness requires proof status `complete`, direct round-backed convergence at the declared risky two-clean-round bar, and no step or increment convergence waiver of either evidence tier. Future production units must use the typed `[[step.blocker]]` policy `complete-only-unwaived` planned in `workflow-ready-frontier-scheduler`; `skipped`, every other non-complete status, roundless or below-streak `complete`, and waiver-backed `complete` remain blocking, while ordinary `blocked_by` and generic convergence-waiver semantics remain unchanged. No production unit is added by this fold. The proof must soundly model selected Option B state, sealed plan review, finite frozen obligations, exact phase ownership, selected floor `high`, comparison floor `critical`, arbitrary finite finding maps, cross-owner and mixed products, cross-family serious carry, global family identity, fresh evidence, legacy adoption, every terminal choice, and every selected transition and algebraic bound. Its blind-closure model must compose owner, scope, and dismissal axes: low backlog, medium terminal scope decision, high pending/upheld/overturned scope re-check with an overturned high taking its applicable owner route, critical `SeriousBlocked` on either scope result, closure pending for either scope or dismissal re-check, and atomic scope-plus-dismissal products with per-id reducers and killing mutations. It must carry repository-lock-bound exact commands and a traceability matrix that closes every applicable valid verdict from `docs/plans/agent-scaffold.reviews/q86-synthesis-r1-triage.md` through `q86-synthesis-r5-triage.md`, with executable assertions, manifest-resolved named mutations whose results are exercised and killed, and mutation controls for every load-bearing transition and predicate. Post-freeze acceptance and mutations replay identical ordered events across resume, rename, rebuild, and unchanged replan and compare architecture, floor, family id, spend, authority, finding map, owner routes, and terminal state without replenishment. If the proof fails, implementation stays blocked and Q-86 returns to the human. No fallback architecture, floor, bound, or production step is automatic.
 
 SERIOUS-FLOOR CO-DECISION.
 1. `high`, recommended. Ordinary residual acceptance and ordinary narrowing are unavailable while a high or critical is open.
@@ -2608,7 +2610,7 @@ SERIOUS-FLOOR CO-DECISION.
 
 Q-91 records the separate recommendation and human decision `high`. Under selected floor `high`, ordinary residual acceptance and ordinary narrowing are unavailable while a high or critical is open. The selected proof still models `critical` as a comparison so the safety difference remains executable. Q-91 is folded into `bounded-convergence-option-b-proof`. Decision receipt `type:"decision"` `q_id:"Q-91"` in `docs/metrics/workflow.jsonl`.
 
-AUTHORITY BOUNDARY: the resettable baseline remains non-admissible comparison evidence and the severity-decay gate remains excluded. Q-85 authorised the design pass. Q-88 authorised the narrowed proof timing. Q-89 authorised only the two low repairs plus one focused mixed-model verification. Q-90 authorised only the exact current-state wording correction and merge without another review. Q-86 selects Option B and Q-91 selects floor `high`. These choices authorise only the separate risky `bounded-convergence-option-b-proof` unit. No controller constant, current cap, acceptance rule, reset behaviour, pack change, production documentation, code change, or production implementation is approved. Every later production implementation unit for bounded convergence must carry the typed complete-only blocker to the proof; a skipped proof never grants authority."""
+AUTHORITY BOUNDARY: the resettable baseline remains non-admissible comparison evidence and the severity-decay gate remains excluded. Q-85 authorised the design pass. Q-88 authorised the narrowed proof timing. Q-89 authorised only the two low repairs plus one focused mixed-model verification. Q-90 authorised only the exact current-state wording correction and merge without another review. Q-86 selects Option B and Q-91 selects floor `high`. These choices authorise only the separate risky `bounded-convergence-option-b-proof` unit. No controller constant, current cap, acceptance rule, reset behaviour, pack change, production documentation, code change, or production implementation is approved. Every later production implementation unit for bounded convergence must carry the typed `complete-only-unwaived` blocker to the proof; a skipped, non-complete, non-converged, or waiver-completed proof never grants authority. Q-92 records only the capped proof-plan specific-fix closure and focused verification path; it changes neither Q-86 nor Q-91 and grants no production authority."""
 
 [[question]]
 id = "Q-87"
@@ -2694,7 +2696,26 @@ ask = """which serious terminal floor governs the selected Option B proof and an
 
 RECOMMENDATION AND DECISION (human): `high`. The recommendation and chosen value are both exactly `high`. Principle 5, Make illegal states unrepresentable, supports removing ordinary delivery states for unresolved high or critical findings. Principle 3, Safe on existing projects, supports failing closed during legacy adoption. Principle 6, Ground decisions in evidence, requires the proof to model both floors and preserves the limit that Q-78 is descriptive rather than prospective evidence. Principle 2, Minimal by default, records the cost that `high` removes terminal flexibility which `critical` would retain. Principle 1, Prefer the cleaner long-term architecture over the smallest diff, supports one typed serious boundary across scope, dismissal, successor, terminal, and delivery states.
 
-Q-91 is `decided -> folded into bounded-convergence-option-b-proof`. The selected proof models both `high` and `critical`, but only `high` is selected. This decision authorises no production behaviour, controller constant, pack change, code change, or implementation step. Decision receipt `type:"decision"` `q_id:"Q-91"` in `docs/metrics/workflow.jsonl`."""
+Q-91 is `decided -> folded into bounded-convergence-option-b-proof`. The selected proof models both `high` and `critical`, but only `high` is selected. Production requires the proof to be `complete`, directly converged at its risky bar, and free of step or increment convergence waivers under the typed `complete-only-unwaived` gate. This decision authorises no production behaviour, controller constant, pack change, code change, or implementation step. Q-92 later fixed the gate requirement without changing Q-91's selected floor. Decision receipt `type:"decision"` `q_id:"Q-91"` in `docs/metrics/workflow.jsonl`."""
+
+[[question]]
+id = "Q-92"
+status = "decided"
+folded_into = "bounded-convergence-option-b-proof"
+receipt = "Q-92"
+ask = """how to close the capped Q-86/Q-91 proof-plan decision fold after its fifth risky plan-review round returned four valid findings, one high and three low, with the clean streak at zero of two. FIVE OPTIONS WERE PRESENTED IN THIS ORDER.
+
+1. `Fix, verify once, then close`. Apply only the four corrections adjudicated in `docs/plans/agent-scaffold.reviews/q86-decision-r5-triage.md`, run one focused GPT-and-Claude verification over those fixes and their direct residue, and close the capped decision fold if that verification finds no new valid finding. TRADE-OFF: this checks the specific high-risk gate repair independently without resetting a full risky loop, but it closes the planning artefact below its ordinary two-clean-round bar.
+2. `Resume the full review loop`. Reset the counters and return to the ordinary risky requirement of two consecutive clean rounds. TRADE-OFF: this preserves the normal convergence bar but can start another long plan-review campaign after five rounds already identified the exact remaining fixes.
+3. `Accept the current plan`. Close immediately with the valid waiver bypass, traceability gap, stale scheduler comment, and post-freeze replay gap still present. TRADE-OFF: this costs no more review but leaves a high-severity route by which an unproved proof could authorise future production.
+4. `Revert the proof-plan fold`. Remove the Q-86/Q-91 proof plan and return the architecture decision to its pre-fold state. TRADE-OFF: this removes the defective gate but discards the reviewed Option B proof obligations and leaves no selected proof path.
+5. `Abandon the redesign`. End the bounded-convergence redesign without proof or implementation. TRADE-OFF: this stops further cost and changes no current workflow, but leaves the known unbounded convergence problem without a planned replacement.
+
+RECOMMENDATION AND DECISION (human, 2026-08-30): `Fix, verify once, then close`. The recommendation and chosen value are both exactly `Fix, verify once, then close`. The capped counters retire rather than reset. The specific fix is limited to all four valid round-5 findings: make future production readiness require the proof to be `complete`, round-backed at its declared risky bar, and free of step or increment convergence waivers while preserving generic waivers for ordinary steps; bind each executable traceability row's named mutation to an exercised-and-killed manifest result; correct the aligned ordinary-blocker comment; and acceptance-test identical post-freeze replay across resume, rename, rebuild, and unchanged replan without replenishment. One focused GPT-and-Claude verification checks those fixes and their direct residue. If it reports no new valid finding, the decision fold closes and merges without a second clean round; any new valid finding returns to the human.
+
+JUDGEMENT AGAINST ALL PROJECT PRINCIPLES. Prefer the cleaner long-term architecture over the smallest diff supports repairing the proof gate at its typed scheduler and workflow-validation boundary rather than accepting a status-only shortcut. Minimal by default supports one focused verification of four fixed findings instead of resetting the entire loop. Safe on existing projects supports planning-only repairs that leave the current workflow and code unchanged and keep production blocked. Idempotent supports retiring the capped counters once under one durable closure path rather than repeatedly resetting the same artefact. Make illegal states unrepresentable supports a production-readiness predicate that cannot be satisfied by any convergence waiver or non-complete proof state. Ground decisions in evidence supports applying exactly the four reproduced triage corrections before closure. Reproducible supports manifest-resolved mutation results, identical ordered-event replay, and focused independent verification of the named fixes. Structured data first, project for humans supports recording Q-92 and its exact receipt as the decision source while the question sidecar and proof plan project the closure path.
+
+Q-92 is `decided -> folded into bounded-convergence-option-b-proof`. It changes only the capped plan-review closure path and the proof plan's safety requirements. Q-86 remains Option B, Q-91 remains floor `high`, and neither Q-92 nor the focused verification authorises production behaviour, a controller constant, a pack or code change, or a production implementation unit. Decision receipt `type:"decision"` `q_id:"Q-92"` in `docs/metrics/workflow.jsonl`."""
 
 [[principle]]
 n = 1
