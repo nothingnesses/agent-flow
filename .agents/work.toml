@@ -1,0 +1,62 @@
+version = 1
+selected_action = "make-next-small-and-truthful"
+
+[[step]]
+id = "make-next-small-and-truthful"
+status = "active"
+blocked_by = []
+user_problem = "The next command emits about 764 KB, copies stale ledger prose, hides concurrent work, and selects the wrong loop."
+change = "Read this bounded work file, project every active unit once, select one action deterministically, and remove ledger and free-form resume output."
+acceptance = [
+  "Human output is at most 8192 bytes on this repository.",
+  "JSON output is at most 8192 bytes on this repository.",
+  "No output contains verbatim ledger text.",
+  "Every active unit appears exactly once.",
+  "Exactly one correct selected action appears.",
+  "Two runs of each format are byte-identical.",
+]
+why_next = "This removes the largest immediate user cost and gives later reset work a bounded control surface."
+
+[[step]]
+id = "make-default-scaffold-minimal"
+status = "pending"
+blocked_by = ["make-next-small-and-truthful"]
+user_problem = "New projects inherit the workflow that produced the deleted planning tree."
+change = "Simplify the default pack to one small work file, one implementation branch, compact guidance, and no ledger, JSONL log, plan-review loop, or review directory."
+acceptance = [
+  "A fresh scaffold creates no ledger, JSONL log, docs/plans process tree, or review directory.",
+  "Generated workflow guidance stays within 65536 bytes.",
+  "No individual prompt exceeds 4096 bytes.",
+  "A second scaffold is byte-idempotent.",
+  "The full product test suite passes.",
+]
+why_next = "Fixing only this repository would leave the product teaching adopters the failed process."
+
+[[step]]
+id = "validate-real-work-state"
+status = "pending"
+blocked_by = ["make-default-scaffold-minimal"]
+user_problem = "The current validator can certify self-authored review claims without proving useful work occurred."
+change = "Validate the bounded work file and useful state invariants without depending on deleted plans, ledgers, or round logs."
+acceptance = [
+  "A clean minimal scaffold validates.",
+  "Validation rejects a sixth step, duplicate selection, unknown status, unresolved blocker, and oversized state.",
+  "Appending a claimed review record cannot make validation pass.",
+  "Human and JSON status outputs are deterministic and at most 16384 bytes.",
+]
+why_next = "The minimal workflow needs a mechanical boundary that checks real state without recreating evidence theatre."
+
+[[step]]
+id = "establish-release-baseline"
+status = "pending"
+blocked_by = ["validate-real-work-state"]
+user_problem = "Process churn obscures whether the retained product still works end to end."
+change = "Align user documentation with minimal behaviour, remove only proven unreachable product code, and prepare a local release candidate."
+acceptance = [
+  "Formatting checks, Clippy with warnings denied, and all tests pass.",
+  "A local install succeeds.",
+  "An empty-directory scaffold is byte-idempotent across two runs.",
+  "Validation and both next formats pass from a clean tree.",
+  "No command requires a deleted process file.",
+]
+why_next = "This turns the reset into a tested product baseline while keeping push and release authority with the human."
