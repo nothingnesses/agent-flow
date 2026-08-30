@@ -521,8 +521,7 @@ fn status_omits_only_the_unpairable_part() {
 	);
 	assert_eq!(code, Some(0), "stderr:\n{stderr}");
 	assert!(
-		stdout
-			.contains("the ledger docs/plans/nope.ledger.md is not under the project root"),
+		stdout.contains("the ledger docs/plans/nope.ledger.md is not under the project root"),
 		"stdout:\n{stdout}"
 	);
 	assert!(!stdout.contains("no ledger at"), "unsafe is not absent; stdout:\n{stdout}");
@@ -616,7 +615,7 @@ fn a_surface_that_reads_no_plan_is_supplied_a_root() {
 	let (code, stdout, stderr) =
 		run(&home, &["next", "--json", "--source", &alpha_source, "--ledger-fragment", fragment]);
 	assert_eq!(code, Some(0), "stderr:\n{stderr}");
-	assert!(stdout.contains("\"resume_state\": null"), "stdout:\n{stdout}");
+	assert!(!stdout.contains("\"resume_state\":"), "stdout:\n{stdout}");
 	assert!(
 		stdout.contains("\"resume_state_absent_reason\": \"ledger-not-this-project\""),
 		"a `null` reason here would positively assert the block is this plan's; stdout:\n{stdout}"
@@ -736,7 +735,7 @@ fn an_anchor_that_does_not_exist_still_supplies_a_root() {
 		stdout.contains("\"resume_state_absent_reason\": \"ledger-not-this-project\""),
 		"a `null` reason here would positively assert the block is this plan's; stdout:\n{stdout}"
 	);
-	assert!(stdout.contains("\"resume_state\": null"), "stdout:\n{stdout}");
+	assert!(!stdout.contains("\"resume_state\":"), "stdout:\n{stdout}");
 	assert!(!stdout.contains("\"records\": 3"), "stdout:\n{stdout}");
 
 	// `status --resume`, whose hole is independent: it calls `resume_roots` directly rather
@@ -808,7 +807,10 @@ fn an_anchor_that_does_not_exist_still_supplies_a_root() {
 	);
 	assert_eq!(code, Some(0), "stderr:\n{stderr}");
 	assert!(stdout.contains("metrics: 2 records"), "the anchor's OWN log; stdout:\n{stdout}");
-	assert!(stdout.contains("ALPHA resume state."), "the anchor's OWN ledger; stdout:\n{stdout}");
+	assert!(
+		!stdout.contains("ALPHA resume state."),
+		"`next` never emits free-form ledger text; stdout:\n{stdout}"
+	);
 
 	// THE NEITHER-ANCHOR CASE IS UNTOUCHED (`README.md`, the anchoring paragraph): with no
 	// `--source` and no `--plan` there is nothing to pair against, so no root is derived, no
@@ -880,8 +882,8 @@ fn a_missing_anchor_does_not_overrule_an_anchor_that_exists() {
 			"{label}: alpha's OWN log; stdout:\n{stdout}"
 		);
 		assert!(
-			stdout.contains("ALPHA resume state."),
-			"{label}: alpha's OWN ledger; stdout:\n{stdout}"
+			!stdout.contains("ALPHA resume state."),
+			"{label}: `next` never emits free-form ledger text; stdout:\n{stdout}"
 		);
 
 		let mut argv = vec!["next", "--json", "--source", &source];
@@ -896,7 +898,7 @@ fn a_missing_anchor_does_not_overrule_an_anchor_that_exists() {
 			stdout.contains("\"resume_state_absent_reason\": null"),
 			"{label}: and so is its own ledger; stdout:\n{stdout}"
 		);
-		assert!(stdout.contains("ALPHA resume state."), "{label}: stdout:\n{stdout}");
+		assert!(!stdout.contains("ALPHA resume state."), "{label}: stdout:\n{stdout}");
 
 		let mut argv = vec!["status", "--resume", "--source", &source];
 		argv.extend_from_slice(&extra);
@@ -1105,7 +1107,7 @@ fn an_uncheckable_plan_anchor_does_not_remove_the_other_anchors_root() {
 		stdout.contains("\"resume_state_absent_reason\": \"ledger-not-this-project\""),
 		"a `null` reason here would positively assert beta's block is this plan's; stdout:\n{stdout}"
 	);
-	assert!(stdout.contains("\"resume_state\": null"), "stdout:\n{stdout}");
+	assert!(!stdout.contains("\"resume_state\":"), "stdout:\n{stdout}");
 	assert!(!stdout.contains("\"records\": 4"), "stdout:\n{stdout}");
 
 	let (code, stdout, stderr) = run(
@@ -1262,7 +1264,7 @@ fn an_uncheckable_source_anchor_does_not_remove_the_other_anchors_root() {
 		stdout.contains("\"resume_state_absent_reason\": \"ledger-not-this-project\""),
 		"stdout:\n{stdout}"
 	);
-	assert!(stdout.contains("\"resume_state\": null"), "stdout:\n{stdout}");
+	assert!(!stdout.contains("\"resume_state\":"), "stdout:\n{stdout}");
 	assert!(!stdout.contains("\"records\": 4"), "stdout:\n{stdout}");
 
 	let (code, stdout, stderr) = run(

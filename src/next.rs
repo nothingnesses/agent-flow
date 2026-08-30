@@ -1,11 +1,8 @@
-//! The advisory `agent-flow next` projection (workflow-driver Stage 1).
+//! Read-only projections for `agent-flow next`.
 //!
-//! `next` is read-only and stateless: for the single active review loop it
-//! recomputes the loop state from the durable files (the plan source, the round
-//! log, and the ledger's `## RESUME STATE` block), reports the state plus the
-//! valid transitions, and emits ONE filled instruction prompt for the next role to
-//! run. It writes nothing and creates no worktree or container; the isolation tier
-//! is echoed, not resolved.
+//! The default bounded-work projection lists every active unit and one selected action.
+//! The legacy plan projection remains available for existing projects and recomputes its
+//! single review-loop state from plan and round records.
 //!
 //! The forward projection here and the backward `validate --workflow` (W3) check keep
 //! their converged-vs-not verdicts in agreement on the same records, in two respects.
@@ -19,10 +16,12 @@
 //! is decision B-a: one streak helper, two directions, the same arithmetic and the same
 //! data-fault handling.
 //!
-//! Stage 1 boundary (accepted): the mid-round `awaiting-triage` sub-state is not
-//! derivable from the round log (a `round` record is written only after triage), so
-//! the states here are derived from completed round records plus the step status; the
-//! in-flight sub-state is carried only by the verbatim `## RESUME STATE` block.
+//! The legacy mid-round `awaiting-triage` sub-state is not derivable from completed
+//! round records, and `next` does not expose free-form ledger or resume text to fill it.
+//!
+//! The bounded `.agents/work.toml` path is the default for new state. Its projection is
+//! intentionally separate from the legacy plan path below: it reads no ledger, metrics
+//! log, resume state, or workflow spec.
 
 use {
 	crate::{
@@ -41,6 +40,10 @@ use {
 				StepStatus as TomlStepStatus,
 			},
 		},
+		work::{
+			WorkFile,
+			WorkStatus,
+		},
 		workflow::{
 			peak_consecutive_clean,
 			round_increment_id,
@@ -54,6 +57,117 @@ use {
 		path::PathBuf,
 	},
 };
+
+pub(crate) const MAX_OUTPUT_BYTES: usize = 8_192;
+
+#[derive(Debug, Serialize)]
+pub(crate) struct WorkProjection {
+	pub(crate) source: String,
+	pub(crate) active_units: Vec<ActiveUnit>,
+	pub(crate) selected_action: SelectedAction,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct ActiveUnit {
+	pub(crate) id: String,
+	pub(crate) status: WorkStatus,
+	pub(crate) blocked_by: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct SelectedAction {
+	pub(crate) id: String,
+	pub(crate) user_problem: String,
+	pub(crate) change: String,
+	pub(crate) acceptance: Vec<String>,
+	pub(crate) why_next: String,
+}
+
+pub(crate) fn project_work(
+	source: String,
+	work: &WorkFile,
+) -> WorkProjection {
+	let selected = work.selected_step();
+	WorkProjection {
+		source,
+		active_units: work
+			.steps
+			.iter()
+			.filter(|step| step.status == WorkStatus::Active)
+			.map(|step| ActiveUnit {
+				id: step.id.clone(),
+				status: step.status,
+				blocked_by: step.blocked_by.clone(),
+			})
+			.collect(),
+		selected_action: SelectedAction {
+			id: selected.id.clone(),
+			user_problem: selected.user_problem.clone(),
+			change: selected.change.clone(),
+			acceptance: selected.acceptance.clone(),
+			why_next: selected.why_next.clone(),
+		},
+	}
+}
+
+pub(crate) fn render_work_human(projection: &WorkProjection) -> String {
+	let mut out = format!(
+		"source: {}\n\nACTIVE UNITS ({})\n",
+		projection.source,
+		projection.active_units.len()
+	);
+	for unit in &projection.active_units {
+		let blockers = if unit.blocked_by.is_empty() {
+			"unblocked".to_string()
+		} else {
+			format!("blocked by: {}", unit.blocked_by.join(", "))
+		};
+		out.push_str(&format!("- {} [{}; {blockers}]\n", unit.id, unit.status.label()));
+	}
+
+	let action = &projection.selected_action;
+	out.push_str("\nSELECTED ACTION\n");
+	out.push_str(&format!("id: {}\n", action.id));
+	out.push_str(&format!("user problem: {}\n", action.user_problem));
+	out.push_str(&format!("change: {}\n", action.change));
+	out.push_str("acceptance:\n");
+	for criterion in &action.acceptance {
+		out.push_str(&format!("- {criterion}\n"));
+	}
+	out.push_str(&format!("why next: {}", action.why_next));
+	out
+}
+
+pub(crate) fn render_work_json(projection: &WorkProjection) -> Result<String, serde_json::Error> {
+	serde_json::to_string_pretty(projection)
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct OutputTooLarge {
+	pub(crate) bytes: usize,
+}
+
+impl std::fmt::Display for OutputTooLarge {
+	fn fmt(
+		&self,
+		f: &mut std::fmt::Formatter<'_>,
+	) -> std::fmt::Result {
+		write!(f, "next output is {} bytes; the limit is {MAX_OUTPUT_BYTES} bytes", self.bytes)
+	}
+}
+
+impl std::error::Error for OutputTooLarge {}
+
+pub(crate) fn enforce_output_size(output: &str) -> Result<(), OutputTooLarge> {
+	let bytes = output.len().saturating_add(1);
+	if bytes > MAX_OUTPUT_BYTES {
+		Err(OutputTooLarge {
+			bytes,
+		})
+	} else {
+		Ok(())
+	}
+}
 
 /// The resolve-the-tier note folded into the agent-isolation reminder when the tier
 /// was not supplied on the CLI (`isolation_tier == "unknown"`). The tool never emits a
@@ -179,10 +293,8 @@ pub(crate) struct NextProjection {
 	/// The single active review loop, or `None` when there is nothing to act on (no
 	/// steps, every step terminal, or a round log this tool cannot vouch for).
 	pub(crate) active_loop: Option<ActiveLoop>,
-	/// The ledger's `## RESUME STATE` block, extracted verbatim, or `None` when the
-	/// ledger is absent or carries no such section.
-	pub(crate) resume_state: Option<String>,
-	/// Why `resume_state` is absent; `Some` exactly when `resume_state` is `None`.
+	/// Why no legacy ledger block is available. `None` means a block exists but its
+	/// free-form contents were intentionally withheld.
 	pub(crate) resume_state_absent_reason: Option<ResumeStateAbsentReason>,
 	/// Why there is no active loop; `Some` exactly when `active_loop` is `None`.
 	/// Serialised: `--json` is what an agent reads, and an agent acting on this output is
@@ -621,8 +733,8 @@ pub(crate) struct NextInputs<'a> {
 	/// `NextProjection::metrics_absent_note`.
 	pub(crate) metrics_absent_note: Option<String>,
 	pub(crate) ledger_path: String,
-	pub(crate) resume_state: Option<String>,
-	/// Why the ledger yielded no block; `Some` exactly when `resume_state` is `None`.
+	/// Why the ledger yielded no block; absent when a block exists but is intentionally
+	/// omitted from `next` output.
 	pub(crate) resume_state_absent_reason: Option<ResumeStateAbsentReason>,
 	/// The caller-assembled human phrasing for an unpairable ledger; see
 	/// `NextProjection::resume_state_absent_note`.
@@ -690,10 +802,11 @@ pub(crate) fn project(inputs: NextInputs) -> NextProjection {
 	NextProjection {
 		task: inputs.task,
 		source: inputs.source,
-		metrics: inputs.metrics_records.map(|records| MetricsSummary { records }),
+		metrics: inputs.metrics_records.map(|records| MetricsSummary {
+			records,
+		}),
 		metrics_absent_reason: inputs.metrics_absent_reason,
 		active_loop,
-		resume_state: inputs.resume_state,
 		resume_state_absent_reason: inputs.resume_state_absent_reason,
 		no_active_loop_reason,
 		metrics_absent_note: inputs.metrics_absent_note,
@@ -712,8 +825,10 @@ fn select_active_loop(
 	spec: &WorkflowSpec,
 	context: &LoopContext,
 ) -> Option<ActiveLoop> {
-	if let Some(step) =
-		steps.iter().filter(|step| step.phase == StepPhase::InProgress).min_by_key(|step| step.order)
+	if let Some(step) = steps
+		.iter()
+		.filter(|step| step.phase == StepPhase::InProgress)
+		.min_by_key(|step| step.order)
 	{
 		return Some(build_in_progress_loop(step, rounds, spec, context));
 	}
@@ -987,9 +1102,8 @@ fn build_instruction(
 /// triage findings path for the fix state, and the unmet blockers for the blocked state.
 /// The concrete reviewer `<disambiguator>` is left as a template token for the
 /// orchestrator to assign (writers never collide on findings-file names). The
-/// `artifact`/`diff` slots are NOT populated: no structured marker exists in the ledger
-/// yet (deferred to Stage 2 per decision A-b), so the orchestrator reads the verbatim
-/// `resume_state` instead of a heuristically parsed slot (Principle 12, fail loud).
+/// `artifact`/`diff` slots are NOT populated: no structured marker exists in the legacy
+/// ledger, and `next` never substitutes a heuristically parsed free-form resume block.
 fn build_context(
 	state: LoopState,
 	facts: &LoopFacts,
@@ -1161,20 +1275,9 @@ pub(crate) fn render_human(projection: &NextProjection) -> String {
 		}
 		Some(active) => render_active_loop(&mut out, active),
 	}
-	match (&projection.resume_state, &projection.resume_state_absent_note) {
-		(Some(resume), _) => {
-			out.push('\n');
-			out.push_str("RESUME STATE (verbatim from the ledger):\n");
-			out.push_str(resume);
-			out.push('\n');
-		}
-		// The ledger was rejected rather than merely missing: print the same note
-		// `status --resume` prints, in place of the block.
-		(None, Some(note)) => {
-			out.push('\n');
-			out.push_str(&format!("{note}\n"));
-		}
-		(None, None) => {}
+	if let Some(note) = &projection.resume_state_absent_note {
+		out.push('\n');
+		out.push_str(&format!("{note}\n"));
 	}
 	out.trim_end_matches('\n').to_string()
 }
@@ -1237,6 +1340,105 @@ mod tests {
 		},
 	};
 
+	fn work_fixture(selected: &str) -> WorkFile {
+		let source = format!(
+			"version = 1\nselected_action = \"{selected}\"\n\n\
+			 [[step]]\n\
+			 id = \"first-active\"\n\
+			 status = \"active\"\n\
+			 blocked_by = []\n\
+			 user_problem = \"First problem\"\n\
+			 change = \"First change\"\n\
+			 acceptance = [\"First acceptance\"]\n\
+			 why_next = \"First why\"\n\n\
+			 [[step]]\n\
+			 id = \"selected-active\"\n\
+			 status = \"active\"\n\
+			 blocked_by = [\"first-active\"]\n\
+			 user_problem = \"Selected problem\"\n\
+			 change = \"Selected change\"\n\
+			 acceptance = [\"Acceptance one\", \"Acceptance two\"]\n\
+			 why_next = \"Selected why\"\n\n\
+			 [[step]]\n\
+			 id = \"third-active\"\n\
+			 status = \"active\"\n\
+			 blocked_by = []\n\
+			 user_problem = \"Third problem\"\n\
+			 change = \"Third change\"\n\
+			 acceptance = [\"Third acceptance\"]\n\
+			 why_next = \"Third why\"\n\n\
+			 [[step]]\n\
+			 id = \"pending\"\n\
+			 status = \"pending\"\n\
+			 blocked_by = [\"selected-active\"]\n\
+			 user_problem = \"VERBATIM LEDGER SENTINEL\"\n\
+			 change = \"Pending change must stay hidden\"\n\
+			 acceptance = [\"Pending acceptance must stay hidden\"]\n\
+			 why_next = \"Pending why must stay hidden\"\n"
+		);
+		crate::work::parse(&source).unwrap()
+	}
+
+	#[test]
+	fn work_projection_lists_simultaneous_active_units_once_in_source_order() {
+		let projection =
+			project_work(".agents/work.toml".to_string(), &work_fixture("selected-active"));
+		assert_eq!(
+			projection.active_units.iter().map(|unit| unit.id.as_str()).collect::<Vec<_>>(),
+			["first-active", "selected-active", "third-active"]
+		);
+		assert_eq!(projection.selected_action.id, "selected-active");
+		assert_eq!(projection.selected_action.user_problem, "Selected problem");
+		assert_eq!(projection.selected_action.change, "Selected change");
+		assert_eq!(projection.selected_action.acceptance, ["Acceptance one", "Acceptance two"]);
+		assert_eq!(projection.selected_action.why_next, "Selected why");
+	}
+
+	#[test]
+	fn selected_action_can_follow_an_earlier_active_unit() {
+		let projection = project_work("work.toml".to_string(), &work_fixture("third-active"));
+		assert_eq!(projection.active_units[0].id, "first-active");
+		assert_eq!(projection.selected_action.id, "third-active");
+	}
+
+	#[test]
+	fn work_renderers_are_deterministic_bounded_and_hide_pending_prose() {
+		let projection =
+			project_work(".agents/work.toml".to_string(), &work_fixture("selected-active"));
+		let human_one = render_work_human(&projection);
+		let human_two = render_work_human(&projection);
+		let json_one = render_work_json(&projection).unwrap();
+		let json_two = render_work_json(&projection).unwrap();
+
+		assert_eq!(human_one, human_two);
+		assert_eq!(json_one, json_two);
+		assert!(!human_one.contains("VERBATIM LEDGER SENTINEL"));
+		assert!(!json_one.contains("VERBATIM LEDGER SENTINEL"));
+		assert!(!human_one.contains("Pending change must stay hidden"));
+		assert!(!json_one.contains("Pending change must stay hidden"));
+		enforce_output_size(&human_one).unwrap();
+		enforce_output_size(&json_one).unwrap();
+
+		let value: serde_json::Value = serde_json::from_str(&json_one).unwrap();
+		assert_eq!(value["active_units"].as_array().unwrap().len(), 3);
+		assert_eq!(
+			value.as_object().unwrap().keys().filter(|key| *key == "selected_action").count(),
+			1
+		);
+		assert_eq!(human_one.matches("SELECTED ACTION").count(), 1);
+	}
+
+	#[test]
+	fn next_output_size_includes_the_trailing_newline_and_never_truncates() {
+		enforce_output_size(&"x".repeat(MAX_OUTPUT_BYTES - 1)).unwrap();
+		assert_eq!(
+			enforce_output_size(&"x".repeat(MAX_OUTPUT_BYTES)).unwrap_err(),
+			OutputTooLarge {
+				bytes: MAX_OUTPUT_BYTES + 1,
+			}
+		);
+	}
+
 	/// Build a `round` record fixture with the fields the projection reads.
 	fn round(
 		line: usize,
@@ -1290,7 +1492,6 @@ mod tests {
 			metrics_absent_reason: None,
 			metrics_absent_note: None,
 			ledger_path: "docs/plans/demo.ledger.md".to_string(),
-			resume_state: None,
 			resume_state_absent_reason: Some(ResumeStateAbsentReason::LedgerAbsent),
 			resume_state_absent_note: None,
 			isolation_tier: isolation_tier.to_string(),
@@ -1318,7 +1519,6 @@ mod tests {
 				"the round log elsewhere/workflow.jsonl is not this plan's".to_string(),
 			),
 			ledger_path: "docs/plans/demo.ledger.md".to_string(),
-			resume_state: None,
 			resume_state_absent_reason: Some(ResumeStateAbsentReason::LedgerAbsent),
 			resume_state_absent_note: None,
 			isolation_tier: "worktree".to_string(),
@@ -1345,7 +1545,6 @@ mod tests {
 			metrics_absent_reason: None,
 			metrics_absent_note: None,
 			ledger_path: "docs/plans/demo.ledger.md".to_string(),
-			resume_state: None,
 			resume_state_absent_reason: Some(ResumeStateAbsentReason::LedgerAbsent),
 			resume_state_absent_note: None,
 			isolation_tier: isolation_tier.to_string(),
@@ -1395,7 +1594,10 @@ mod tests {
 		assert_eq!(loop_.state, LoopState::Blocked);
 		assert!(loop_.valid_transitions.is_empty());
 		assert_eq!(loop_.next_instruction.role, "orchestrator");
-		assert_eq!(loop_.next_instruction.context.get("blocked_by").map(String::as_str), Some("dep"));
+		assert_eq!(
+			loop_.next_instruction.context.get("blocked_by").map(String::as_str),
+			Some("dep")
+		);
 	}
 
 	#[test]
@@ -1517,8 +1719,10 @@ mod tests {
 		let spec = WorkflowSpec::builtin();
 		let steps = [test_step("a", 0, StepPhase::InProgress, &[])];
 		let projection = project_fixture(&steps, &rounds, "worktree");
-		let next_converged =
-			projection.active_loop.as_ref().is_some_and(|loop_| loop_.state == LoopState::Converged);
+		let next_converged = projection
+			.active_loop
+			.as_ref()
+			.is_some_and(|loop_| loop_.state == LoopState::Converged);
 
 		// W3 checks a COMPLETE step; feed it the same records and the same built-in spec.
 		let w3_steps = [crate::plan::Step {
@@ -1533,18 +1737,34 @@ mod tests {
 	#[test]
 	fn next_agrees_with_w3() {
 		// Converged cases: next says converged, W3 finds no shortfall.
-		assert_differential(vec![round(1, RoundOutcome::Clean, 1, RiskClass::LowRisk, "a", "a-inc")]);
+		assert_differential(vec![round(
+			1,
+			RoundOutcome::Clean,
+			1,
+			RiskClass::LowRisk,
+			"a",
+			"a-inc",
+		)]);
 		assert_differential(vec![
 			round(1, RoundOutcome::NewValid, 0, RiskClass::Risky, "a", "a-inc"),
 			round(2, RoundOutcome::Clean, 1, RiskClass::Risky, "a", "a-inc"),
 			round(3, RoundOutcome::Clean, 2, RiskClass::Risky, "a", "a-inc"),
 		]);
 		// Shortfall cases: next says not-converged, W3 reports a shortfall.
-		assert_differential(vec![round(1, RoundOutcome::NewValid, 0, RiskClass::LowRisk, "a", "a-inc")]);
+		assert_differential(vec![round(
+			1,
+			RoundOutcome::NewValid,
+			0,
+			RiskClass::LowRisk,
+			"a",
+			"a-inc",
+		)]);
 		assert_differential(vec![round(1, RoundOutcome::Clean, 1, RiskClass::Risky, "a", "a-inc")]);
 		assert_differential(
 			(1 ..= 5)
-				.map(|line| round(line, RoundOutcome::NewValid, 0, RiskClass::LowRisk, "a", "a-inc"))
+				.map(|line| {
+					round(line, RoundOutcome::NewValid, 0, RiskClass::LowRisk, "a", "a-inc")
+				})
 				.collect(),
 		);
 		// Mixed-class case: one increment whose rounds disagree on risk_class. This would
@@ -1652,13 +1872,11 @@ mod tests {
 	#[test]
 	fn a_writer_state_echoes_the_resolved_tier_in_the_isolation_reminder() {
 		let known = ready_to_plan_loop("worktree");
-		assert!(
-			active(&known)
-				.next_instruction
-				.principle_reminders
-				.iter()
-				.any(|reminder| reminder.contains("resolved tier: worktree"))
-		);
+		assert!(active(&known)
+			.next_instruction
+			.principle_reminders
+			.iter()
+			.any(|reminder| reminder.contains("resolved tier: worktree")));
 		// A known tier does NOT carry the resolve-the-tier note; only an unknown tier does.
 		assert!(!reminders_carry_the_resolve_note(active(&known)));
 	}
@@ -1791,13 +2009,11 @@ mod tests {
 			[test_principle(6, GROUNDING_PRINCIPLE_NAME, "validate an approach with evidence.")];
 		let projection = project_fixture_with_principles(&steps, &rounds, "worktree", &principles);
 		assert_eq!(active(&projection).state, LoopState::AwaitingFixes);
-		assert!(
-			!active(&projection)
-				.next_instruction
-				.principle_reminders
-				.iter()
-				.any(|reminder| reminder.contains(GROUNDING_PRINCIPLE_NAME))
-		);
+		assert!(!active(&projection)
+			.next_instruction
+			.principle_reminders
+			.iter()
+			.any(|reminder| reminder.contains(GROUNDING_PRINCIPLE_NAME)));
 	}
 
 	#[test]
@@ -1813,13 +2029,11 @@ mod tests {
 		let projection = project_fixture(&steps, &escalate_rounds, "worktree");
 		assert_eq!(active(&projection).state, LoopState::Escalate);
 		assert!(reminders_cite_the_contract(active(&projection)));
-		assert!(
-			!active(&projection)
-				.next_instruction
-				.principle_reminders
-				.iter()
-				.any(|reminder| reminder.contains(GROUNDING_PRINCIPLE_NAME))
-		);
+		assert!(!active(&projection)
+			.next_instruction
+			.principle_reminders
+			.iter()
+			.any(|reminder| reminder.contains(GROUNDING_PRINCIPLE_NAME)));
 	}
 
 	// -- RESUME STATE extractor --
@@ -1922,7 +2136,6 @@ mod tests {
 			metrics_absent_reason: Some(MetricsAbsentReason::LogAbsent),
 			metrics_absent_note: None,
 			ledger_path: "docs/plans/demo.ledger.md".to_string(),
-			resume_state: None,
 			resume_state_absent_reason: Some(ResumeStateAbsentReason::LedgerAbsent),
 			resume_state_absent_note: None,
 			isolation_tier: "worktree".to_string(),
@@ -1999,7 +2212,6 @@ mod tests {
 			metrics_absent_reason: None,
 			metrics_absent_note: None,
 			ledger_path: "elsewhere/demo.ledger.md".to_string(),
-			resume_state: None,
 			resume_state_absent_reason: Some(ResumeStateAbsentReason::LedgerNotThisProject),
 			resume_state_absent_note: Some(
 				"the ledger elsewhere/demo.ledger.md is not this plan's; nothing to resume"
@@ -2008,7 +2220,6 @@ mod tests {
 			isolation_tier: "worktree".to_string(),
 			principles: &[],
 		});
-		assert!(projection.resume_state.is_none());
 		assert_eq!(
 			projection.resume_state_absent_reason,
 			Some(ResumeStateAbsentReason::LedgerNotThisProject)
@@ -2027,7 +2238,8 @@ mod tests {
 
 	fn golden_projection() -> NextProjection {
 		let steps = [test_step("core-assets", 0, StepPhase::InProgress, &[])];
-		let rounds = [round(1, RoundOutcome::Clean, 1, RiskClass::Risky, "core-assets", "core-assets-inc1")];
+		let rounds =
+			[round(1, RoundOutcome::Clean, 1, RiskClass::Risky, "core-assets", "core-assets-inc1")];
 		let spec = WorkflowSpec::builtin();
 		project(NextInputs {
 			task: "demo".to_string(),
@@ -2039,7 +2251,6 @@ mod tests {
 			metrics_absent_reason: None,
 			metrics_absent_note: None,
 			ledger_path: "docs/plans/demo.ledger.md".to_string(),
-			resume_state: None,
 			resume_state_absent_reason: Some(ResumeStateAbsentReason::LedgerAbsent),
 			resume_state_absent_note: None,
 			isolation_tier: "worktree".to_string(),
@@ -2112,7 +2323,6 @@ ACTIVE LOOP
       "filled_prompt_summary": "fresh review round on step `core-assets` increment `core-assets-inc1` (streak 1/2)."
     }
   },
-  "resume_state": null,
   "resume_state_absent_reason": "ledger-absent",
   "no_active_loop_reason": null
 }"#;

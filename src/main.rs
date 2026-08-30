@@ -23,6 +23,7 @@ mod plan;
 mod recommendation_rule;
 mod safe_path;
 mod tui;
+mod work;
 mod workflow;
 mod workflow_spec;
 
@@ -48,6 +49,7 @@ use {
 		io::{
 			self,
 			IsTerminal,
+			Write,
 		},
 		path::{
 			Path,
@@ -254,9 +256,7 @@ impl std::fmt::Display for PrinciplesError {
 /// does not ship at all is the empty set. For the built-in pack this reads the same
 /// embedded file the drop uses, so the selection and the dropped `principles.toml`
 /// stay consistent.
-fn pack_principles(
-	source: &manifest::PackSource
-) -> Result<Vec<pack::Principle>, PrinciplesError> {
+fn pack_principles(source: &manifest::PackSource) -> Result<Vec<pack::Principle>, PrinciplesError> {
 	// `read_optional`, not `read`: only a pack that ships NO principles.toml yields the
 	// empty set. A refusal arrives as an `Err` and is reported, rather than being
 	// spelled the same way as an absence and silently producing a principle-free
@@ -415,7 +415,7 @@ enum Command {
 	Validate(ValidateArgs),
 	/// Project the workflow state: emit a derived summary of the plan's Roadmap steps and open questions plus a metrics-record count. Best-effort; a missing file yields a partial projection. With --resume, print the ledger's `## RESUME STATE` block verbatim instead.
 	Status(StatusArgs),
-	/// Advisory: for the single active review loop, recompute its state from the durable files, report the state plus valid transitions, and emit one filled instruction prompt for the next role. Read-only and stateless; writes nothing and creates no worktree or container (the isolation tier is echoed, not resolved). Human text, or --json.
+	/// Project every active unit and one selected action from `.agents/work.toml`. Falls back to the legacy plan projection when an old plan is explicitly selected or no work file exists. Human text, or --json.
 	Next(NextArgs),
 	/// Run the project's `.agents/checks.toml` lint and format checks in a temporary, isolated git worktree of the current tracked working-tree state, so a relative-path check cannot mutate the live tree (this is isolation, not a security sandbox: a check that writes an absolute path or mutates git metadata is trusted-config self-harm and out of contract). Exits 0 iff every check that ran passed.
 	Checks(ChecksArgs),
@@ -514,23 +514,23 @@ struct StatusArgs {
 	ledger_fragment: Option<PathBuf>,
 }
 
-/// Arguments for the `next` subcommand. Mirrors `StatusArgs`'s plan-source and metrics
-/// flags, plus the ledger fragment and the echoed isolation tier.
+/// Arguments for the `next` subcommand. The default `.agents/work.toml` path needs only
+/// `--source` and `--json`; the remaining flags preserve the legacy plan projection.
 #[derive(Args)]
 struct NextArgs {
-	/// Path to a Markdown plan to project (its Roadmap steps). When omitted, and no TOML-primary --source is given, there is no plan source and the active loop is empty.
+	/// Path to a legacy Markdown plan to project (its Roadmap steps). An explicit legacy plan bypasses the default `.agents/work.toml` source.
 	#[arg(long)]
 	plan: Option<PathBuf>,
-	/// Path to a `<task>.plan.toml` structured source. When it declares `[meta].primary = "toml"`, the steps are read from it instead of --plan (else --plan is used).
+	/// Path to `.agents/work.toml` or a legacy `<task>.plan.toml` source. The work source is strict and does not read legacy metrics, ledger, resume-state, or workflow-spec inputs.
 	#[arg(long)]
 	source: Option<PathBuf>,
-	/// Path to the JSONL metrics log the round evidence is read from. An explicit value is used verbatim. When omitted, the log is `docs/metrics/workflow.jsonl` under the project root derived from the plan source: the nearest `<root>/docs/plans/` ancestor of --source (else of --plan), or the source's own directory when it has no such ancestor. With neither --source nor --plan there is nothing to anchor to and the path stays `docs/metrics/workflow.jsonl` relative to the current directory.
+	/// Legacy plan mode only: path to the JSONL metrics log the round evidence is read from. An explicit value is used verbatim. When omitted, the log is `docs/metrics/workflow.jsonl` under the project root derived from the plan source: the nearest `<root>/docs/plans/` ancestor of --source (else of --plan), or the source's own directory when it has no such ancestor. With neither --source nor --plan there is nothing to anchor to and the path stays `docs/metrics/workflow.jsonl` relative to the current directory.
 	#[arg(long)]
 	metrics: Option<PathBuf>,
-	/// Path to the ledger fragment whose `## RESUME STATE` block is echoed verbatim. Defaults to `<task>.ledger.md` BESIDE the plan source, where `<task>` is derived from that source's filename; the ledger lives next to the plan it belongs to, so no root derivation is involved. With neither --source nor --plan there is no directory to sit beside and the path stays `docs/plans/<task>.ledger.md` relative to the current directory.
+	/// Legacy plan mode only: path to the ledger fragment used for typed availability or refusal metadata; free-form resume text is never emitted. Defaults to `<task>.ledger.md` BESIDE the plan source, where `<task>` is derived from that source's filename.
 	#[arg(long)]
 	ledger_fragment: Option<PathBuf>,
-	/// The isolation tier to echo into the instruction (`worktree`, `container`, or `file-safety`). When omitted, the tier is reported as `unknown` with a reminder to resolve it per the AGENTS.md tier policy. The tool never emits a worktree path or a branch name.
+	/// Legacy plan mode only: the isolation tier to echo into the instruction (`worktree`, `container`, or `file-safety`). When omitted, the tier is reported as `unknown` with a reminder to resolve it per the AGENTS.md tier policy. The tool never emits a worktree path or a branch name.
 	#[arg(long, value_enum)]
 	isolation_tier: Option<IsolationTier>,
 	/// Emit the projection as JSON instead of the human-readable text.
@@ -1711,10 +1711,58 @@ fn run_resume(args: &StatusArgs) -> io::Result<()> {
 	Ok(())
 }
 
-/// The `next` subcommand: gather the plan source, the round log, and the ledger's
-/// `## RESUME STATE` block from the durable files, project the single active review loop,
-/// and print the human text (or `--json`). Read-only and best-effort: a missing plan or
-/// log simply leaves that part empty, mirroring `status`.
+const DEFAULT_WORK_SOURCE: &str = ".agents/work.toml";
+
+fn next_work_source(args: &NextArgs) -> io::Result<Option<PathBuf>> {
+	if args.source.as_ref().is_some_and(|path| path.ends_with(Path::new(DEFAULT_WORK_SOURCE))) {
+		return Ok(args.source.clone());
+	}
+	if args.source.is_none() && args.plan.is_none() {
+		let default = PathBuf::from(DEFAULT_WORK_SOURCE);
+		if default.try_exists()? {
+			return Ok(Some(default));
+		}
+	}
+	Ok(None)
+}
+
+fn emit_next_output(output: &str) -> io::Result<()> {
+	next::enforce_output_size(output).map_err(|error| io::Error::other(error.to_string()))?;
+	let stdout = io::stdout();
+	let mut lock = stdout.lock();
+	lock.write_all(output.as_bytes())?;
+	lock.write_all(b"\n")
+}
+
+fn run_work_next(
+	path: &Path,
+	json: bool,
+) -> io::Result<()> {
+	let contents = fs::read_to_string(path).map_err(|error| {
+		io::Error::new(
+			error.kind(),
+			format!("could not read work source {}: {error}", path.display()),
+		)
+	})?;
+	let work = work::parse(&contents).map_err(|error| {
+		io::Error::new(io::ErrorKind::InvalidData, format!("{}: {error}", path.display()))
+	})?;
+	let projection = next::project_work(path.display().to_string(), &work);
+	let output = if json {
+		next::render_work_json(&projection).map_err(io::Error::other)?
+	} else {
+		next::render_work_human(&projection)
+	};
+	emit_next_output(&output)
+}
+
+/// The `next` subcommand defaults to the bounded `.agents/work.toml` projection. An
+/// explicit legacy plan, or the absence of a default work file, keeps the previous plan
+/// projection available for existing projects.
+///
+/// The legacy path gathers the plan source and round log, projects the single active
+/// review loop, and prints the human text (or `--json`). It may report typed ledger
+/// availability metadata for compatibility, but it never emits free-form resume text.
 ///
 /// The round log and the ledger are resolved from the PLAN SOURCE, not from the process
 /// working directory (`resolve_metrics_path`, `default_ledger_path`). That matters,
@@ -1727,6 +1775,10 @@ fn run_resume(args: &StatusArgs) -> io::Result<()> {
 /// `## RESUME STATE` echo. Each says why in its place, and the run still exits 0: the
 /// refusal is the validator's alone.
 fn run_next(args: NextArgs) -> io::Result<()> {
+	if let Some(path) = next_work_source(&args)? {
+		return run_work_next(&path, args.json);
+	}
+
 	// The same typo'd-anchor note `status` prints, for the same reason: the note is owed on a
 	// name that is not on disk whether or not that name ends up supplying a root, and where NO
 	// supplied anchor is on disk `next` does root containment on one rather than falling
@@ -1797,15 +1849,16 @@ fn run_next(args: NextArgs) -> io::Result<()> {
 		.iter()
 		.find(|root| is_outside_root(&ledger_path, root))
 		.map(|root| unpairable_ledger_note(&ledger_path, root));
-	let (resume_state, resume_state_absent_reason) = if resume_state_absent_note.is_some() {
-		(None, Some(next::ResumeStateAbsentReason::LedgerNotThisProject))
+	let resume_state_absent_reason = if resume_state_absent_note.is_some() {
+		Some(next::ResumeStateAbsentReason::LedgerNotThisProject)
 	} else if ledger_path.exists() {
-		match next::extract_resume_state(&fs::read_to_string(&ledger_path)?) {
-			Some(block) => (Some(block), None),
-			None => (None, Some(next::ResumeStateAbsentReason::NoResumeSection)),
+		if next::extract_resume_state(&fs::read_to_string(&ledger_path)?).is_some() {
+			None
+		} else {
+			Some(next::ResumeStateAbsentReason::NoResumeSection)
 		}
 	} else {
-		(None, Some(next::ResumeStateAbsentReason::LedgerAbsent))
+		Some(next::ResumeStateAbsentReason::LedgerAbsent)
 	};
 
 	let isolation_tier =
@@ -1826,20 +1879,18 @@ fn run_next(args: NextArgs) -> io::Result<()> {
 		metrics_absent_reason,
 		metrics_absent_note,
 		ledger_path: ledger_path.display().to_string(),
-		resume_state,
 		resume_state_absent_reason,
 		resume_state_absent_note,
 		isolation_tier,
 		principles: &principles,
 	});
 
-	if args.json {
-		let json = serde_json::to_string_pretty(&projection).map_err(io::Error::other)?;
-		println!("{json}");
+	let output = if args.json {
+		serde_json::to_string_pretty(&projection).map_err(io::Error::other)?
 	} else {
-		println!("{}", next::render_human(&projection));
-	}
-	Ok(())
+		next::render_human(&projection)
+	};
+	emit_next_output(&output)
 }
 
 /// The `audit` subcommand: derive `<task>` from the plan source (the same way `next`
@@ -2358,11 +2409,8 @@ mod tests {
 
 	/// A unique scratch directory under the system temp dir for one test.
 	fn scratch(name: &str) -> PathBuf {
-		let dir = std::env::temp_dir().join(format!(
-			"agent-flow-poc-{}-{}",
-			std::process::id(),
-			name
-		));
+		let dir =
+			std::env::temp_dir().join(format!("agent-flow-poc-{}-{}", std::process::id(), name));
 		let _ = fs::remove_dir_all(&dir);
 		dir
 	}

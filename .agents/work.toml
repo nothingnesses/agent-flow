@@ -1,9 +1,9 @@
 version = 1
-selected_action = "make-next-small-and-truthful"
+selected_action = "make-default-scaffold-minimal"
 
 [[step]]
 id = "make-next-small-and-truthful"
-status = "active"
+status = "complete"
 blocked_by = []
 user_problem = "The next command emits about 764 KB, copies stale ledger prose, hides concurrent work, and selects the wrong loop."
 change = "Read this bounded work file, project every active unit once, select one action deterministically, and remove ledger and free-form resume output."
@@ -19,7 +19,7 @@ why_next = "This removes the largest immediate user cost and gives later reset w
 
 [[step]]
 id = "make-default-scaffold-minimal"
-status = "pending"
+status = "active"
 blocked_by = ["make-next-small-and-truthful"]
 user_problem = "New projects inherit the workflow that produced the deleted planning tree."
 change = "Simplify the default pack to one small work file, one implementation branch, compact guidance, and no ledger, JSONL log, plan-review loop, or review directory."
