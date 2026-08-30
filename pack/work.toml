@@ -1,0 +1,14 @@
+version = 1
+selected_action = "replace-this-starter-step"
+
+[[step]]
+id = "replace-this-starter-step"
+status = "active"
+blocked_by = []
+user_problem = "Replace this text with the user-visible problem the first delivery should solve."
+change = "Replace this starter with one bounded product change that can be implemented and reviewed on a single branch."
+acceptance = [
+  "Describe the observable behaviour that will prove the change works.",
+  "Name the focused and full verification commands that must pass.",
+]
+why_next = "Replace this text with why this is the highest-value unblocked action."

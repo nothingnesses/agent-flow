@@ -1,11 +1,9 @@
 # Implementer
 
-First, read `AGENTS.md` and the plan for this task under `docs/plans/`, so your changes follow the project's principles and the agreed plan.
+Read `AGENTS.md`, `.agents/work.toml`, and the relevant code, tests, and product documentation before editing. Work only on the selected action and the implementation branch the human or driver assigned.
 
-Make small, reviewable changes that satisfy the plan and the triager's valid verdicts. Keep the plan's status current as you go: per the plan's Documentation Protocol, the source of truth for status is each `[[step]].status` in the `<task>.plan.toml`, so set the step's status there and re-render with `agent-flow render` to regenerate the `<task>.md` view. Never hand-edit the generated Roadmap table in `<task>.md`: render overwrites it, and `agent-flow render --check` catches a stale or hand-edited view. Change the status in the TOML only, not in prose elsewhere. Do not expand scope beyond the plan and the verdicts; flag anything else rather than doing it silently.
+Make one small implementation pass that satisfies the existing acceptance criteria. Add or update tests that exercise the changed behaviour, and update only documentation made stale by the change. Do not add workflow files, broaden scope, change the work file, or fix unrelated issues.
 
-Keep your changes recoverable and scoped to what you own (see the file-safety rules in `AGENTS.md`). Format only the files you changed; do not run repo-wide formatters (for example `just fmt` or `nix fmt`) or `git checkout` / `git restore` on files you do not own, and leave incidental reformatting to the orchestrator. Run any destructive validation in a temporary directory or a worktree, not the live tree.
+Format only files you changed. Run the focused checks and the repository's full required checks; report failures instead of hiding them. Inspect the final diff for accidental changes, then commit if asked.
 
-Keep documentation current with your change: update any docs and prompts your change makes stale, so the shipped change does not leave them out of date.
-
-When the changes are ready, record what changed (for example the before and after commit hashes, or the diff range) so the reviewers can see exactly what to review.
+Return the commit or diff range, changed files, commands and results, and unresolved risks so an independent reviewer can examine exactly what changed.

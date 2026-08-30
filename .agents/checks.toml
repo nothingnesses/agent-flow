@@ -1,18 +1,25 @@
 # Deterministic checks for this project (the checks module schema: `[[check]]`).
 #
-# This project's plan is now a render artifact: `docs/plans/agent-scaffold.md` is
-# GENERATED from `docs/plans/agent-scaffold.plan.toml` plus its Markdown sidecars
-# (do-not-hand-edit). The render-check gate below fails hard (`--strict`) when the
-# committed `.md` diverges from a fresh render, so a hand-edit of the generated
-# plan, or a stale render after a source edit, cannot be committed. It is a lint
-# (read-only detection): `render --check` writes nothing.
+# This is working tooling, not task state, review evidence, or a record of when a
+# command ran. It is also a narrow, hand-curated file rather than full checks-module
+# self-adoption; add more `[[check]]` rows as the project adopts the module.
 #
-# This is a narrow, hand-curated checks file, not full checks-module self-adoption
-# (that dogfood, an active ripgrep ASCII row and the rest, is tracked separately);
-# it declares only the render gate for now. Add more `[[check]]` rows as the
-# project adopts the module.
+# The row below pins an invariant this repository already depends on. `pack/` is
+# embedded into the binary at compile time (`include_dir!` in `src/manifest.rs`), and
+# `build.rs` records the pack as maintainer-controlled and all-ASCII. A stray
+# non-ASCII byte in a pack asset would therefore be compiled in and dropped into
+# every scaffolded project's guidance, so the check reads the tracked pack bytes and
+# fails when it finds one. Nothing else in the repository is held to this rule: a
+# non-ASCII test fixture elsewhere in `src/` is deliberate, which is why `paths` and
+# the grep both scope to `pack/`.
+#
+# It is a lint in the strict sense: `git grep` only reads, so a run mutates neither
+# the temporary worktree it executes in nor the live tree. The leading `!` inverts
+# git grep's exit status, which is 0 when it FINDS a match; the command needs no tool
+# beyond the `git` the development shell already pins.
 
 [[check]]
-name = "render-check"
+name = "pack-ascii"
 kind = "lint"
-command = "agent-flow render --check docs/plans/agent-scaffold.plan.toml --strict"
+command = '! LC_ALL=C git grep -nP "[^\x00-\x7F]" -- pack'
+paths = ["pack/"]

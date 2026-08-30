@@ -854,36 +854,15 @@ mod tests {
 			dests,
 			vec![
 				"AGENTS.md",
-				"docs/plans/TEMPLATE.plan.toml",
-				"docs/plans/TEMPLATE._status-narrative.md",
-				"docs/plans/TEMPLATE.motivations.md",
-				"docs/plans/TEMPLATE.principles-note.md",
-				"docs/plans/TEMPLATE.documentation-protocol.md",
-				"docs/plans/TEMPLATE.repo-layout.md",
-				"docs/plans/TEMPLATE.queue-intro.md",
-				"docs/plans/TEMPLATE.roadmap-intro.md",
-				"docs/plans/TEMPLATE.success-criteria.md",
-				"docs/plans/TEMPLATE.steps/example-step.md",
-				"docs/plans/TEMPLATE.steps/.gitkeep",
-				"docs/plans/TEMPLATE.questions/.gitkeep",
+				".agents/work.toml",
 				".agents/AGENTS.reference.md",
-				".agents/prompts/orchestrator.md",
-				".agents/prompts/planner.md",
-				".agents/prompts/clarifying-questions.md",
-				".agents/prompts/open-questions-gate.md",
+				".agents/prompts/implementer.md",
 				".agents/prompts/reviewer.md",
 				".agents/prompts/triager.md",
-				".agents/prompts/implementer.md",
+				".agents/prompts/fixer.md",
+				".agents/prompts/verifier.md",
 				".agents/principles.toml",
-				".agents/LEDGER.template.md",
-				".agents/workflow.toml",
 				".agents/user-prompts/kickoff.md",
-				".agents/user-prompts/explore.md",
-				".agents/user-prompts/review.md",
-				".agents/user-prompts/pause.md",
-				".agents/user-prompts/compaction-prep.md",
-				".agents/user-prompts/resume.md",
-				".agents/user-prompts/audit.md",
 			]
 		);
 	}
@@ -958,39 +937,6 @@ mod tests {
 		assert_eq!(with_checks.len(), core.len() + 5);
 	}
 
-	#[test]
-	fn builtin_isolation_module_renders_its_guidance_only_when_selected() {
-		// The built-in `isolation` module is guidance-only: it drops zero assets, so
-		// the asset list is byte-identical whether or not it is selected (the same
-		// list `builtin_manifest_lists_the_expected_assets` pins).
-		let core = load(&builtin(), &HashMap::new(), &HashMap::new(), &[]).unwrap();
-		let with_isolation =
-			load(&builtin(), &HashMap::new(), &HashMap::new(), &["isolation".to_string()]).unwrap();
-		let core_dests: Vec<&str> = core.iter().map(|a| a.dest.as_str()).collect();
-		let isolation_dests: Vec<&str> = with_isolation.iter().map(|a| a.dest.as_str()).collect();
-		assert_eq!(isolation_dests, core_dests, "the isolation module drops no assets");
-
-		// With no module selected the `{{modules}}` block is empty, so the scaffold
-		// stays byte-identical to core.
-		assert_eq!(module_guidance(&builtin(), &[]).unwrap(), "");
-
-		// Selecting `isolation` renders its guidance partial into the `{{modules}}`
-		// block: its heading and the agent-box/agent-images pointers appear.
-		let guidance = module_guidance(&builtin(), &["isolation".to_string()]).unwrap();
-		assert!(
-			guidance.contains("## Writer isolation via agent-box and agent-images"),
-			"the isolation guidance heading should render"
-		);
-		assert!(
-			guidance.contains("github.com/0xferrous/agent-box"),
-			"the agent-box pointer should render"
-		);
-		assert!(
-			guidance.contains("github.com/nothingnesses/agent-images"),
-			"the agent-images pointer should render"
-		);
-	}
-
 	/// Write a filesystem pack fixture (a `pack.toml` plus one source file) and
 	/// return its `Directory` source root.
 	fn fixture_pack(
@@ -1044,16 +990,20 @@ mod tests {
 				"a.md",
 				"x\n",
 			);
-			match load(&PackSource::Directory(root.clone()), &HashMap::new(), &HashMap::new(), &[]) {
-				Err(error @ LoadError::UnsafeAssetDest {
-					..
-				}) => {
+			match load(&PackSource::Directory(root.clone()), &HashMap::new(), &HashMap::new(), &[])
+			{
+				Err(
+					error @ LoadError::UnsafeAssetDest {
+						..
+					},
+				) => {
 					// The message names the offending dest and the asset that declared it.
 					let message = error.to_string();
 					assert!(message.contains(dest), "{message}");
 					assert!(message.contains("a.md"), "{message}");
 				}
-				other => panic!("expected UnsafeAssetDest for `{dest}`, got {:?}", other.map(|_| ())),
+				other =>
+					panic!("expected UnsafeAssetDest for `{dest}`, got {:?}", other.map(|_| ())),
 			}
 			fs::remove_dir_all(&root).unwrap();
 		}
@@ -1074,10 +1024,13 @@ mod tests {
 				"a.md",
 				"x\n",
 			);
-			match load(&PackSource::Directory(root.clone()), &HashMap::new(), &HashMap::new(), &[]) {
-				Err(error @ LoadError::UnsafeAssetSource {
-					..
-				}) => {
+			match load(&PackSource::Directory(root.clone()), &HashMap::new(), &HashMap::new(), &[])
+			{
+				Err(
+					error @ LoadError::UnsafeAssetSource {
+						..
+					},
+				) => {
 					// The message names the offending source, and names it as a SOURCE: a
 					// reader shown a `dest` message for a `source` problem looks at the wrong
 					// side of the entry.
@@ -1112,9 +1065,11 @@ mod tests {
 			fs::write(root.join("a.md"), "x\n").unwrap();
 			let source = PackSource::Directory(root.clone());
 			match module_guidance(&source, &["evil".to_string()]) {
-				Err(error @ LoadError::UnsafeModuleGuidance {
-					..
-				}) => {
+				Err(
+					error @ LoadError::UnsafeModuleGuidance {
+						..
+					},
+				) => {
 					// The message names the module AND the guidance path, and names the
 					// FIELD: a reader told an asset source escaped would hunt for an
 					// `[[asset]]` that does not carry this path.
@@ -1188,8 +1143,9 @@ mod tests {
 		)
 		.unwrap();
 		fs::write(root.join("nested/a.md"), "nested body\n").unwrap();
-		let assets = load(&PackSource::Directory(root.clone()), &HashMap::new(), &HashMap::new(), &[])
-			.unwrap_or_else(|error| panic!("a nested source must load: {error}"));
+		let assets =
+			load(&PackSource::Directory(root.clone()), &HashMap::new(), &HashMap::new(), &[])
+				.unwrap_or_else(|error| panic!("a nested source must load: {error}"));
 		assert_eq!(assets[0].contents, "nested body\n");
 		fs::remove_dir_all(&root).unwrap();
 	}
@@ -1212,8 +1168,9 @@ mod tests {
 		.unwrap();
 		fs::write(root.join("sub/real.md"), "real body\n").unwrap();
 		std::os::unix::fs::symlink("sub/real.md", root.join("alias.md")).unwrap();
-		let assets = load(&PackSource::Directory(root.clone()), &HashMap::new(), &HashMap::new(), &[])
-			.unwrap_or_else(|error| panic!("a pack-internal symlink must load: {error}"));
+		let assets =
+			load(&PackSource::Directory(root.clone()), &HashMap::new(), &HashMap::new(), &[])
+				.unwrap_or_else(|error| panic!("a pack-internal symlink must load: {error}"));
 		assert_eq!(assets[0].contents, "real body\n");
 		fs::remove_dir_all(&root).unwrap();
 	}
@@ -1264,9 +1221,11 @@ mod tests {
 		.unwrap();
 		let source = PackSource::Directory(pack.clone());
 		match load(&source, &HashMap::new(), &HashMap::new(), &[]) {
-			Err(error @ LoadError::UnsafeAssetSource {
-				..
-			}) => {
+			Err(
+				error @ LoadError::UnsafeAssetSource {
+					..
+				},
+			) => {
 				let message = error.to_string();
 				assert!(message.contains("link.md"), "{message}");
 				assert!(message.contains("asset source"), "{message}");
@@ -1284,9 +1243,11 @@ mod tests {
 		)
 		.unwrap();
 		match module_guidance(&source, &["evil".to_string()]) {
-			Err(error @ LoadError::UnsafeModuleGuidance {
-				..
-			}) => {
+			Err(
+				error @ LoadError::UnsafeModuleGuidance {
+					..
+				},
+			) => {
 				let message = error.to_string();
 				assert!(message.contains("link.md"), "{message}");
 				assert!(message.contains("evil"), "{message}");

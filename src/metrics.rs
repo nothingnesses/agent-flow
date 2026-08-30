@@ -1633,20 +1633,14 @@ mod tests {
 		assert_eq!(one_error(line), "field `ts` has wrong type (expected string)");
 	}
 
-	/// Schema drift-guard: the metrics schema lives in two places, this validator
-	/// (the source of truth) and the human-readable prose in `pack/instrument.md`.
-	/// This test asserts every value the validator accepts is documented verbatim
-	/// in that prose, so changing the schema on one side without the other fails
-	/// here (Principle 16, one source of truth; Principle 11, the test exercises
-	/// the real accepted set). The enum spellings are iterated from each type's own
-	/// `VARIANTS` array rather than re-hardcoded, so renaming a variant in code
-	/// automatically re-points the check at the new spelling, and the prose must
-	/// then document that new spelling or this test fails. The record-type and
-	/// field lists mirror what `check_record` matches on and requires; if a field
-	/// is added to or removed from the validator, update this list to match.
+	/// Compatibility drift guard: the legacy metrics validator and its retained
+	/// documentation fixture must agree even though the minimal built-in pack no
+	/// longer emits instrumentation guidance. The enum spellings are iterated from
+	/// each type's `VARIANTS` array; the record and field lists mirror
+	/// `check_record`.
 	#[test]
-	fn instrument_prose_documents_every_accepted_schema_value() {
-		let prose = include_str!("../pack/instrument.md");
+	fn legacy_instrument_prose_documents_every_accepted_schema_value() {
+		let prose = include_str!("testdata/legacy-instrument.md");
 
 		// Every record-type name `check_record` accepts (its `match record_type`).
 		// Anchor on the quoted form the prose uses (`type: "round"`), not a bare
@@ -1657,7 +1651,7 @@ mod tests {
 		{
 			assert!(
 				prose.contains(&format!("\"{record_type}\"")),
-				"record type `{record_type}` accepted by the validator is not documented in pack/instrument.md"
+				"record type `{record_type}` accepted by the validator is not documented in the legacy instrument fixture"
 			);
 		}
 
@@ -1701,7 +1695,7 @@ mod tests {
 			// appearing as a substring of another word (for example `ts` in `tasks`).
 			assert!(
 				prose.contains(&format!("`{field}`")),
-				"field `{field}` checked by the validator is not documented in pack/instrument.md"
+				"field `{field}` checked by the validator is not documented in the legacy instrument fixture"
 			);
 		}
 
@@ -1724,7 +1718,7 @@ mod tests {
 				// prose writes every enum value as `value`.
 				assert!(
 					prose.contains(&format!("`{variant}`")),
-					"enum `{enum_name}` value `{variant}` accepted by the validator is not documented in pack/instrument.md"
+					"enum `{enum_name}` value `{variant}` accepted by the validator is not documented in the legacy instrument fixture"
 				);
 			}
 		}

@@ -4,32 +4,11 @@
 //! on what is and is not guarded; it is the one place in this file that states coverage,
 //! and the rest of the file cites it rather than restating it.
 //!
-//! The per-fragment guards (`isolation_policy.rs`, `workflow_spec.rs`) each pin ONE
-//! generated slot inside the committed scaffold with a `.contains()` check. Nothing
-//! asserted that the WHOLE committed file still corresponds to a fresh render of the
-//! pack, so a hand edit, a dropped slot, or a stale pack source outside those two
-//! fragments could go unnoticed. This module closes that gap: it re-renders the
-//! built-in pack under the exact `just scaffold-self` config and compares the result
-//! against the committed files.
-//!
-//! It is a NORMALIZED IN-TEST guard, decided so the test stays hermetic (it never
-//! shells out to the formatter). The committed files are `prettier(build_assets
-//! output)`: the self-scaffold pipeline runs the render and then `nix fmt`, whose
-//! prettier owns Markdown wrapping with `proseWrap=never`. A byte compare of the raw
-//! render against the committed file would therefore fail on formatter reflow alone,
-//! not on real drift (this is why the per-fragment guards use `.contains()`, and it
-//! composes with the Q-57 decision that incidental formatter reflow is not a
-//! finding). So both sides are passed through `normalize_wrapping`, which collapses the
-//! whitespace degrees of freedom prettier exercises (see its doc comment for the exact
-//! transform and the argument that, under its stated precondition, it cannot mask a
-//! content change) before the equality check.
-//!
-//! Empirically, at the time this guard was written the raw render is already
-//! byte-identical to both committed files (the pack authors each paragraph on a single
-//! line, so `proseWrap=never` is a no-op on them). The normalization is nonetheless
-//! applied so the guard keeps passing on incidental reflow if a future pack edit
-//! introduces wrapped prose, rather than turning a formatter reflow into a false
-//! failure.
+//! The guard re-renders the built-in pack under the exact `just scaffold-self`
+//! config and compares the whole generated guidance and prompt set against the
+//! committed copies. It normalizes ordinary Markdown wrapping so a formatter reflow
+//! does not look like content drift; the precondition checks below keep that
+//! normalization from hiding whitespace-significant constructs.
 //!
 //! COVERAGE. Stated once, here, and operationally. Coverage claims in this module drifted
 //! from what the code does at enough separate sites that fixing one contradicted another,
@@ -56,17 +35,11 @@
 //!
 //! COMPLEMENT, AS A RULE. Anything else the scaffold emits, or the repo commits, is
 //! unguarded by this module. A rule rather than an inventory, because an inventory carries
-//! an obligation to stay complete that prose reliably fails; `.agents/LEDGER.template.md`,
-//! the `.toml` copies under `.agents/`, and the `docs/plans/TEMPLATE` family illustrate the
-//! rule and do not bound it. Leaving them uncovered is a scope call whose cost is uneven:
-//! widening to a further Markdown asset copy is a small change to `PROMPT_DEST_PREFIXES`,
-//! since such a copy is prose under the same prettier settings and already satisfies the
-//! precondition, while the TOML copies need a comparison of their own, since
-//! `.agents/principles.toml` carries lines outside canonical whitespace form (indented
-//! multi-line array continuations among them) that `assert_no_unprotected_construct`
-//! rejects, and `normalize_wrapping` is a Markdown prose transform with no business
-//! canonicalizing TOML. The `.agents/user-prompts/` copies took that first route, which is
-//! why they are in the guarded set above rather than in this complement.
+//! an obligation to stay complete that prose reliably fails. The `.agents/work.toml` and
+//! `.agents/principles.toml` copies illustrate the rule and do not bound it: they need a
+//! TOML-aware comparison rather than this Markdown prose normalization. The
+//! `.agents/user-prompts/` copies are prose under the same formatter settings, so they are
+//! in the guarded set above.
 //!
 //! R1, THE DERIVED-SET RESIDUAL (accepted, not a defect to fix here). Check 3 maps render
 //! -> committed and asserts nothing in the other direction, so a committed file under one of
@@ -127,18 +100,17 @@ mod tests {
 	const PROMPT_DEST_PREFIXES: [&str; 2] = [".agents/prompts/", ".agents/user-prompts/"];
 
 	/// Re-render the self-scaffold asset set. This replicates the exact
-	/// `just scaffold-self` invocation (`scaffold --principles default --instrument`):
-	/// the built-in pack, the default principle selection, the default `Summary` detail,
-	/// no `--var` overrides, and no `--module` selections. Any divergence from that
-	/// config would compare the committed files against the wrong render, so it is
-	/// pinned here to match the justfile recipe. The absent `--module` selection is
-	/// load-bearing for what check 3 covers; see R1 in COVERAGE.
+	/// `just scaffold-self` invocation (`scaffold --principles default`): the built-in
+	/// pack, the default principle selection, the default `Summary` detail, no `--var`
+	/// overrides, no instrumentation, and no `--module` selections. Any divergence
+	/// would compare the committed files against the wrong render. The absent module
+	/// selection is load-bearing for what check 3 covers; see R1 in COVERAGE.
 	fn self_scaffold_assets() -> Vec<manifest::Asset> {
 		let source = manifest::builtin();
 		let principles = pack_principles(&source).expect("the built-in principles.toml parses");
 		let selected = pack::resolve_selection(&principles, "default")
 			.expect("the default principle selection resolves");
-		build_assets(&source, &selected, pack::Detail::Summary, &HashMap::new(), true, &[])
+		build_assets(&source, &selected, pack::Detail::Summary, &HashMap::new(), false, &[])
 			.expect("build_assets succeeds for the self-scaffold config")
 	}
 
@@ -379,9 +351,8 @@ mod tests {
 		// committed root `AGENTS.md` and its reference copy must match a fresh render of
 		// the built-in pack under the self-scaffold config, once prettier's
 		// wrapping/whitespace is normalized away on both sides. This fails on a real
-		// content drift, a hand edit, a dropped slot, or a stale pack source that the
-		// per-fragment guards do not cover, while tolerating an incidental formatter
-		// reflow. The fix is `just scaffold-self`.
+		// content drift, a hand edit, a dropped slot, or a stale pack source while
+		// tolerating an incidental formatter reflow. The fix is `just scaffold-self`.
 		let rendered_agents = self_scaffold_asset("AGENTS.md");
 		let rendered_reference = self_scaffold_asset(".agents/AGENTS.reference.md");
 

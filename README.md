@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/agent-flow.svg)](https://crates.io/crates/agent-flow) [![GitHub License](https://img.shields.io/github/license/nothingnesses/agent-scaffold?color=blue)](https://github.com/nothingnesses/agent-scaffold/blob/main/LICENSE)
 
-A small command-line tool that scaffolds a repeatable agent workflow into a project: front-load context, write a structured plan, review it, implement in small steps, then review the work. It drops a canonical `AGENTS.md`, a planning-document template, and a few reusable prompts, so the structure does not have to be hand-rolled for every repository.
+A small command-line tool that scaffolds a bounded agent delivery workflow into a project. The built-in pack creates one compact work file, one implementation-branch workflow, and role prompts for implementation, independent product review, conditional triage, one scoped fix, and one focused verification.
 
 ## The `agent-flow` rename
 
@@ -12,94 +12,55 @@ The `agent-scaffold` name is free for whoever wants to reclaim it. To ask for it
 
 ## Motivations
 
-- Setting the workflow up by hand for each project is repetitive: the same planning skeleton, the same guidance and principles, the same reusable prompts. This tool drops them in one command.
-- It works both for a new project and for adding to an existing one. Scaffolding into a populated repository never clobbers your files: tool-owned reference assets under `.agents/` are refreshed, while working files (the root `AGENTS.md` and plan templates) are created only if absent unless you pass `--force`.
-- The default is minimal. You get a usable core; anything extra is opt-in.
-- Guidance is harness-agnostic. `AGENTS.md` is the canonical file, and any harness-specific file (for example `CLAUDE.md`) should point at it rather than duplicate it.
+- Starting a task should require one bounded source of state, not a generated process tree.
+- Scaffolding into an existing project is safe: tool-owned references refresh, while working files are create-if-absent unless `--force` is passed.
+- The default is minimal. Product-development checks and hooks are opt-in.
+- Guidance is harness-agnostic. `AGENTS.md` is canonical; harness-specific files should point to it rather than duplicate it.
 
 ## What it scaffolds
 
-Running the tool writes this layout into the target directory:
+The built-in pack writes this default layout:
 
 ```
-AGENTS.md                          canonical agent guidance (working file)
-docs/plans/TEMPLATE.plan.toml      plan skeleton: the structured source (working file)
-docs/plans/TEMPLATE.*.md           plan prose sidecars (motivations, success criteria, ...)
-docs/plans/TEMPLATE.steps/         step body prose (one <slug>.md per Roadmap step)
-docs/plans/TEMPLATE.questions/     question body prose (one <id>.md per queue item)
-docs/plans/TEMPLATE.md             generated plan view (rendered from the skeleton; do not hand-edit)
+AGENTS.md                          compact canonical guidance (working file)
 .agents/
-  AGENTS.reference.md              pristine copy of the guidance, to merge from
-  principles.toml                  the principle data the guidance renders
-  prompts/                         role prompts and the planner's decision gates
-    orchestrator.md                drive the workflow and the review loop
-    planner.md                     draft the plan
-    clarifying-questions.md        gate: agent asks, the human answers, before starting
-    open-questions-gate.md         gate: agent presents options, the human chooses
-    reviewer.md                    adversarially review the plan or the work
-    triager.md                     adjudicate the review findings
-    implementer.md                 implement the plan
-  user-prompts/                    prompts a human copies and pastes to drive work
-    kickoff.md                     start a new task under the workflow
-    explore.md                     ask for a design-space exploration, not a decision
-    review.md                      ask for a findings report on a diff or the tree, no fixes
-    pause.md                       checkpoint durable state before stopping for now
-    compaction-prep.md             flush durable state before a compaction
-    resume.md                      continue an in-progress task after context loss
-    audit.md                       pre-registered, independently measured audit of a claim
+  work.toml                       bounded delivery state (working file)
+  AGENTS.reference.md             pristine guidance copy
+  principles.toml                 compact selectable principles
+  prompts/
+    implementer.md                make the bounded product change
+    reviewer.md                   independently review the product diff
+    triager.md                    adjudicate findings when any exist
+    fixer.md                      make the one allowed scoped fix
+    verifier.md                   verify that fix once
+  user-prompts/
+    kickoff.md                    start the selected action
 ```
 
-`AGENTS.md` is generated by rendering a selected set of principles into the guidance template. The `.agents/` assets are tool-owned and refreshed on every run; the working files are created once and then left alone (so your edits are safe) unless `--force` is given.
+The default creates no ledger, JSON Lines round log, `docs/plans/` process tree, review directory, plan-review loop, or convergence-round state. `.agents/work.toml` contains at most five ordered delivery steps and exactly one active `selected_action`; `agent-flow next` projects that state into a bounded human or JSON brief.
 
-The plan template is a structured `TEMPLATE.plan.toml` skeleton plus Markdown prose sidecars, not a single Markdown file. Scaffolding renders it into the generated `TEMPLATE.md` for you, and you author a plan by editing the TOML skeleton and its sidecars and re-rendering (see the `render` subcommand below); the generated `<task>.md` is never hand-edited.
+`AGENTS.md` is rendered from the selected principles. The root guidance and `.agents/work.toml` are working files, created only when absent unless `--force` is used. Tool-owned references under `.agents/` refresh on each run.
 
-## How it's used
+Select `--module checks` to add `.agents/checks.toml`, seeded ast-grep assets, a checks-reviewer prompt, and an inert pre-commit hook. These are optional product-development tools, not task state. Pair it with `--with-precommit-hook` to install a create-if-absent delegate without overwriting an existing hook.
 
-agent-flow is used at two moments, by two audiences:
+## Bounded workflow
 
-- You (the human) run it once to set a project up. Choose which principles apply (in the selector, or with `--principles`), review the plan, and write the assets, then commit them to version control. To then start a task, see the "Getting started, for the human" section of the scaffolded `AGENTS.md`, which points you at the kickoff prompt to copy and explains your ongoing part in the decisions the workflow brings back to you.
-- Agents then work inside the scaffolded project. They read `AGENTS.md` (the canonical, harness-agnostic guidance) and follow the workflow it describes: front-load context, draft a plan under `docs/plans/`, review the plan, implement in small steps, then review the work. The workflow separates roles (an orchestrator drives it, with a planner, independent reviewers, a separate triager, and an implementer), and `.agents/prompts/` carries one prompt per role. Agents consume these assets; they do not normally run the tool.
-
-The tool's job ends at dropping well-structured assets: it sets the workflow up but does not enforce it at runtime. Adherence comes from agents following `AGENTS.md`.
-
-The workflow the scaffolded `AGENTS.md` prescribes (an orchestrator drives every phase and keeps the review ledger). Each review loops until it converges; implementation iterates over the plan's steps; and the work stops only once every step is done and an acceptance review confirms the Success Criteria. Escalating to a human is a request for a decision (the workflow resumes at the paused review after it), not a stop; and a human may add or change requests at any time, which are assessed at intake and, when non-trivial, re-enter through the plan:
+The human selects one action in `.agents/work.toml` and starts it with `.agents/user-prompts/kickoff.md`. Delivery stays on one `impl/<selected-action>` branch and uses no parallel implementation worktrees.
 
 ```mermaid
----
-config:
-  layout: elk
----
-flowchart TB
-    start(["Task"]) --> ctx["Front-load context"]
-    ctx --> plan["Plan<br/>(planner)"]
-    plan --> preview["Review the plan<br/>(reviewers)"]
-    preview --> ptriage["Triage the findings<br/>(triager)"]
-    ptriage --> pdec{"Plan review converged?"}
-    pdec -->|new valid findings| previse["Planner revises"]
-    previse --> preview
-    pdec -->|total-round cap reached| pesc[["Escalate to a human"]]
-    pesc -->|decision applied, resume| preview
-    pdec -->|converged| steps{"Pending steps<br/>in the roadmap?"}
-    steps -->|yes| impl["Implement the next step<br/>(implementer)"]
-    impl --> wreview["Review the work<br/>(reviewers)"]
-    wreview --> wtriage["Triage the findings<br/>(triager)"]
-    wtriage --> wdec{"Work review converged?"}
-    wdec -->|new valid findings| wfix["Implementer fixes"]
-    wfix --> wreview
-    wdec -->|total-round cap reached| wesc[["Escalate to a human"]]
-    wesc -->|decision applied, resume| wreview
-    wdec -->|converged| mark["Mark the step complete"]
-    mark --> steps
-    steps -->|no| accept["Acceptance review<br/>(reviewers)"]
-    accept --> atriage["Triage the findings<br/>(triager)"]
-    atriage --> adec{"Success Criteria met?"}
-    adec -->|"no: shortfall to planning or implementation"| plan
-    adec -->|yes| done(["Done: accept the work"])
-    interrupt["Human adds or changes<br/>requests (at any time)"] -.-> intake["Intake: assess and advise<br/>(human decides routing)"]
-    intake -.->|non-trivial| plan
-    intake -.->|trivial| fold["Orchestrator folds<br/>it in directly"]
-    fold -.->|"resume at the roadmap-steps gate"| steps
+flowchart LR
+    start["Selected action"] --> implement["Implementation pass"]
+    implement --> review["Independent product review"]
+    review -->|clean| human["Return result to human"]
+    review -->|findings| triage["Separate triage"]
+    triage -->|none valid| human
+    triage -->|valid, in scope| fix["One scoped fix"]
+    fix --> verify["One focused verification"]
+    verify -->|pass| human
+    verify -->|fail| unresolved["Return unresolved work to human"]
 ```
+
+There is no plan review or convergence loop. Review findings cannot broaden the selected action's acceptance criteria. A missing independent reviewer, an out-of-scope finding, an unsafe fix, or a failed focused verification stops the workflow and returns the decision to the human.
 
 ## Installation
 
@@ -194,9 +155,9 @@ On a terminal, `agent-flow scaffold` opens the two-pane selector by default (see
 
 On save it prints a ready-to-paste `--principles <ids>` line so the exact selection and order can be replayed non-interactively.
 
-### Rendering the plan
+### Legacy plan rendering
 
-A plan is a structured `<task>.plan.toml` skeleton (its Roadmap `[[step]]` entries, `[[question]]` queue, and `[[principle]]` list) plus opaque Markdown prose sidecars (the step and question bodies and the front/tail matter). `render` generates the committed `<task>.md` view from them, splicing each sidecar verbatim: the TOML and the sidecars are the source, and the generated `<task>.md` is a projection that is never hand-edited.
+For an existing project that uses the legacy plan flow, a plan is a structured `<task>.plan.toml` skeleton (its Roadmap `[[step]]` entries, `[[question]]` queue, and `[[principle]]` list) plus opaque Markdown prose sidecars (the step and question bodies and the front/tail matter). `render` generates the committed `<task>.md` view from them, splicing each sidecar verbatim: the TOML and the sidecars are the source, and the generated `<task>.md` is a projection that is never hand-edited.
 
 ```sh
 # Generate <task>.md from the skeleton and its sidecars:
@@ -209,7 +170,7 @@ agent-flow render --check docs/plans/my-task.plan.toml
 agent-flow render --check --strict docs/plans/my-task.plan.toml
 ```
 
-`render` is strict: a schema violation, an unresolved cross-reference, or a missing sidecar exits non-zero and writes nothing, so a broken source never yields a partial plan. `render --check` catches both a hand-edit of the generated file and a stale render after a source edit; it warns locally (so a forgotten re-render never blocks an in-flight step) and, with `--strict`, fails hard. Scaffolding a new project renders the dropped `TEMPLATE.plan.toml` into `TEMPLATE.md` for you.
+`render` is strict: a schema violation, an unresolved cross-reference, or a missing sidecar exits non-zero and writes nothing, so a broken source never yields a partial plan. `render --check` catches both a hand-edit of the generated file and a stale render after a source edit; it warns locally (so a forgotten re-render never blocks an in-flight step) and, with `--strict`, fails hard. The built-in minimal pack does not emit a plan template; this command remains for existing projects and custom packs.
 
 ### Validating and projecting workflow state
 
@@ -227,10 +188,10 @@ agent-flow next --source .agents/work.toml --json
 
 Existing plan-based invocations remain available when an old plan is selected explicitly, or when no `.agents/work.toml` exists. That legacy mode retains its plan and metrics projection for compatibility, but no longer emits free-form ledger or resume text.
 
-`validate` checks the workflow's metrics log against its record schema. With `--plan` it also checks a Markdown plan's structured regions (the Roadmap table and the Open Questions queue) against the plan schema, and with `--source` it checks a `<task>.plan.toml` structured source (its schema and internal cross-references). With `--workflow` it cross-references the plan status against the round log: every Roadmap step marked `complete` must have converging round records in the log (or a recorded waiver), so a step marked done without its review loop (or that never reached the clean-round streak its risk class requires) is caught. The workflow check reads the plan from a TOML `--source` when that source declares `[meta].primary = "toml"` (a TOML-only project needs no `--plan`), else from the Markdown `--plan`. It reports every malformed record, region, or cross-reference and every workflow disagreement, and exits non-zero if any exist, so it can gate a commit or run in CI. A `--workflow` run that cannot see a round log is itself one of those failures rather than a skip: with no log at the resolved path the check cannot run, so it reports that and exits non-zero instead of reporting success for a project it never checked. That is the boundary between the two enforcement tiers, and `--workflow` fails on a project with no round log yet, which every project scaffolded without `--instrument` remains; plain `validate` without `--workflow` is unaffected and still notes an absent log on stderr at exit 0. It also REFUSES a pairing it cannot vouch for: when the round log it is about to read does not live under the project root of the plan it is about to check, `--workflow` reports that and exits non-zero rather than joining the two, since a green over one project's plan and another project's evidence is worse than no answer at all:
+The default scaffold does not create or require a metrics log. For existing instrumented or legacy-plan projects, `validate` checks the workflow's metrics log against its record schema. With `--plan` it also checks a Markdown plan's structured regions (the Roadmap table and the Open Questions queue) against the plan schema, and with `--source` it checks a `<task>.plan.toml` structured source (its schema and internal cross-references). With `--workflow` it cross-references the plan status against the round log: every Roadmap step marked `complete` must have converging round records in the log (or a recorded waiver), so a step marked done without its review loop (or that never reached the clean-round streak its risk class requires) is caught. The workflow check reads the plan from a TOML `--source` when that source declares `[meta].primary = "toml"` (a TOML-only project needs no `--plan`), else from the Markdown `--plan`. It reports every malformed record, region, or cross-reference and every workflow disagreement, and exits non-zero if any exist, so it can gate a commit or run in CI. A `--workflow` run that cannot see a round log is itself one of those failures rather than a skip: with no log at the resolved path the check cannot run, so it reports that and exits non-zero instead of reporting success for a project it never checked. That is the boundary between the two enforcement tiers, and `--workflow` fails on a project with no round log; plain `validate` without `--workflow` is unaffected and still notes an absent log on stderr at exit 0. It also REFUSES a pairing it cannot vouch for: when the round log it is about to read does not live under the project root of the plan it is about to check, `--workflow` reports that and exits non-zero rather than joining the two, since a green over one project's plan and another project's evidence is worse than no answer at all:
 
 ```sh
-# Validate the default metrics log (docs/metrics/workflow.jsonl):
+# Validate the legacy default metrics path (docs/metrics/workflow.jsonl):
 agent-flow validate
 
 # Validate a TOML plan skeleton (its schema and internal cross-references):
