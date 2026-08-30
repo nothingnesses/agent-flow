@@ -257,15 +257,10 @@ fn status_counts_the_plans_own_log_from_either_anchor() {
 	let _ = fs::remove_dir_all(&root);
 }
 
-/// Acceptance check 7: the ledger resolves BESIDE the plan source, so one project's
-/// `## RESUME STATE` block can no longer be printed as another project's resume anchor ON
-/// THE DEFAULT PATH. Both readers are covered, since `next` echoes the same block
-/// `status --resume` prints.
-///
-/// RED before the change: both commands print `HOME resume state.`, this directory's
-/// internal resume state, as the anchor for an unrelated project.
+/// Acceptance check 7: `status --resume` resolves a ledger beside the plan source, while
+/// `next` never emits a ledger or free-form resume block.
 #[test]
-fn the_ledger_resolves_beside_the_plan_source() {
+fn resume_resolves_beside_the_plan_while_next_omits_ledger_text() {
 	let root = scratch("ledger");
 	let home = build_home(&root);
 	let away = build_away(&root, "in-progress");
@@ -284,11 +279,9 @@ fn the_ledger_resolves_beside_the_plan_source() {
 
 	let (code, stdout, stderr) = run(&home, &["next", "--source", &away_plan]);
 	assert_eq!(code, Some(0), "stderr:\n{stderr}");
-	assert!(
-		stdout.contains("AWAY resume state."),
-		"`next` echoes the same block and must read the same ledger; stdout:\n{stdout}"
-	);
+	assert!(!stdout.contains("AWAY resume state."), "stdout:\n{stdout}");
 	assert!(!stdout.contains("HOME resume state."), "stdout:\n{stdout}");
+	assert!(!stdout.contains("RESUME STATE (verbatim"), "stdout:\n{stdout}");
 
 	let _ = fs::remove_dir_all(&root);
 }
