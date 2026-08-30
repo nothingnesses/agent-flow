@@ -33,16 +33,10 @@ clippy:
 fmt:
 	{{ direnv_prefix }} nix fmt
 
-# Regenerate the project's own scaffolded assets from the pack, so the committed
-# `AGENTS.md`, `.agents/`, and plan template stay in sync with the pack (dogfooding).
-# `--instrument` is on because we dogfood the workflow instrumentation: the rendered
-# `AGENTS.md` carries the metrics-logging block, and this project logs its own review
-# rounds to `docs/metrics/workflow.jsonl` (validated with `agent-flow validate`).
-# The raw render is not formatter-clean (prettier owns Markdown wrapping via
-# proseWrap=never), so run the repo-wide formatter afterwards to normalise the
-# generated files. `nix fmt` formats the whole tree, not just the generated files;
-# that is intentional and harmless because treefmt is idempotent (a no-op on files
-# already clean), and it leaves the repo at a stable committed fixed point.
+# Regenerate the project's own reference guidance and role prompts from the built-in
+# pack. The scaffold run leaves working files alone, notably this repository's live
+# `.agents/work.toml` and optional `.agents/checks.toml`; copying the refreshed guidance
+# reference updates the dogfooded root `AGENTS.md` without forcing either working file.
 scaffold-self:
-	{{ direnv_prefix }} cargo run -- scaffold --output-dir . --write --force --principles default --instrument
-	{{ direnv_prefix }} nix fmt
+	{{ direnv_prefix }} cargo run -- scaffold --output-dir . --write --principles default
+	cp .agents/AGENTS.reference.md AGENTS.md

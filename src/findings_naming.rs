@@ -1,29 +1,6 @@
-//! The findings-file naming convention: the ONE canonical statement of the path
-//! FORMAT for a round's findings files (the `docs/plans/<task>.reviews/` directory
-//! and the reviewer / triager / backstop-re-check basenames), authored once as
-//! named-token templates and projected into every view that restates it.
-//!
-//! This differs from `isolation_policy.rs` and `recommendation_rule.rs`: those are
-//! verbatim `&'static str` fragments with no computed input, byte-identical in the
-//! `AGENTS.md` slot and the driver reminder. The findings path is NOT verbatim,
-//! because the driver's value is a PATH bearing runtime tokens (`task`, `step`)
-//! filled per invocation, plus a `<disambiguator>` token the orchestrator fills even
-//! later. So the single source here is a set of angle-bracket-token TEMPLATES,
-//! rendered two ways from the one set of constants:
-//!
-//! - `convention_fragment()` renders the templates with every token left in its
-//!   `<...>` human form, producing the convention sentence substituted into the
-//!   `{{findings_naming}}` slot in `AGENTS.md` (via `build_assets` in `main.rs`).
-//! - the `review_findings_path` / `triage_findings_path` builders fill `<task>` and
-//!   `<step>` (and set `<role>` to the literal `reviewer` for a reviewer's file),
-//!   leaving `<disambiguator>` as the literal token, producing the exact strings the
-//!   `next` driver emits into its `review_findings` / `triage_findings` context slots
-//!   (`next::build_context`).
-//!
-//! Both consumers derive from the one set of template constants, so no second
-//! encoding of the shape exists and the two cannot drift; a byte-guard test pins the
-//! committed scaffold to `convention_fragment()`, and a unit test pins the builders'
-//! filled output.
+//! Legacy findings-path templates used by plan-based `next` and available to
+//! custom packs through `{{findings_naming}}`. The minimal built-in pack emits no
+//! findings directory or naming guidance.
 
 /// The findings-files directory, a named-token template. `<task>` is filled by the
 /// driver builders; the convention sentence names the directory in the hand-authored
@@ -49,7 +26,10 @@ const TRIAGE_RECHECK_BASENAME: &str = "<step>-triage-recheck.md";
 /// substitution (not `format!`) because `format!` cannot leave a named argument
 /// unfilled, and the builders must leave `<disambiguator>` (and, for the convention,
 /// every token) in place.
-fn join_dir(task: &str, basename: &str) -> String {
+fn join_dir(
+	task: &str,
+	basename: &str,
+) -> String {
 	let dir = DIR_TEMPLATE.replace("<task>", task);
 	format!("{dir}/{basename}")
 }
@@ -58,7 +38,10 @@ fn join_dir(task: &str, basename: &str) -> String {
 /// filled, `<role>` set to the literal `reviewer`, `<disambiguator>` left as its
 /// template token for the orchestrator to assign. Reproduces exactly the string the
 /// driver formatted by hand before this module existed.
-pub(crate) fn review_findings_path(task: &str, step: &str) -> String {
+pub(crate) fn review_findings_path(
+	task: &str,
+	step: &str,
+) -> String {
 	let basename = REVIEWER_BASENAME.replace("<step>", step).replace("<role>", "reviewer");
 	join_dir(task, &basename)
 }
@@ -66,17 +49,16 @@ pub(crate) fn review_findings_path(task: &str, step: &str) -> String {
 /// The triager findings-file path the `next` driver emits: `<task>` and `<step>`
 /// filled. Reproduces exactly the string the driver formatted by hand before this
 /// module existed.
-pub(crate) fn triage_findings_path(task: &str, step: &str) -> String {
+pub(crate) fn triage_findings_path(
+	task: &str,
+	step: &str,
+) -> String {
 	let basename = TRIAGE_BASENAME.replace("<step>", step);
 	join_dir(task, &basename)
 }
 
-/// The canonical findings-naming convention sentence, rendered from the same template
-/// constants the driver builders fill, but with every token left in its `<...>` human
-/// form. `build_assets` substitutes this into the `{{findings_naming}}` slot in
-/// `AGENTS.md`, so the human convention and the machine path derive from the one
-/// source and cannot drift. Single-line prose (no manual wrapping) so the plain
-/// scaffold output equals the canonical formatter output and the drift guard passes.
+/// Render the legacy convention from the same templates the plan-based driver
+/// fills. Custom packs may consume it; the minimal built-in pack does not.
 pub(crate) fn convention_fragment() -> String {
 	format!(
 		"The filenames follow one convention so parallel writers never collide: a reviewer's file is `{REVIEWER_BASENAME}`, where the orchestrator assigns each spawned reviewer a distinct disambiguator (its model, or an index); the triager's is `{TRIAGE_BASENAME}`; and the backstop re-check triager's is `{TRIAGE_RECHECK_BASENAME}`."
@@ -86,14 +68,6 @@ pub(crate) fn convention_fragment() -> String {
 #[cfg(test)]
 mod tests {
 	use super::*;
-
-	/// The committed root `AGENTS.md`, embedded so the drift-guard test reads exactly
-	/// the scaffold output the repo ships (dogfooded from the pack).
-	const COMMITTED_AGENTS: &str = include_str!("../AGENTS.md");
-
-	/// The committed `.agents/AGENTS.reference.md`, the tool-owned reference copy of
-	/// the same generated guidance.
-	const COMMITTED_REFERENCE: &str = include_str!("../.agents/AGENTS.reference.md");
 
 	#[test]
 	fn the_fragment_states_the_naming_convention() {
@@ -140,25 +114,6 @@ mod tests {
 		assert_eq!(
 			triage_findings_path("demo", "core-assets"),
 			"docs/plans/demo.reviews/core-assets-triage.md"
-		);
-	}
-
-	#[test]
-	fn the_committed_scaffold_carries_the_convention_fragment() {
-		// Drift guard on the PACK generation path: the committed scaffold output (the
-		// dogfooded root `AGENTS.md` and its reference copy) must carry the exact
-		// fragment this source generates. This fails on a hand edit of the fragment in
-		// the committed output (it no longer matches) and on a stale fragment after a
-		// source edit that was not re-scaffolded (the fragment changes while the
-		// committed bytes do not). The fix in either case is a scaffold regeneration.
-		let fragment = convention_fragment();
-		assert!(
-			COMMITTED_AGENTS.contains(&fragment),
-			"root AGENTS.md is missing the current generated findings-naming fragment; regenerate the scaffold"
-		);
-		assert!(
-			COMMITTED_REFERENCE.contains(&fragment),
-			".agents/AGENTS.reference.md is missing the current generated findings-naming fragment; regenerate the scaffold"
 		);
 	}
 }

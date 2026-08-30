@@ -1,97 +1,46 @@
-# Deterministic checks for this project (the checks module: `--module checks`).
+# Optional deterministic product-development checks (`--module checks`).
 #
-# This file is YOURS to edit. It is created once (create-if-absent) and never
-# overwritten by re-running the scaffolder, so curate it freely. It is a pure
-# declaration of the commands that verify this project's code; it does not encode
-# WHEN a check runs or with what expected outcome. That is a workflow concern (the
-# implementer's verify step and the checks-reviewer), so a test that must "fail
-# first" is not a field here.
+# This working file is created once and is yours to edit. It is tooling, not task
+# state, review evidence, or a record of when a command ran.
 #
-# Each entry is a flat `[[check]]` table. Keep values to single-line strings (the
-# schema is a flat array of tables: no inline tables, no multi-line strings), so a
-# simple reader can parse it. Fields:
-#   name      (required) a unique id, shown in findings.
-#   kind      (required) one of: lint | format | test | mutation.
-#   command   (required) the primary command. lint: detect (read-only).
-#             format: APPLY (rewrites files). test: run the suite. mutation: run
-#             the mutation tool.
-#   check     (optional) a secondary command whose meaning is by kind. format:
-#             the check-mode command. Prefer a NON-mutating dry-run where the
-#             formatter supports one (for example `rustfmt --check`,
-#             `prettier --check`, `black --check`), which exits non-zero when
-#             files are unformatted without changing them. Some formatters have no
-#             dry-run (treefmt v2, via `nix fmt`, is one: `--fail-on-change`
-#             formats in place THEN fails if anything changed), so their check
-#             mutates the tree and must be run where the changes are safe to
-#             discard. test: the compile-only command (exit 0 means "it builds",
-#             which lets the workflow tell "compiles and fails" from "does not
-#             compile"). lint and mutation do not use it.
-#   paths     (optional) an array of globs scoping the check to matching files, so
-#             in a polyglot repo a check runs only over its language (see the
-#             commented `ruff` example below, scoped to `**/*.py`).
-#   budget    (optional, mutation only) a wall-clock cap, for example "10m".
-#   threshold (optional, mutation only) the max surviving mutants tolerated
-#             before a finding is raised.
+# Each `[[check]]` is a flat table:
+#   name      required unique id shown in output
+#   kind      required: lint | format | test | mutation
+#   command   required primary command; for format this is the apply command
+#   check     optional secondary command; for format this is the check command
+#   paths     optional globs that scope a check to matching files
+#   budget    optional mutation wall-clock cap, such as "10m"
+#   threshold optional maximum surviving mutants
 #
-# Who runs what: in the work-review phase the checks-reviewer runs the lint
-# `command`s and the format `check`s and reports findings (it authors no fixes),
-# though a format `check` on an in-place formatter (see the `check` field above)
-# does mutate a discardable working copy. The implementer applies the format
-# `command`s over the files it changed during its verify step. Plug in any other
-# linter or formatter by adding a `[[check]]` row; nothing here is privileged.
+# `agent-flow checks` runs lint commands and format check commands in temporary
+# isolation. Prefer a non-mutating format check such as `rustfmt --check`. Some
+# tools, including treefmt v2 via `nix fmt --fail-on-change`, modify the isolated
+# copy before reporting failure; those changes are discarded. The current checks
+# command skips test and mutation entries.
+#
+# An implementer may run a format entry's apply command over files it changed.
+# The optional checks reviewer reports command output directly and edits nothing.
+# Neither result replaces independent product review.
 
-# -- First-party linter: ast-grep (structural, language-aware lint). The module
-#    seeds ast-grep's own config at .agents/checks/ast-grep/sgconfig.yml plus one
-#    example rule under .agents/checks/ast-grep/rules/, so this runs out of the
-#    box; curate your own rules in that directory. Replace this row with your
-#    language's linter (ruff / eslint / clippy / etc.) in the same shape if
-#    ast-grep does not cover your language. --
 [[check]]
 name = "ast-grep"
 kind = "lint"
 command = "ast-grep scan --config .agents/checks/ast-grep/sgconfig.yml"
 
-# -- Formatter. The implementer runs `command` to APPLY formatting over its
-#    changed files; the checks-reviewer runs `check` to confirm the tree is
-#    formatted. `nix fmt` is this project's convention (treefmt v2); swap in your
-#    own. Note treefmt v2 has no true dry-run: `--fail-on-change` formats in place
-#    and then exits non-zero if anything changed, so this `check` mutates the tree
-#    (unlike a real dry-run such as `rustfmt --check`). Run it where the changes
-#    are safe to discard. --
 [[check]]
 name = "format"
 kind = "format"
 command = "nix fmt"
 check = "nix fmt -- --fail-on-change"
 
-# -- Plug-in examples (commented; nothing here runs by default). Any tool is one
-#    `[[check]]` row naming a command, ast-grep included; these show the pattern
-#    for non-ast-grep tools and for scoping a check to one language. --
-
-# -- A text/regex linter plugging in identically to ast-grep, this one forbidding
-#    non-ASCII bytes (a common convention; this very project enforces it). It is
-#    grep-based, not an ast-grep rule, because ast-grep rules must match AST kinds,
-#    so a bare byte/regex check is not expressible as one. ripgrep exits 0 when it
-#    FINDS a match (a violation), which is inverted from a pass/fail gate, so the
-#    command wraps it in `! ...` to exit non-zero on a hit and zero when clean.
-#    Remove or edit this if the project legitimately uses unicode. --
-# [[check]]
-# name = "ascii-clean"
-# kind = "lint"
-# command = "sh -c '! rg --pcre2 -n \"[^\\x00-\\x7F]\" .'"
-
-# -- Any other linter plugs in as one row. `paths` scopes it to one language's
-#    files, so a polyglot repo (Rust + Python + TS, say) just adds one row per
-#    tool, each scoped via `paths`. --
+# Example language-specific linter:
 # [[check]]
 # name = "ruff"
 # kind = "lint"
 # command = "ruff check"
 # paths = ["**/*.py"]
 
-# -- Reserved kinds. Inert in the checks module; the later test-driven and
-#    mutation modules tell you to uncomment and fill these. Shown here as schema
-#    documentation so the schema is defined once. --
+# Reserved slower kinds, skipped by the current checks command:
 # [[check]]
 # name = "test"
 # kind = "test"

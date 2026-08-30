@@ -1,19 +1,7 @@
-//! The workflow control-constants spec: the deterministic CONTROL CONSTANTS the
-//! workflow counts and thresholds against, parsed from `.agents/workflow.toml` (a
-//! tool-owned, pack-shipped reference asset) or taken from a built-in default.
-//!
-//! This is the data-driven boundary of the workflow driver (Stage 0a): a workflow
-//! VALUE change (a required streak, the round cap, the backstop severity) is a data
-//! edit reviewable like a plan edit, while the transition FUNCTION (the streak/cap
-//! arithmetic) stays in Rust. Today this single-sources the one convergence constant
-//! W3 checks; `round_cap`/`backstop_severity` are carried and exposed but NOT yet
-//! wired into any enforcement (adding a cap/backstop gate would change behaviour and
-//! belongs to a later stage).
-//!
-//! `WorkflowSpec::builtin()` returns today's hardcoded constants, so a project that
-//! ships no spec validates byte-for-byte unchanged. A drift-guard test parses the
-//! shipped `pack/workflow.toml` and asserts it equals `builtin()`, so the asset and
-//! the built-in default cannot diverge.
+//! Legacy workflow control constants used by plan-based `next` and
+//! `validate --workflow`. The minimal built-in pack emits no workflow spec or
+//! convergence machinery; parsing remains for existing projects and explicit
+//! `--workflow-spec` inputs.
 
 use {
 	crate::metrics::{
@@ -43,10 +31,8 @@ pub(crate) struct WorkflowSpec {
 }
 
 impl WorkflowSpec {
-	/// The built-in default: today's hardcoded constants (`low_risk` 1, `risky` 2,
-	/// cap 5, backstop `high`). A project shipping no `.agents/workflow.toml` uses
-	/// this, so it validates byte-for-byte unchanged. Pinned equal to the shipped
-	/// asset by the drift-guard test.
+	/// The compatibility default for legacy plan-based commands: `low_risk` 1,
+	/// `risky` 2, cap 5, and backstop `high`.
 	pub(crate) fn builtin() -> Self {
 		WorkflowSpec {
 			required_streak_low_risk: 1,
@@ -101,18 +87,8 @@ impl WorkflowSpec {
 	/// convergence constants (the required clean-round count per risk class, the
 	/// total-round cap, and the backstop severity threshold), derived from this spec.
 	///
-	/// This is the value the pack substitutes into the `{{workflow_control}}` slot of
-	/// the scaffolded `AGENTS.md` (see `build_assets` in `main.rs`), the forward
-	/// prose-generating member of the workflow projection family: the fragment and
-	/// the arithmetic the tool runs both read the one spec, so the process prose and
-	/// the process logic cannot drift. The surrounding rationale in `AGENTS.md` (WHY
-	/// two clean rounds, WHY a cap) stays hand-authored and refers to these values
-	/// rather than restating them.
-	///
-	/// The built-in pack renders this from `WorkflowSpec::builtin()`, which the
-	/// shipped `pack/workflow.toml` is pinned equal to (see the drift-guard test), so
-	/// for the default scaffold the fragment states the same constants the shipped
-	/// spec holds.
+	/// Custom packs may consume this through the reserved `{{workflow_control}}`
+	/// variable. The minimal built-in pack deliberately has no such slot.
 	pub(crate) fn control_fragment(&self) -> String {
 		format!(
 			"These control constants are generated from the workflow spec, so this statement and the arithmetic the tool runs from that spec cannot drift: converging a review loop takes {low} consecutive clean round for a trivial or low-risk artifact and {risky} for a risky or high-blast-radius one; the total-round cap that escalates the loop to a human is {cap} rounds; and the backstop re-check covers a dismissed finding whose severity is {severity} or above.",
@@ -182,9 +158,9 @@ impl std::error::Error for WorkflowSpecError {}
 mod tests {
 	use super::*;
 
-	/// The shipped reference asset, embedded so the drift-guard test reads exactly
-	/// what the pack ships.
-	const SHIPPED: &str = include_str!("../pack/workflow.toml");
+	/// The pre-reset config retained as a compatibility parser fixture. It is not a
+	/// built-in pack asset.
+	const LEGACY_FIXTURE: &str = include_str!("testdata/legacy-workflow.toml");
 
 	#[test]
 	fn builtin_equals_the_old_hardcoded_constants() {
@@ -199,20 +175,11 @@ mod tests {
 	}
 
 	#[test]
-	fn the_shipped_asset_parses_to_exactly_the_builtin() {
-		// Drift guard: the pack-shipped `workflow.toml` and `WorkflowSpec::builtin()`
-		// cannot diverge, so editing one without the other fails here.
-		let parsed = WorkflowSpec::parse(SHIPPED).expect("the shipped workflow.toml must parse");
+	fn the_legacy_fixture_parses_to_exactly_the_compatibility_default() {
+		let parsed =
+			WorkflowSpec::parse(LEGACY_FIXTURE).expect("the legacy workflow fixture must parse");
 		assert_eq!(parsed, WorkflowSpec::builtin());
 	}
-
-	/// The committed root `AGENTS.md`, embedded so the drift-guard test reads exactly
-	/// the scaffold output the repo ships (dogfooded from the pack).
-	const COMMITTED_AGENTS: &str = include_str!("../AGENTS.md");
-
-	/// The committed `.agents/AGENTS.reference.md`, the tool-owned reference copy of
-	/// the same generated guidance.
-	const COMMITTED_REFERENCE: &str = include_str!("../.agents/AGENTS.reference.md");
 
 	#[test]
 	fn the_control_fragment_states_the_spec_constants() {
@@ -224,26 +191,6 @@ mod tests {
 		assert_eq!(
 			WorkflowSpec::builtin().control_fragment(),
 			"These control constants are generated from the workflow spec, so this statement and the arithmetic the tool runs from that spec cannot drift: converging a review loop takes 1 consecutive clean round for a trivial or low-risk artifact and 2 for a risky or high-blast-radius one; the total-round cap that escalates the loop to a human is 5 rounds; and the backstop re-check covers a dismissed finding whose severity is high or above."
-		);
-	}
-
-	#[test]
-	fn the_committed_scaffold_carries_the_generated_fragment() {
-		// Drift guard on the PACK generation path: the committed scaffold output (the
-		// dogfooded root `AGENTS.md` and its reference copy) must carry the exact
-		// fragment `WorkflowSpec::builtin()` generates. This fails on a hand edit of
-		// the fragment in the committed output (it no longer matches) and on a stale
-		// fragment after a `builtin()` constant edit that was not re-scaffolded (the
-		// freshly generated fragment changes while the committed bytes do not). The
-		// fix in either case is `just scaffold-self`.
-		let fragment = WorkflowSpec::builtin().control_fragment();
-		assert!(
-			COMMITTED_AGENTS.contains(&fragment),
-			"root AGENTS.md is missing the current generated workflow-control fragment; run `just scaffold-self`"
-		);
-		assert!(
-			COMMITTED_REFERENCE.contains(&fragment),
-			".agents/AGENTS.reference.md is missing the current generated workflow-control fragment; run `just scaffold-self`"
 		);
 	}
 
