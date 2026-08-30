@@ -40,7 +40,7 @@ fn work_source(change: &str) -> String {
 		 [[step]]\n\
 		 id = \"second\"\n\
 		 status = \"active\"\n\
-		 blocked_by = [\"first\"]\n\
+		 blocked_by = []\n\
 		 user_problem = \"Selected problem\"\n\
 		 change = {change:?}\n\
 		 acceptance = [\"Acceptance one\", \"Acceptance two\"]\n\
@@ -175,16 +175,16 @@ fn invalid_work_sources_fail_without_stdout_and_name_the_source() {
 }
 
 #[test]
-fn oversized_next_output_fails_without_truncating() {
+fn oversized_work_source_fails_before_next_projects_it() {
 	let root = scratch("oversized");
 	write(&root.join(".agents/work.toml"), &work_source(&"x".repeat(8_192)));
 
 	for args in [&["next"][..], &["next", "--json"][..]] {
 		let output = run(&root, args);
 		assert_eq!(output.status.code(), Some(1));
-		assert!(output.stdout.is_empty(), "oversized output must not be partially written");
+		assert!(output.stdout.is_empty(), "oversized input must not write partial output");
 		assert!(
-			String::from_utf8_lossy(&output.stderr).contains("the limit is 8192 bytes"),
+			String::from_utf8_lossy(&output.stderr).contains("the limit is 4096 bytes"),
 			"{}",
 			String::from_utf8_lossy(&output.stderr)
 		);

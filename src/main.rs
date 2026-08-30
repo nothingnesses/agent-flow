@@ -439,9 +439,9 @@ struct Cli {
 enum Command {
 	/// Scaffold the agent workflow into a project. On a terminal the principle selector opens unless --write or --dry-run is given.
 	Scaffold(ScaffoldArgs),
-	/// Validate the workflow's metrics log against the record schema, (with --plan) the plan's structured regions, and (with --workflow) the plan status against the round log; exits non-zero on any violation.
+	/// Validate bounded `.agents/work.toml` state by default. Explicit legacy plan, metrics, or workflow inputs, or no work file, retain the legacy validator.
 	Validate(ValidateArgs),
-	/// Project the workflow state: emit a derived summary of the plan's Roadmap steps and open questions plus a metrics-record count. Best-effort; a missing file yields a partial projection. With --resume, print the ledger's `## RESUME STATE` block verbatim instead.
+	/// Project every bounded work step, dependency status, and the selected action. Explicit legacy plan, metrics, or resume inputs, or no work file, retain the legacy projection.
 	Status(StatusArgs),
 	/// Project every active unit and one selected action from `.agents/work.toml`. Falls back to the legacy plan projection when an old plan is explicitly selected or no work file exists. Human text, or --json.
 	Next(NextArgs),
@@ -500,19 +500,19 @@ struct ScaffoldArgs {
 /// Arguments for the `validate` subcommand.
 #[derive(Args)]
 struct ValidateArgs {
-	/// Path to the JSONL metrics log to validate. An explicit value is used verbatim. When omitted, the log is `docs/metrics/workflow.jsonl` under the project root derived from the plan source: the nearest `<root>/docs/plans/` ancestor of --source (else of --plan), or the source's own directory when it has no such ancestor. With neither --source nor --plan there is nothing to anchor to and the path stays `docs/metrics/workflow.jsonl` relative to the current directory.
+	/// Legacy mode: path to the JSONL metrics log to validate. An explicit value is used verbatim. When omitted, the log is `docs/metrics/workflow.jsonl` under the project root derived from the plan source: the nearest `<root>/docs/plans/` ancestor of --source (else of --plan), or the source's own directory when it has no such ancestor. With neither --source nor --plan there is nothing to anchor to and the path stays `docs/metrics/workflow.jsonl` relative to the current directory.
 	#[arg(long)]
 	metrics: Option<PathBuf>,
-	/// Path to a Markdown plan to validate (its Roadmap and Open Questions regions). When omitted, only the metrics log is validated.
+	/// Legacy mode: path to a Markdown plan to validate (its Roadmap and Open Questions regions). When omitted, only the metrics log is validated.
 	#[arg(long)]
 	plan: Option<PathBuf>,
-	/// Path to a `<task>.plan.toml` structured source to validate (its schema and internal cross-references). When omitted, no source is validated. When it declares `[meta].primary = "toml"`, it also drives the --workflow check (its steps, questions, waivers, and baseline) instead of the Markdown --plan.
+	/// Path to `.agents/work.toml`, or in legacy mode a `<task>.plan.toml` structured source. With no legacy flags, the existing default `.agents/work.toml` is used automatically.
 	#[arg(long)]
 	source: Option<PathBuf>,
-	/// Cross-reference the plan's Roadmap status against the round log (the workflow invariants): every `complete` step must have converged round records. Reads the plan from a TOML source (via --source) when it declares `[meta].primary = "toml"`, else from the Markdown --plan; the round log comes from --metrics (see that flag's help for the rule). A TOML-primary --source needs no --plan (a TOML-only project has no Markdown plan); the Markdown path still needs --plan present. Requesting --workflow with neither a TOML-primary --source nor a --plan is an error, and so is a round log that lies outside the project root of the plan being checked: the tool cannot vouch that such a log's records belong to that plan, so it REFUSES the pairing and exits non-zero rather than reporting on it. So is no round log at the resolved path at all, or a path the check cannot answer that question for: the check cannot run, and a check that did not run must not report success.
+	/// Legacy mode: cross-reference the plan's Roadmap status against the round log (the workflow invariants): every `complete` step must have converged round records. Reads the plan from a TOML source (via --source) when it declares `[meta].primary = "toml"`, else from the Markdown --plan; the round log comes from --metrics (see that flag's help for the rule). A TOML-primary --source needs no --plan (a TOML-only project has no Markdown plan); the Markdown path still needs --plan present. Requesting --workflow with neither a TOML-primary --source nor a --plan is an error, and so is a round log that lies outside the project root of the plan being checked: the tool cannot vouch that such a log's records belong to that plan, so it REFUSES the pairing and exits non-zero rather than reporting on it. So is no round log at the resolved path at all, or a path the check cannot answer that question for: the check cannot run, and a check that did not run must not report success.
 	#[arg(long)]
 	workflow: bool,
-	/// Path to a `workflow.toml` control-constants spec supplying the convergence streaks, round cap, and backstop severity the --workflow check reads. When omitted, the built-in default (today's constants) is used, so the check is unchanged. A malformed spec is a hard error (non-zero exit). Requires --workflow (the flag is meaningless without it, and would otherwise leave a malformed spec unparsed and exit 0).
+	/// Legacy mode: path to a `workflow.toml` control-constants spec supplying the convergence streaks, round cap, and backstop severity the --workflow check reads. When omitted, the built-in default (today's constants) is used, so the check is unchanged. A malformed spec is a hard error (non-zero exit). Requires --workflow (the flag is meaningless without it, and would otherwise leave a malformed spec unparsed and exit 0).
 	#[arg(long, requires = "workflow")]
 	workflow_spec: Option<PathBuf>,
 }
@@ -520,22 +520,22 @@ struct ValidateArgs {
 /// Arguments for the `status` subcommand.
 #[derive(Args)]
 struct StatusArgs {
-	/// Path to a Markdown plan to project (its Roadmap steps and Open Questions items). When omitted, the plan part of the projection is empty.
+	/// Legacy mode: path to a Markdown plan to project (its Roadmap steps and Open Questions items). When omitted, the plan part of the projection is empty.
 	#[arg(long)]
 	plan: Option<PathBuf>,
-	/// Path to a `<task>.plan.toml` structured source. When it declares `[meta].primary = "toml"`, the plan projection is read from it instead of --plan (else --plan is used).
+	/// Path to `.agents/work.toml`, or in legacy mode a `<task>.plan.toml` structured source. With no legacy flags, the existing default `.agents/work.toml` is used automatically.
 	#[arg(long)]
 	source: Option<PathBuf>,
-	/// Path to the JSONL metrics log to summarise (a record count). An explicit value is used verbatim. When omitted, the log is `docs/metrics/workflow.jsonl` under the project root derived from the plan source: the nearest `<root>/docs/plans/` ancestor of --source (else of --plan), or the source's own directory when it has no such ancestor. With neither --source nor --plan there is nothing to anchor to and the path stays `docs/metrics/workflow.jsonl` relative to the current directory.
+	/// Legacy mode: path to the JSONL metrics log to summarise (a record count). An explicit value is used verbatim. When omitted, the log is `docs/metrics/workflow.jsonl` under the project root derived from the plan source: the nearest `<root>/docs/plans/` ancestor of --source (else of --plan), or the source's own directory when it has no such ancestor. With neither --source nor --plan there is nothing to anchor to and the path stays `docs/metrics/workflow.jsonl` relative to the current directory.
 	#[arg(long)]
 	metrics: Option<PathBuf>,
 	/// Emit the projection as JSON instead of a short human-readable summary.
 	#[arg(long)]
 	json: bool,
-	/// Print the ledger's `## RESUME STATE` block verbatim (from --ledger-fragment, or `<task>.ledger.md` beside the plan source) instead of the state projection. Exits 0 with a note when the ledger is absent or carries no such section.
+	/// Legacy mode: print the ledger's `## RESUME STATE` block verbatim (from --ledger-fragment, or `<task>.ledger.md` beside the plan source) instead of the state projection. Exits 0 with a note when the ledger is absent or carries no such section.
 	#[arg(long)]
 	resume: bool,
-	/// Path to the ledger fragment to read the `## RESUME STATE` block from (with --resume). Defaults to `<task>.ledger.md` BESIDE the plan source, where `<task>` is derived from that source's filename; the ledger lives next to the plan it belongs to, so no root derivation is involved. With neither --source nor --plan there is no directory to sit beside and the path stays `docs/plans/<task>.ledger.md` relative to the current directory. Requires --resume (the flag is meaningless without it, and would otherwise be silently ignored on an exit-0 run).
+	/// Legacy mode: path to the ledger fragment to read the `## RESUME STATE` block from (with --resume). Defaults to `<task>.ledger.md` BESIDE the plan source, where `<task>` is derived from that source's filename; the ledger lives next to the plan it belongs to, so no root derivation is involved. With neither --source nor --plan there is no directory to sit beside and the path stays `docs/plans/<task>.ledger.md` relative to the current directory. Requires --resume (the flag is meaningless without it, and would otherwise be silently ignored on an exit-0 run).
 	#[arg(long, requires = "resume")]
 	ledger_fragment: Option<PathBuf>,
 }
@@ -869,10 +869,13 @@ fn report_workflow(
 	}
 }
 
-/// Validate the metrics log against the record schema and, when `--plan` is given, the
-/// plan's structured regions against the plan schema.
+/// Validate bounded work state by default, before resolving or reading any legacy input.
+/// An explicit legacy flag, a non-work `--source`, or no default work file dispatches to
+/// the compatibility validator described below.
 ///
-/// The log is `--metrics` verbatim when given, else `docs/metrics/workflow.jsonl` under
+/// In legacy mode, validate the metrics log against the record schema and, when `--plan`
+/// is given, the plan's structured regions against the plan schema. The log is `--metrics`
+/// verbatim when given, else `docs/metrics/workflow.jsonl` under
 /// the project root derived from the plan source (`resolve_metrics_path`).
 ///
 /// An absent file (the metrics log, or a `--plan` path) is not a validation
@@ -907,6 +910,10 @@ fn report_workflow(
 /// (`validate_plan`) is NOT run against it; the TOML is validated instead by
 /// `validate_source`. In Markdown mode `validate_plan` runs on `--plan` unchanged.
 fn run_validate(args: ValidateArgs) -> io::Result<()> {
+	if let Some(path) = validate_work_source(&args)? {
+		return run_work_validate(&path);
+	}
+
 	let mut problems: Vec<String> = Vec::new();
 	let mut summaries: Vec<String> = Vec::new();
 
@@ -1239,12 +1246,14 @@ fn note_missing_anchors(
 	}
 }
 
-/// Emit a best-effort projection of the workflow state: from `--plan` (when given
-/// and readable) the Roadmap steps and Open Questions items, and from the metrics
-/// log (when present) a record count. Unlike `validate`, this never hard-fails on
-/// a missing or malformed file; a missing plan or metrics file simply leaves that
-/// part of the projection empty. With `--json` the projection is printed as
-/// pretty JSON; otherwise a short human-readable summary is printed.
+/// Project bounded work state by default, before resolving or reading any legacy input.
+/// An explicit legacy flag, a non-work `--source`, or no default work file dispatches to
+/// the compatibility projection described below.
+///
+/// In legacy mode, emit a best-effort projection from `--plan` (when given and readable)
+/// and from the metrics log (when present). This compatibility path does not hard-fail on
+/// a missing or malformed file; a missing part is left out. With `--json` the projection
+/// is pretty JSON; otherwise it is a short human-readable summary.
 ///
 /// The metrics log is resolved exactly as `validate` resolves it
 /// (`resolve_metrics_path`); with `--resume`, the ledger is resolved beside the plan source
@@ -1257,6 +1266,10 @@ fn note_missing_anchors(
 /// part that is not available for the projection, which is the documented contract applied
 /// literally.
 fn run_status(args: StatusArgs) -> io::Result<()> {
+	if let Some(path) = status_work_source(&args)? {
+		return run_work_status(&path, args.json);
+	}
+
 	// Before the `--resume` split, so BOTH slices report a typo'd anchor. Whether that anchor
 	// supplies a containment root is `resume_roots`'s rule and depends on what else was
 	// supplied (beside an anchor on disk it supplies none), but the note is owed either way:
@@ -1739,8 +1752,113 @@ fn run_resume(args: &StatusArgs) -> io::Result<()> {
 
 const DEFAULT_WORK_SOURCE: &str = ".agents/work.toml";
 
+fn is_work_source(path: &Path) -> bool {
+	path.ends_with(Path::new(DEFAULT_WORK_SOURCE))
+}
+
+fn default_work_source(
+	source: &Option<PathBuf>,
+	legacy_input_selected: bool,
+) -> io::Result<Option<PathBuf>> {
+	if legacy_input_selected {
+		return Ok(None);
+	}
+	if let Some(path) = source {
+		return Ok(is_work_source(path).then(|| path.clone()));
+	}
+	let default = PathBuf::from(DEFAULT_WORK_SOURCE);
+	Ok(default.try_exists()?.then_some(default))
+}
+
+fn validate_work_source(args: &ValidateArgs) -> io::Result<Option<PathBuf>> {
+	default_work_source(
+		&args.source,
+		args.metrics.is_some()
+			|| args.plan.is_some()
+			|| args.workflow
+			|| args.workflow_spec.is_some(),
+	)
+}
+
+fn status_work_source(args: &StatusArgs) -> io::Result<Option<PathBuf>> {
+	default_work_source(
+		&args.source,
+		args.plan.is_some()
+			|| args.metrics.is_some()
+			|| args.resume
+			|| args.ledger_fragment.is_some(),
+	)
+}
+
+fn load_work_source(path: &Path) -> work::WorkFile {
+	match work::load(path) {
+		Ok(work) => work,
+		Err(error) => {
+			eprintln!("{}: {error}", path.display());
+			std::process::exit(1);
+		}
+	}
+}
+
+/// The printable source label for the bounded-work `validate`/`status` output, or a
+/// refusal. Both commands print the path beside state they vouch for, so a path label
+/// carrying a control character could forge a line there; this rejects it BEFORE the load,
+/// exits nonzero with nothing on stdout, and reports the character rather than the path so
+/// the refusal itself echoes neither the raw path nor the forged line.
+fn work_source_label(path: &Path) -> String {
+	match work::source_label(path) {
+		Ok(label) => label,
+		Err(error) => {
+			eprintln!("{error}");
+			std::process::exit(1);
+		}
+	}
+}
+
+fn emit_complete_output(output: &str) -> io::Result<()> {
+	let stdout = io::stdout();
+	let mut lock = stdout.lock();
+	lock.write_all(output.as_bytes())?;
+	lock.write_all(b"\n")
+}
+
+fn run_work_validate(path: &Path) -> io::Result<()> {
+	let source = work_source_label(path);
+	let work = load_work_source(path);
+	let output = format!(
+		"{source}: {} steps, selected action `{}`, valid",
+		work.steps.len(),
+		work.selected_action
+	);
+	let bytes = output.len().saturating_add(1);
+	if bytes > work::MAX_STATUS_OUTPUT_BYTES {
+		return Err(io::Error::other(format!(
+			"validate output is {bytes} bytes; the limit is {} bytes",
+			work::MAX_STATUS_OUTPUT_BYTES
+		)));
+	}
+	emit_complete_output(&output)
+}
+
+fn run_work_status(
+	path: &Path,
+	json: bool,
+) -> io::Result<()> {
+	let source = work_source_label(path);
+	let work = load_work_source(path);
+	let projection = work::project_status(source, &work);
+	let output = if json {
+		work::render_status_json(&projection).map_err(io::Error::other)?
+	} else {
+		work::render_status_human(&projection)
+	};
+	work::enforce_status_output_size(&output)
+		.map_err(|error| io::Error::other(error.to_string()))?;
+	emit_complete_output(&output)
+}
+
 fn next_work_source(args: &NextArgs) -> io::Result<Option<PathBuf>> {
-	if args.source.as_ref().is_some_and(|path| path.ends_with(Path::new(DEFAULT_WORK_SOURCE))) {
+	if args.source.as_ref().is_some_and(|path| is_work_source(path)) {
 		return Ok(args.source.clone());
 	}
 	if args.source.is_none() && args.plan.is_none() {
@@ -1764,15 +1882,7 @@ fn run_work_next(
 	path: &Path,
 	json: bool,
 ) -> io::Result<()> {
-	let contents = fs::read_to_string(path).map_err(|error| {
-		io::Error::new(
-			error.kind(),
-			format!("could not read work source {}: {error}", path.display()),
-		)
-	})?;
-	let work = work::parse(&contents).map_err(|error| {
-		io::Error::new(io::ErrorKind::InvalidData, format!("{}: {error}", path.display()))
-	})?;
+	let work = load_work_source(path);
 	let projection = next::project_work(path.display().to_string(), &work);
 	let output = if json {
 		next::render_work_json(&projection).map_err(io::Error::other)?

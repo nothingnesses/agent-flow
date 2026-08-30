@@ -41,6 +41,7 @@ use {
 			},
 		},
 		work::{
+			Dependency,
 			WorkFile,
 			WorkStatus,
 		},
@@ -67,11 +68,15 @@ pub(crate) struct WorkProjection {
 	pub(crate) selected_action: SelectedAction,
 }
 
+/// One active unit: its id, its status, and its declared predecessors WITH their statuses.
+/// The statuses are carried rather than bare ids because an active unit's predecessors are
+/// all complete (the parser enforces it), so a bare `blocked_by` list named a dependency
+/// that has already been met as though it still held the unit up.
 #[derive(Debug, Serialize)]
 pub(crate) struct ActiveUnit {
 	pub(crate) id: String,
 	pub(crate) status: WorkStatus,
-	pub(crate) blocked_by: Vec<String>,
+	pub(crate) dependencies: Vec<Dependency>,
 }
 
 #[derive(Debug, Serialize)]
@@ -97,7 +102,7 @@ pub(crate) fn project_work(
 			.map(|step| ActiveUnit {
 				id: step.id.clone(),
 				status: step.status,
-				blocked_by: step.blocked_by.clone(),
+				dependencies: work.dependencies(step),
 			})
 			.collect(),
 		selected_action: SelectedAction {
@@ -117,12 +122,22 @@ pub(crate) fn render_work_human(projection: &WorkProjection) -> String {
 		projection.active_units.len()
 	);
 	for unit in &projection.active_units {
-		let blockers = if unit.blocked_by.is_empty() {
-			"unblocked".to_string()
+		// The same `<id> [<status>]` dependency phrasing `status` prints, for the same
+		// reason: naming a met predecessor a blocker would read as work still owed.
+		let dependencies = if unit.dependencies.is_empty() {
+			"none".to_string()
 		} else {
-			format!("blocked by: {}", unit.blocked_by.join(", "))
+			unit.dependencies
+				.iter()
+				.map(|dependency| format!("{} [{}]", dependency.id, dependency.status.label()))
+				.collect::<Vec<_>>()
+				.join(", ")
 		};
-		out.push_str(&format!("- {} [{}; {blockers}]\n", unit.id, unit.status.label()));
+		out.push_str(&format!(
+			"- {} [{}; dependencies: {dependencies}]\n",
+			unit.id,
+			unit.status.label()
+		));
 	}
 
 	let action = &projection.selected_action;
@@ -1354,7 +1369,7 @@ mod tests {
 			 [[step]]\n\
 			 id = \"selected-active\"\n\
 			 status = \"active\"\n\
-			 blocked_by = [\"first-active\"]\n\
+			 blocked_by = []\n\
 			 user_problem = \"Selected problem\"\n\
 			 change = \"Selected change\"\n\
 			 acceptance = [\"Acceptance one\", \"Acceptance two\"]\n\
@@ -1426,6 +1441,76 @@ mod tests {
 			1
 		);
 		assert_eq!(human_one.matches("SELECTED ACTION").count(), 1);
+	}
+
+	/// The shape the live `.agents/work.toml` carries: a complete step, the active step
+	/// that depended on it, and a pending step waiting on the active one.
+	fn current_state_fixture() -> WorkFile {
+		let source = "version = 1\nselected_action = \"active-step\"\n\n\
+			 [[step]]\n\
+			 id = \"complete-step\"\n\
+			 status = \"complete\"\n\
+			 blocked_by = []\n\
+			 user_problem = \"Complete problem\"\n\
+			 change = \"Complete change\"\n\
+			 acceptance = [\"Complete acceptance\"]\n\
+			 why_next = \"Complete why\"\n\n\
+			 [[step]]\n\
+			 id = \"active-step\"\n\
+			 status = \"active\"\n\
+			 blocked_by = [\"complete-step\"]\n\
+			 user_problem = \"Active problem\"\n\
+			 change = \"Active change\"\n\
+			 acceptance = [\"Active acceptance\"]\n\
+			 why_next = \"Active why\"\n\n\
+			 [[step]]\n\
+			 id = \"pending-step\"\n\
+			 status = \"pending\"\n\
+			 blocked_by = [\"active-step\"]\n\
+			 user_problem = \"Pending problem\"\n\
+			 change = \"Pending change\"\n\
+			 acceptance = [\"Pending acceptance\"]\n\
+			 why_next = \"Pending why\"\n";
+		crate::work::parse(source).unwrap()
+	}
+
+	#[test]
+	fn an_active_unit_names_its_complete_predecessor_a_met_dependency() {
+		let projection = project_work(".agents/work.toml".to_string(), &current_state_fixture());
+		let unit = &projection.active_units[0];
+		assert_eq!(unit.id, "active-step");
+		assert_eq!(unit.dependencies.len(), 1);
+		assert_eq!(unit.dependencies[0].id, "complete-step");
+		assert_eq!(unit.dependencies[0].status, WorkStatus::Complete);
+
+		// The human line calls the met predecessor a dependency and reports its status, so
+		// nothing reads as work still owed.
+		let human = render_work_human(&projection);
+		assert!(
+			human.contains("- active-step [active; dependencies: complete-step [complete]]"),
+			"{human}"
+		);
+		assert!(!human.contains("blocked"), "{human}");
+
+		// The JSON is equally unambiguous: a `dependencies` list of id/status pairs, with no
+		// bare `blocked_by` list that a met dependency could be read out of.
+		let json = render_work_json(&projection).unwrap();
+		assert!(!json.contains("blocked_by"), "{json}");
+		let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+		let dependencies = &value["active_units"][0]["dependencies"];
+		assert_eq!(dependencies[0]["id"], "complete-step");
+		assert_eq!(dependencies[0]["status"], "complete");
+	}
+
+	#[test]
+	fn an_active_unit_without_dependencies_says_so() {
+		let projection =
+			project_work(".agents/work.toml".to_string(), &work_fixture("selected-active"));
+		let human = render_work_human(&projection);
+		assert!(human.contains("- first-active [active; dependencies: none]"), "{human}");
+		let value: serde_json::Value =
+			serde_json::from_str(&render_work_json(&projection).unwrap()).unwrap();
+		assert_eq!(value["active_units"][0]["dependencies"].as_array().unwrap().len(), 0);
 	}
 
 	#[test]
