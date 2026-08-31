@@ -1,62 +1,65 @@
 version = 1
+selected_action = "support-safe-work-paragraphs"
 
 [[step]]
-id = "make-next-small-and-truthful"
+id = "enforce-reset-guardrails"
 status = "complete"
 blocked_by = []
-user_problem = "The next command emits about 764 KB, copies stale ledger prose, hides concurrent work, and selects the wrong loop."
-change = "Read this bounded work file, project every active unit once, select one action deterministically, and remove ledger and free-form resume output."
+user_problem = "Nothing outside this repository stops a change that breaks the build or revives a deleted reset artefact."
+change = "Add one locked-toolchain GitHub CI workflow plus one shared local gate, then have the human protect main with a required pull request and that check."
 acceptance = [
-  "Human output is at most 8192 bytes on this repository.",
-  "JSON output is at most 8192 bytes on this repository.",
-  "No output contains verbatim ledger text.",
-  "Every active unit appears exactly once.",
-  "Exactly one correct selected action appears.",
-  "Two runs of each format are byte-identical.",
+  "One read-only job runs on pushes to main and on pull requests.",
+  "It runs the accepted cargo formatting check, strict Clippy, locked tests, repository checks, real work validation, reset tripwires and actionlint in the locked Nix environment.",
+  "It never runs nix fmt.",
+  "Actions are pinned to immutable commit SHAs.",
+  "Local and CI runs share one gate source.",
+  "The tracked tree stays clean after a run.",
+  "Remote protection requires a pull request and this check, with zero approvals.",
 ]
-why_next = "This removes the largest immediate user cost and gives later reset work a bounded control surface."
+why_next = "Every later action is safer once a mechanical gate, not a promise, holds the reset boundary."
 
 [[step]]
-id = "make-default-scaffold-minimal"
-status = "complete"
-blocked_by = ["make-next-small-and-truthful"]
-user_problem = "New projects inherit the workflow that produced the deleted planning tree."
-change = "Simplify the default pack to one small work file, one implementation branch, compact guidance, and no ledger, JSONL log, plan-review loop, or review directory."
+id = "support-safe-work-paragraphs"
+status = "active"
+blocked_by = ["enforce-reset-guardrails"]
+user_problem = "Every work field must fit one line, so a step cannot explain its problem without cramming it."
+change = "Let prose fields carry paragraphs while ids and structural fields stay single-line, and keep both projections safe."
 acceptance = [
-  "A fresh scaffold creates no ledger, JSONL log, docs/plans process tree, or review directory.",
-  "Generated workflow guidance stays within 65536 bytes.",
-  "No individual prompt exceeds 4096 bytes.",
-  "A second scaffold is byte-idempotent.",
-  "The full product test suite passes.",
+  "IDs, statuses, blockers and the selected action stay single-line.",
+  "Prose fields accept paragraphs.",
+  "Unsafe control characters are still rejected.",
+  "Human output renders paragraphs without heading injection.",
+  "JSON preserves paragraph structure.",
 ]
-why_next = "Fixing only this repository would leave the product teaching adopters the failed process."
+why_next = "Bounded state is only worth trusting if a step can state its problem honestly inside the size limits."
 
 [[step]]
-id = "validate-real-work-state"
-status = "complete"
-blocked_by = ["make-default-scaffold-minimal"]
-user_problem = "The current validator can certify self-authored review claims without proving useful work occurred."
-change = "Validate the bounded work file and useful state invariants without depending on deleted plans, ledgers, or round logs."
+id = "explore-general-review-surface"
+status = "pending"
+blocked_by = ["support-safe-work-paragraphs"]
+user_problem = "The scaffold supports delivery review, but not a standalone review of a current tree or a diff between two states."
+change = "Compare a compact prompt, a dedicated CLI command and no product surface, then recommend one."
 acceptance = [
-  "A clean minimal scaffold validates.",
-  "Validation rejects a sixth step, duplicate selection, unknown status, unresolved blocker, and oversized state.",
-  "Appending a claimed review record cannot make validation pass.",
-  "Human and JSON status outputs are deterministic and at most 16384 bytes.",
+  "Representative current-tree and two-ref review tasks drive the comparison.",
+  "Every option is judged against the same tasks.",
+  "The result is a capped scratch decision brief.",
+  "No product code, pack asset or shipped documentation changes.",
 ]
-why_next = "The minimal workflow needs a mechanical boundary that checks real state without recreating evidence theatre."
+why_next = "Deciding the surface first avoids shipping a command the workflow turns out not to need."
 
 [[step]]
-id = "establish-release-baseline"
-status = "complete"
-blocked_by = ["validate-real-work-state"]
-user_problem = "Process churn obscures whether the retained product still works end to end."
-change = "Add the all-complete terminal work state, align user documentation with minimal behaviour, normalise the Rust formatting baseline, remove only proven unreachable product code, and prepare a local release candidate."
+id = "investigate-workflow-failure-causes"
+status = "pending"
+blocked_by = ["explore-general-review-surface"]
+user_problem = "The August audit dated the workflow failure and proved immediate mechanisms, but did not identify what caused them to start or worsen."
+change = "Trace initiating causes and test delivery-value signals across code, agent-facing text and generated output."
 acceptance = [
-  "An all-complete work file with no selected action validates, and validate, status, and next project its terminal state.",
-  "Formatting checks, Clippy with warnings denied, and all tests pass.",
-  "A local install succeeds.",
-  "An empty-directory scaffold is byte-idempotent across two runs.",
-  "Validation and both next formats pass from a clean tree.",
-  "No command requires a deleted process file.",
+  "Hypotheses and evidence grades are fixed before measurement.",
+  "The dated change points are traced through human messages, prompts and Git history.",
+  "Matched work before and after the transition tests each candidate cause.",
+  "Results separate demonstrated causes, supported causes and unknowns.",
+  "Each supported cause maps to a bounded preventive control.",
+  "Self-certified process metrics are excluded.",
+  "The result is a scratch decision brief of at most 20000 bytes.",
 ]
-why_next = "This turns the reset into a tested product baseline while keeping push and release authority with the human."
+why_next = "Causal evidence can prevent another failure without turning activity counts into another target."

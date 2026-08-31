@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Read-only: the gate inspects the tree and runs no release, publish, or write step.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # `quality` is the stable check name remote branch protection requires. Renaming
+  # the job silently disables that protection, so keep the id and the name together.
+  quality:
+    name: quality
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to immutable commit SHAs, not tags: a tag can be moved onto other code.
+      - name: Check out the commit under test
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+      # The committed flake supplies the locked toolchain; `.agents/checks/ci-gate.sh`
+      # is the same gate `just ci` runs locally. Already inside `nix develop`, so the
+      # recipe must not wrap the script in direnv a second time.
+      - name: Run the shared gate
+        env:
+          SKIP_DIRENV: "1"
+        run: nix develop --command just ci
