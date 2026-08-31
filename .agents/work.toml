@@ -1,5 +1,5 @@
 version = 1
-selected_action = "support-safe-work-paragraphs"
+selected_action = "explore-general-review-surface"
 
 [[step]]
 id = "enforce-reset-guardrails"
@@ -20,7 +20,7 @@ why_next = "Every later action is safer once a mechanical gate, not a promise, h
 
 [[step]]
 id = "support-safe-work-paragraphs"
-status = "active"
+status = "complete"
 blocked_by = ["enforce-reset-guardrails"]
 user_problem = "Every work field must fit one line, so a step cannot explain its problem without cramming it."
 change = "Let prose fields carry paragraphs while ids and structural fields stay single-line, and keep both projections safe."
@@ -35,7 +35,7 @@ why_next = "Bounded state is only worth trusting if a step can state its problem
 
 [[step]]
 id = "explore-general-review-surface"
-status = "pending"
+status = "active"
 blocked_by = ["support-safe-work-paragraphs"]
 user_problem = "The scaffold supports delivery review, but not a standalone review of a current tree or a diff between two states."
 change = "Compare a compact prompt, a dedicated CLI command and no product surface, then recommend one."

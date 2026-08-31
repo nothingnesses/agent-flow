@@ -144,7 +144,12 @@ impl std::fmt::Display for ParseError {
 					(None, Some(item)) => format!("work file field `{field}` item {item}"),
 					(None, None) => format!("work file field `{field}`"),
 				};
-				write!(f, "{location} contains control character U+{:04X}", u32::from(*character))
+				write!(
+					f,
+					"{location} contains {} U+{:04X}",
+					unsafe_character_kind(*character),
+					u32::from(*character)
+				)
 			}
 			Self::UnknownBlocker {
 				step,
@@ -212,13 +217,68 @@ impl std::error::Error for ParseError {
 	}
 }
 
-fn reject_control_characters(
+/// Whether a character is unsafe in ANY work-file value. Two families: the control
+/// characters (which include the C1 block, so U+0085 NEXT LINE is here rather than
+/// spelled out), and the two Unicode separators a consumer may render as a line break.
+/// U+2028 and U+2029 are not control characters, so `char::is_control` alone would let
+/// them through into text that is about to be printed as lines.
+///
+/// This is the whole unsafe set. The two callers below differ in ONE character: prose
+/// exempts the line feed, and nothing else.
+fn is_unsafe_character(character: char) -> bool {
+	character.is_control() || matches!(character, '\u{2028}' | '\u{2029}')
+}
+
+/// What to call an unsafe character in a diagnostic. The separators get their own words
+/// because calling U+2028 a control character would send a reader looking for something
+/// that is not there.
+fn unsafe_character_kind(character: char) -> &'static str {
+	match character {
+		'\u{2028}' => "line separator",
+		'\u{2029}' => "paragraph separator",
+		_ => "control character",
+	}
+}
+
+/// A STRUCTURAL value: `selected_action`, a step `id`, a blocker id. These name things
+/// and are printed inline inside composed lines (`- {id} [{status}; ...]`), so a line
+/// break anywhere in one forges output. Every unsafe character is rejected, the line
+/// feed included.
+fn reject_structural_text(
 	value: &str,
 	step: Option<usize>,
 	field: &'static str,
 	item: Option<usize>,
 ) -> Result<(), ParseError> {
-	if let Some(character) = value.chars().find(|character| character.is_control()) {
+	reject_unsafe_text(value, step, field, item, is_unsafe_character)
+}
+
+/// A PROSE value: `user_problem`, `change`, an `acceptance` item, `why_next`. A step
+/// cannot state its problem honestly on one line, so these carry paragraphs: the line
+/// feed is accepted, and the renderer indents every continuation line behind a gutter
+/// (`next::PROSE_CONTINUATION`) so a paragraph break cannot become a top-level output
+/// line. Every OTHER unsafe character stays rejected, including the tab and the carriage
+/// return, which a terminal can move the cursor with, and the two Unicode separators,
+/// which some consumers break lines on.
+fn reject_prose_text(
+	value: &str,
+	step: Option<usize>,
+	field: &'static str,
+	item: Option<usize>,
+) -> Result<(), ParseError> {
+	reject_unsafe_text(value, step, field, item, |character| {
+		character != '\n' && is_unsafe_character(character)
+	})
+}
+
+fn reject_unsafe_text(
+	value: &str,
+	step: Option<usize>,
+	field: &'static str,
+	item: Option<usize>,
+	is_unsafe: impl Fn(char) -> bool,
+) -> Result<(), ParseError> {
+	if let Some(character) = value.chars().find(|character| is_unsafe(*character)) {
 		return Err(ParseError::UnsafeText {
 			step,
 			field,
@@ -242,22 +302,24 @@ pub(crate) fn parse(source: &str) -> Result<WorkFile, ParseError> {
 	}
 
 	if let Some(selected_action) = &work.selected_action {
-		reject_control_characters(selected_action, None, "selected_action", None)?;
+		reject_structural_text(selected_action, None, "selected_action", None)?;
 	}
 
 	let mut positions = BTreeMap::new();
 	for (index, step) in work.steps.iter().enumerate() {
 		let position = index + 1;
-		reject_control_characters(&step.id, Some(position), "id", None)?;
+		// Structural first, then prose: the split is per FIELD, not per file, so one
+		// weakened predicate can never let a line break into an id.
+		reject_structural_text(&step.id, Some(position), "id", None)?;
 		for (item, blocker) in step.blocked_by.iter().enumerate() {
-			reject_control_characters(blocker, Some(position), "blocked_by", Some(item + 1))?;
+			reject_structural_text(blocker, Some(position), "blocked_by", Some(item + 1))?;
 		}
-		reject_control_characters(&step.user_problem, Some(position), "user_problem", None)?;
-		reject_control_characters(&step.change, Some(position), "change", None)?;
+		reject_prose_text(&step.user_problem, Some(position), "user_problem", None)?;
+		reject_prose_text(&step.change, Some(position), "change", None)?;
 		for (item, criterion) in step.acceptance.iter().enumerate() {
-			reject_control_characters(criterion, Some(position), "acceptance", Some(item + 1))?;
+			reject_prose_text(criterion, Some(position), "acceptance", Some(item + 1))?;
 		}
-		reject_control_characters(&step.why_next, Some(position), "why_next", None)?;
+		reject_prose_text(&step.why_next, Some(position), "why_next", None)?;
 
 		if let Some(first) = positions.insert(step.id.as_str(), position) {
 			return Err(ParseError::DuplicateStepId {
@@ -629,8 +691,8 @@ mod tests {
 			(
 				"user problem",
 				"user_problem = \"Alpha problem\"",
-				"user_problem = \"Alpha\\nspoof\"",
-				"step 1 field `user_problem` contains control character U+000A",
+				"user_problem = \"Alpha\\rspoof\"",
+				"step 1 field `user_problem` contains control character U+000D",
 			),
 			(
 				"change",
@@ -647,8 +709,8 @@ mod tests {
 			(
 				"why next",
 				"why_next = \"Beta why\"",
-				"why_next = \"Beta\\nspoof\"",
-				"step 2 field `why_next` contains control character U+000A",
+				"why_next = \"Beta\\tspoof\"",
+				"step 2 field `why_next` contains control character U+0009",
 			),
 		];
 
@@ -656,6 +718,97 @@ mod tests {
 			let input = source(Some("alpha")).replace(before, after);
 			let error = parse(&input).unwrap_err().to_string();
 			assert_eq!(error, expected, "{name}");
+		}
+	}
+
+	/// Two paragraphs with a blank line between them, at every one of the four prose
+	/// sites, written as the TOML multi-line basic strings a human would actually type.
+	/// The leading newline after each `"""` is TOML's own trim, so every value starts at
+	/// its first word.
+	fn paragraphs_source() -> String {
+		"version = 1\nselected_action = \"alpha\"\n\n\
+		 [[step]]\n\
+		 id = \"alpha\"\n\
+		 status = \"active\"\n\
+		 blocked_by = []\n\
+		 user_problem = \"\"\"\nProblem one.\n\nProblem two.\"\"\"\n\
+		 change = \"\"\"\nChange one.\n\nChange two.\"\"\"\n\
+		 acceptance = [\"\"\"\nCriterion one.\n\nCriterion two.\"\"\", \"Single line criterion\"]\n\
+		 why_next = \"\"\"\nWhy one.\n\nWhy two.\"\"\"\n"
+			.to_string()
+	}
+
+	#[test]
+	fn every_prose_field_carries_paragraphs_verbatim() {
+		let work = parse(&paragraphs_source()).unwrap();
+		let step = &work.steps[0];
+		assert_eq!(step.user_problem, "Problem one.\n\nProblem two.");
+		assert_eq!(step.change, "Change one.\n\nChange two.");
+		assert_eq!(step.acceptance, ["Criterion one.\n\nCriterion two.", "Single line criterion"]);
+		assert_eq!(step.why_next, "Why one.\n\nWhy two.");
+		// The structural half of the same file is untouched by the prose relaxation.
+		assert_eq!(step.id, "alpha");
+		assert_eq!(work.selected_action.as_deref(), Some("alpha"));
+	}
+
+	#[test]
+	fn prose_accepts_the_line_feed_and_no_other_unsafe_character() {
+		// One case per unsafe family, at a prose site: the tab and the carriage return a
+		// terminal moves the cursor with, another C0 control, the C1 NEXT LINE, and the two
+		// Unicode separators that are not control characters at all and so needed checking
+		// for on top of `char::is_control`.
+		let cases = [
+			("tab", "\\t", "control character U+0009"),
+			("carriage return", "\\r", "control character U+000D"),
+			("vertical tab", "\\u000B", "control character U+000B"),
+			("next line", "\\u0085", "control character U+0085"),
+			("line separator", "\\u2028", "line separator U+2028"),
+			("paragraph separator", "\\u2029", "paragraph separator U+2029"),
+		];
+		for (name, escape, expected) in cases {
+			let input = source(Some("alpha")).replace(
+				"user_problem = \"Alpha problem\"",
+				&format!("user_problem = \"Alpha{escape}spoof\""),
+			);
+			assert_eq!(
+				parse(&input).unwrap_err().to_string(),
+				format!("step 1 field `user_problem` contains {expected}"),
+				"{name}"
+			);
+		}
+	}
+
+	#[test]
+	fn a_structural_field_rejects_the_line_feed_prose_now_accepts() {
+		// The same character, the same file, the two verdicts the split exists to give.
+		let cases = [
+			(
+				"selected_action = \"alpha\"",
+				"work file field `selected_action` contains control character U+000A",
+			),
+			("id = \"alpha\"", "step 1 field `id` contains control character U+000A"),
+			(
+				"blocked_by = [\"alpha\"]",
+				"step 2 field `blocked_by` item 1 contains control character U+000A",
+			),
+		];
+		for (field, expected) in cases {
+			let spoofed = field.replace("alpha", "alpha\\nspoof");
+			let input = source(Some("alpha")).replace(field, &spoofed);
+			assert_eq!(parse(&input).unwrap_err().to_string(), expected, "{field}");
+		}
+
+		// A structural id also rejects the two separators, which are not control
+		// characters, and names each one precisely rather than calling it a control.
+		for (escape, expected) in
+			[("\\u2028", "line separator U+2028"), ("\\u2029", "paragraph separator U+2029")]
+		{
+			let input =
+				source(Some("alpha")).replace("id = \"beta\"", &format!("id = \"beta{escape}\""));
+			assert_eq!(
+				parse(&input).unwrap_err().to_string(),
+				format!("step 2 field `id` contains {expected}")
+			);
 		}
 	}
 

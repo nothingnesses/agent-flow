@@ -6,6 +6,8 @@ This is the canonical, harness-agnostic guidance for agents working in this repo
 
 The human keeps delivery state in `.agents/work.toml`. It contains at most five ordered steps and uses only `active`, `pending`, and `complete` statuses. While work remains, `selected_action` names exactly one active step; it is omitted only after every step is complete. Before work starts, replace the starter text with a bounded user problem, change, acceptance criteria, and why-next rationale. Run `agent-flow next` for the current brief.
 
+The four prose fields (`user_problem`, `change`, each `acceptance` item, and `why_next`) may hold paragraphs, so write them with a TOML multi-line string (`"""`) when one line will not state the problem honestly. The structural values stay on one line each: `selected_action`, every step `id`, every `blocked_by` id, and every status. Tabs, carriage returns, other control characters, and Unicode line or paragraph separators are rejected everywhere, in prose as well; only the line-feed paragraph break is prose-only. The `next` brief indents every continuation line, so prose cannot forge a heading of its own.
+
 To start the selected action, copy `.agents/user-prompts/kickoff.md`, fill in its optional context, and paste it to the agent.
 
 `.agents/work.toml` is the only workflow task-state file. Do not create a plan tree, ledger, round log, findings directory, or review record. Product-development checks under `.agents/checks.toml`, `.agents/checks/`, and `.agents/hooks/` are optional tooling, not task state or proof of review.
