@@ -91,6 +91,9 @@
               pkgs.just
               pkgs.git
               pkgs.gh
+
+              # CI gate (`.agents/checks/ci-gate.sh`)
+              pkgs.actionlint
             ];
 
             env = {
