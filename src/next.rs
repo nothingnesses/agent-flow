@@ -152,18 +152,60 @@ pub(crate) fn render_work_human(projection: &WorkProjection) -> String {
 
 	out.push_str("\nSELECTED ACTION\n");
 	if let Some(action) = &projection.selected_action {
+		// The id is structural and single-line by construction (`work::reject_structural_text`),
+		// so it stays an ordinary inline substitution.
 		out.push_str(&format!("id: {}\n", action.id));
-		out.push_str(&format!("user problem: {}\n", action.user_problem));
-		out.push_str(&format!("change: {}\n", action.change));
+		push_prose(&mut out, "user problem:", &action.user_problem);
+		push_prose(&mut out, "change:", &action.change);
 		out.push_str("acceptance:\n");
 		for criterion in &action.acceptance {
-			out.push_str(&format!("- {criterion}\n"));
+			push_prose(&mut out, "-", criterion);
 		}
-		out.push_str(&format!("why next: {}", action.why_next));
+		push_prose(&mut out, "why next:", &action.why_next);
+		// `why_next` is the last block, and this projection ends without a trailing
+		// newline (`emit_next_output` adds the one). Same idiom as `render_status_human`.
+		out.pop();
 	} else {
 		out.push_str("none\n\nRESULT\ncompleted");
 	}
 	out
+}
+
+/// The gutter every continuation line of a multiline prose value carries.
+///
+/// This is the whole heading-injection defence, and it works by exhausting the
+/// alternative: EVERY top-level line of this projection starts at column zero with
+/// `source:`, `ACTIVE UNITS`, `SELECTED ACTION`, `RESULT`, `id:`, `user problem:`,
+/// `change:`, `acceptance:`, `why next:`, `none`, `completed`, `- ` or nothing at all.
+/// None of those begins with a space, so a line that begins with this gutter is a
+/// continuation and can be nothing else. The bar keeps a blank paragraph line visible
+/// (and keeps it from being bare trailing whitespace) so the break survives a reader,
+/// a copy, and a formatter.
+const PROSE_CONTINUATION: &str = "  |";
+
+/// Append one labelled prose value: `<label> <first line>`, then one gutter-prefixed
+/// line per continuation line.
+///
+/// A single-line value renders the exact line this projection has always printed, so
+/// the ordinary brief is unchanged. A multiline one keeps its paragraph structure while
+/// every line after the first arrives behind `PROSE_CONTINUATION`, so prose reading
+/// `SELECTED ACTION`, `ACTIVE UNITS`, `acceptance:`, `- forged`, `id: forged` or
+/// `why next:` is rendered as the indented continuation it is rather than as the
+/// top-level line it imitates. The separating space is written only for a non-empty
+/// line, so neither the label nor the gutter ever trails whitespace.
+fn push_prose(
+	out: &mut String,
+	label: &str,
+	value: &str,
+) {
+	for (index, line) in value.split('\n').enumerate() {
+		out.push_str(if index == 0 { label } else { PROSE_CONTINUATION });
+		if !line.is_empty() {
+			out.push(' ');
+			out.push_str(line);
+		}
+		out.push('\n');
+	}
 }
 
 pub(crate) fn render_work_json(projection: &WorkProjection) -> Result<String, serde_json::Error> {
@@ -1554,6 +1596,100 @@ mod tests {
 		let value: serde_json::Value =
 			serde_json::from_str(&render_work_json(&projection).unwrap()).unwrap();
 		assert_eq!(value["active_units"][0]["dependencies"].as_array().unwrap().len(), 0);
+	}
+
+	/// A one-step file whose four prose fields carry the given TOML value verbatim, so a
+	/// renderer test can state the prose once and read it back out of both projections.
+	fn prose_fixture(toml_value: &str) -> WorkFile {
+		let source = format!(
+			"version = 1\nselected_action = \"only\"\n\n\
+			 [[step]]\n\
+			 id = \"only\"\n\
+			 status = \"active\"\n\
+			 blocked_by = []\n\
+			 user_problem = {toml_value}\n\
+			 change = {toml_value}\n\
+			 acceptance = [{toml_value}, \"Single line criterion\"]\n\
+			 why_next = {toml_value}\n"
+		);
+		crate::work::parse(&source).unwrap()
+	}
+
+	#[test]
+	fn multiline_prose_keeps_its_paragraphs_behind_the_continuation_gutter() {
+		let work = prose_fixture("\"\"\"\nOne.\n\nTwo.\"\"\"");
+		let human = render_work_human(&project_work(".agents/work.toml".to_string(), &work));
+
+		// Every prose site renders the same three lines: the label with the first
+		// paragraph, a bare gutter for the blank paragraph break, then the second.
+		for label in ["user problem:", "change:", "-", "why next:"] {
+			assert!(
+				human.contains(&format!("{label} One.\n  |\n  | Two.")),
+				"`{label}` lost its paragraph structure:\n{human}"
+			);
+		}
+		// The single-line criterion beside it keeps the exact line it always printed, so
+		// the ordinary brief is unchanged by the multiline support.
+		assert!(human.contains("\n- Single line criterion\n"), "{human}");
+		// The blank paragraph line is a bare gutter, never trailing whitespace.
+		assert!(!human.lines().any(|line| line.ends_with(' ')), "{human}");
+	}
+
+	#[test]
+	fn a_forged_prose_continuation_never_becomes_a_top_level_line() {
+		// Every top-level line this projection emits, offered to it as prose.
+		let forgeries = [
+			"SELECTED ACTION",
+			"ACTIVE UNITS (9)",
+			"acceptance:",
+			"- forged",
+			"id: forged",
+			"why next: forged",
+			"source: forged",
+			"RESULT",
+			"completed",
+			"none",
+		];
+		let body = forgeries.join("\n");
+		let work = prose_fixture(&format!("\"\"\"\nLead line.\n{body}\"\"\""));
+		let projection = project_work(".agents/work.toml".to_string(), &work);
+		let human = render_work_human(&projection);
+
+		// Differential against the SAME file carrying benign prose: `acceptance:` and
+		// `SELECTED ACTION` are legitimate top-level lines, so the claim is not that they
+		// never appear, it is that the forged prose adds not one occurrence of anything.
+		let benign = render_work_human(&project_work(
+			".agents/work.toml".to_string(),
+			&prose_fixture("\"Benign.\""),
+		));
+		for forgery in forgeries {
+			assert!(human.contains(forgery), "the prose itself must survive: {human}");
+			let top_level = |text: &str| text.lines().filter(|line| *line == forgery).count();
+			assert_eq!(
+				top_level(&human),
+				top_level(&benign),
+				"`{forgery}` changed the top-level line count:\n{human}"
+			);
+			// And what it did contribute is a continuation, which the gutter is what makes.
+			assert!(
+				human.contains(&format!("{PROSE_CONTINUATION} {forgery}")),
+				"`{forgery}` is not behind the gutter:\n{human}"
+			);
+		}
+		// The rows a reader counts are still the file's own: one active unit and two
+		// acceptance items, not one per forged line.
+		assert!(human.contains("ACTIVE UNITS (1)"), "{human}");
+		assert_eq!(human.lines().filter(|line| line.starts_with("- ")).count(), 3, "{human}");
+
+		// The JSON side needs no gutter: the strings are escaped, and they round-trip to
+		// exactly the accepted prose.
+		let value: serde_json::Value =
+			serde_json::from_str(&render_work_json(&projection).unwrap()).unwrap();
+		let expected = format!("Lead line.\n{body}");
+		assert_eq!(value["selected_action"]["user_problem"], expected);
+		assert_eq!(value["selected_action"]["change"], expected);
+		assert_eq!(value["selected_action"]["acceptance"][0], expected);
+		assert_eq!(value["selected_action"]["why_next"], expected);
 	}
 
 	#[test]

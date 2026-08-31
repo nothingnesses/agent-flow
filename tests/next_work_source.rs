@@ -169,11 +169,149 @@ fn invalid_work_sources_fail_without_stdout_and_name_the_source() {
 		"selected_action `pending` has status `pending`; expected `active`",
 	);
 
+	// A newline in a STRUCTURAL value is still a forged line, so it still fails, still
+	// names the exact field, and still writes no stdout. The prose relaxation is per
+	// field: it did not weaken this.
 	assert_work_error(
-		"multiline-field",
-		&work_source("line one\nline two"),
-		"step 2 field `change` contains control character U+000A",
+		"structural-newline-id",
+		&work_source("Selected change").replace("id = \"third\"", "id = \"third\\nspoof\""),
+		"step 3 field `id` contains control character U+000A",
 	);
+	assert_work_error(
+		"structural-newline-selection",
+		&work_source("Selected change")
+			.replace("selected_action = \"second\"", "selected_action = \"second\\nspoof\""),
+		"work file field `selected_action` contains control character U+000A",
+	);
+	assert_work_error(
+		"structural-newline-blocker",
+		&work_source("Selected change")
+			.replace("blocked_by = [\"second\"]", "blocked_by = [\"second\\nspoof\"]"),
+		"step 4 field `blocked_by` item 1 contains control character U+000A",
+	);
+}
+
+#[test]
+fn unsafe_prose_characters_still_fail_before_any_output() {
+	// The line feed is the ONE character prose gained. Every other unsafe family still
+	// fails at the boundary, in both formats, before a byte of stdout: the tab and the
+	// carriage return, another C0 control, the C1 NEXT LINE, and the two Unicode
+	// separators that `char::is_control` does not cover and so are named precisely.
+	let cases = [
+		("tab", "\\t", "control character U+0009"),
+		("carriage-return", "\\r", "control character U+000D"),
+		("vertical-tab", "\\u000B", "control character U+000B"),
+		("next-line", "\\u0085", "control character U+0085"),
+		("line-separator", "\\u2028", "line separator U+2028"),
+		("paragraph-separator", "\\u2029", "paragraph separator U+2029"),
+	];
+	for (name, escape, expected) in cases {
+		let root = scratch(&format!("unsafe-prose-{name}"));
+		// Substituted into the rendered TOML rather than through `work_source`, whose
+		// `{:?}` formatting would escape the backslash instead of passing the escape on.
+		let source = work_source("Selected change").replace(
+			"change = \"Selected change\"",
+			&format!("change = \"Selected{escape}change\""),
+		);
+		write(&root.join(".agents/work.toml"), &source);
+		for args in [&["next"][..], &["next", "--json"][..]] {
+			let output = run(&root, args);
+			let stderr = String::from_utf8(output.stderr).unwrap();
+			assert_eq!(output.status.code(), Some(1), "{name} {args:?}: {stderr}");
+			assert!(output.stdout.is_empty(), "{name} {args:?}: unsafe prose wrote stdout");
+			assert!(
+				stderr.contains(&format!("step 2 field `change` contains {expected}")),
+				"{name} {args:?}: {stderr}"
+			);
+		}
+		let _ = fs::remove_dir_all(root);
+	}
+}
+
+#[test]
+fn prose_paragraphs_survive_both_projections_without_forging_a_top_level_line() {
+	let root = scratch("paragraphs");
+	// Two paragraphs at every prose site, the second of which is every top-level line
+	// this command emits, offered as prose. Written as the TOML multi-line basic strings
+	// a human would type; TOML trims the newline right after each `"""`.
+	let forgeries = [
+		"SELECTED ACTION",
+		"ACTIVE UNITS (9)",
+		"acceptance:",
+		"- forged",
+		"id: forged",
+		"why next: forged",
+		"source: forged",
+	];
+	let body = forgeries.join("\\n");
+	let value = format!("\"\"\"\nLead line.\n\n{body}\"\"\"");
+	let expected = format!("Lead line.\n\n{}", forgeries.join("\n"));
+	let source = format!(
+		"version = 1\nselected_action = \"only\"\n\n\
+		 [[step]]\n\
+		 id = \"only\"\n\
+		 status = \"active\"\n\
+		 blocked_by = []\n\
+		 user_problem = {value}\n\
+		 change = {value}\n\
+		 acceptance = [{value}, \"Single line criterion\"]\n\
+		 why_next = {value}\n"
+	);
+	write(&root.join(".agents/work.toml"), &source);
+
+	let human_one = run(&root, &["next"]);
+	let human_two = run(&root, &["next"]);
+	assert!(human_one.status.success(), "{}", String::from_utf8_lossy(&human_one.stderr));
+	assert!(human_one.stderr.is_empty());
+	assert_eq!(human_one.stdout, human_two.stdout, "human output is not deterministic");
+	assert!(human_one.stdout.len() <= 8_192);
+	let human = String::from_utf8(human_one.stdout).unwrap();
+
+	// The paragraphs survive: label plus first paragraph, a bare gutter for the blank
+	// line, then the continuation lines.
+	for label in ["user problem:", "change:", "-", "why next:"] {
+		assert!(
+			human.contains(&format!("{label} Lead line.\n  |\n  | SELECTED ACTION\n")),
+			"`{label}` lost its paragraph structure:\n{human}"
+		);
+	}
+	assert!(human.contains("\n- Single line criterion\n"), "{human}");
+	assert!(!human.lines().any(|line| line.ends_with(' ')), "gutter left trailing space:\n{human}");
+
+	// No forged line reached the top level. `SELECTED ACTION` and `acceptance:` are
+	// legitimate top-level lines, so the claim is the exact count, not absence: one
+	// each, from the renderer, none from the prose.
+	for forgery in forgeries {
+		assert!(human.contains(forgery), "the prose itself must survive:\n{human}");
+		let expected_top_level =
+			usize::from(forgery == "SELECTED ACTION" || forgery == "acceptance:");
+		assert_eq!(
+			human.lines().filter(|line| *line == forgery).count(),
+			expected_top_level,
+			"`{forgery}` forged a top-level line:\n{human}"
+		);
+		assert!(human.contains(&format!("  | {forgery}")), "`{forgery}` is not indented:\n{human}");
+	}
+	assert!(human.contains("ACTIVE UNITS (1)"), "{human}");
+	assert_eq!(human.lines().filter(|line| line.starts_with("- ")).count(), 3, "{human}");
+
+	// JSON preserves the accepted strings exactly, line feeds and blank paragraph line
+	// included, and stays deterministic and bounded.
+	let json_one = run(&root, &["next", "--json"]);
+	let json_two = run(&root, &["next", "--json"]);
+	assert!(json_one.status.success(), "{}", String::from_utf8_lossy(&json_one.stderr));
+	assert!(json_one.stderr.is_empty());
+	assert_eq!(json_one.stdout, json_two.stdout, "JSON output is not deterministic");
+	assert!(json_one.stdout.len() <= 8_192);
+	let projected: serde_json::Value = serde_json::from_slice(&json_one.stdout).unwrap();
+	let action = &projected["selected_action"];
+	assert_eq!(action["user_problem"], expected);
+	assert_eq!(action["change"], expected);
+	assert_eq!(action["acceptance"][0], expected);
+	assert_eq!(action["acceptance"][1], "Single line criterion");
+	assert_eq!(action["why_next"], expected);
+
+	let _ = fs::remove_dir_all(root);
 }
 
 #[test]
