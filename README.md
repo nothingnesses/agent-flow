@@ -354,10 +354,13 @@ just build     # cargo build
 just test      # cargo test
 just clippy    # cargo clippy --all-targets
 just fmt       # format all files through the Nix formatter
+just ci        # the full quality gate, exactly what GitHub CI runs
 just run -- --help
 ```
 
-The verification convention before each commit is `cargo clippy --all-targets -- -D warnings`, `nix fmt`, and keeping all text ASCII-clean.
+Run `just ci` before each commit, and keep all text ASCII-clean. It runs `.agents/checks/ci-gate.sh`, the one gate the `quality` job in `.github/workflows/ci.yml` also runs through the locked flake: `cargo fmt --all -- --check`, Clippy with warnings denied, the locked tests, `agent-flow checks`, `agent-flow validate`, `actionlint`, tripwires for the process artefacts `RESET.md` deleted, and a check that the run left the tracked tree unchanged.
+
+The gate deliberately does not run `nix fmt`. That formatter applies Rust 2024 formatting to this Rust 2021 crate and reflows the retained `docs/audits/` records, so `cargo fmt` is the accepted formatting check.
 
 ## License
 

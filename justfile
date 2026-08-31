@@ -33,6 +33,12 @@ clippy:
 fmt:
 	{{ direnv_prefix }} nix fmt
 
+# Run the full quality gate: exactly what the `quality` job runs in GitHub CI.
+# Invoked through `bash` rather than the script's shebang so the gate runs under the
+# bash the flake pins, on any host, including one with no `/usr/bin/env`.
+ci:
+	{{ direnv_prefix }} bash .agents/checks/ci-gate.sh
+
 # Regenerate the project's own reference guidance and role prompts from the built-in
 # pack. The scaffold run leaves working files alone, notably this repository's live
 # `.agents/work.toml` and optional `.agents/checks.toml`; copying the refreshed guidance
