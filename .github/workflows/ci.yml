@@ -23,6 +23,12 @@ jobs:
       # Pinned to immutable commit SHAs, not tags: a tag can be moved onto other code.
       - name: Check out the commit under test
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          # The attribution check reads every commit reachable from its target, so
+          # the default single-commit checkout would hide all but the tip. The ref
+          # stays the default, so a pull request still builds and tests the merge
+          # result rather than the branch tip alone.
+          fetch-depth: 0
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
       # The committed flake supplies the locked toolchain; `.agents/checks/ci-gate.sh`
@@ -31,4 +37,10 @@ jobs:
       - name: Run the shared gate
         env:
           SKIP_DIRENV: "1"
+          # On a pull request the checked out tip is a merge commit GitHub itself
+          # authors, which no author allowlist can accept. Point the attribution
+          # check at the head commit of the branch, and at the pushed commit on a
+          # push. The merge commit has that head as a parent, so the fetched
+          # history already contains it.
+          ATTRIBUTION_TARGET: ${{ github.event.pull_request.head.sha || github.sha }}
         run: nix develop --command just ci
