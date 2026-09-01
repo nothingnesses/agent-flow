@@ -362,7 +362,7 @@ just ci        # the full quality gate, exactly what GitHub CI runs
 just run -- --help
 ```
 
-Run `just ci` before each commit, and keep all text ASCII-clean. It runs `.agents/checks/ci-gate.sh`, the one gate the `quality` job in `.github/workflows/ci.yml` also runs through the locked flake: `cargo fmt --all -- --check`, Clippy with warnings denied, the locked tests, `agent-flow checks`, `agent-flow validate`, `actionlint`, tripwires for the process artefacts `RESET.md` deleted, and a check that the run left the tracked tree unchanged.
+Run `just ci` before each commit, and keep all text ASCII-clean. It runs `.agents/checks/ci-gate.sh`, the one gate the `quality` job in `.github/workflows/ci.yml` also runs through the locked flake: `cargo fmt --all -- --check`, Clippy with warnings denied, the locked tests, `agent-flow checks`, `agent-flow validate`, `actionlint`, tripwires for the process artefacts `RESET.md` deleted, the scratch-repository tests for the attribution check, the attribution check itself over every commit reachable from `HEAD`, or from the branch commit named by `ATTRIBUTION_TARGET` when GitHub CI checks out a pull request's merge result, and a check that the run left the tracked tree unchanged.
 
 The gate deliberately does not run `nix fmt`. That formatter applies Rust 2024 formatting to this Rust 2021 crate and reflows the retained `docs/audits/` records, so `cargo fmt` is the accepted formatting check.
 

@@ -1,65 +1,25 @@
 version = 1
-selected_action = "explore-general-review-surface"
 
 [[step]]
-id = "enforce-reset-guardrails"
+id = "prevent-false-attribution"
 status = "complete"
 blocked_by = []
-user_problem = "Nothing outside this repository stops a change that breaks the build or revives a deleted reset artefact."
-change = "Add one locked-toolchain GitHub CI workflow plus one shared local gate, then have the human protect main with a required pull request and that check."
-acceptance = [
-  "One read-only job runs on pushes to main and on pull requests.",
-  "It runs the accepted cargo formatting check, strict Clippy, locked tests, repository checks, real work validation, reset tripwires and actionlint in the locked Nix environment.",
-  "It never runs nix fmt.",
-  "Actions are pinned to immutable commit SHAs.",
-  "Local and CI runs share one gate source.",
-  "The tracked tree stays clean after a run.",
-  "Remote protection requires a pull request and this check, with zero approvals.",
-]
-why_next = "Every later action is safer once a mechanical gate, not a promise, holds the reset boundary."
+user_problem = """
+Commits can name an agent or an LLM as the author or as a co-author, which credits work to someone who did not do it and adds a false contributor to the repository.
 
-[[step]]
-id = "support-safe-work-paragraphs"
-status = "complete"
-blocked_by = ["enforce-reset-guardrails"]
-user_problem = "Every work field must fit one line, so a step cannot explain its problem without cramming it."
-change = "Let prose fields carry paragraphs while ids and structural fields stay single-line, and keep both projections safe."
+A rewrite of the history fixed the record already. All 1512 commits reachable from the current main now carry the raw author nothingnesses <18732253+nothingnesses@users.noreply.github.com>, seven Co-Authored-By trailers are gone, and the repository-local Test <test@example.com> identity override is gone. Nothing stops the next commit from undoing that work."""
+change = """
+Add a read-only attribution check over every commit reachable from HEAD, prove it with scratch repositories, run both from the shared just ci gate, fetch the complete history in GitHub CI, and state the rule in the shipped guidance."""
 acceptance = [
-  "IDs, statuses, blockers and the selected action stay single-line.",
-  "Prose fields accept paragraphs.",
-  "Unsafe control characters are still rejected.",
-  "Human output renders paragraphs without heading injection.",
-  "JSON preserves paragraph structure.",
+  "just ci checks the complete reachable history, locally and in GitHub CI.",
+  "The gate accepts only the raw author identity nothingnesses <18732253+nothingnesses@users.noreply.github.com>.",
+  "Any Co-Authored-By trailer fails, whatever its case and whatever horizontal whitespace surrounds the key and the colon.",
+  "A report names the offending commit and the rule it broke, and prints no other commit body content.",
+  "Scratch repositories outside the tracked tree prove the passing case, a foreign author, a placeholder author, and a co-author trailer, under temporary Git configuration.",
+  "The GitHub checkout fetches the complete history, so the remote run cannot inspect only the tip, and it keeps the default merge-result ref, so a pull request still builds and tests the merge rather than the branch tip alone.",
+  "On a pull request the remote run scans the commits of the branch rather than the synthetic author of GitHub's merge commit.",
+  "The shipped guidance requires the owner identity and forbids agent and LLM attribution in commits and pull requests.",
+  "The gate stays read-only over the tracked tree, and the existing formatting, Clippy, test, reset tripwire, action pin, and clean-tree checks still pass.",
 ]
-why_next = "Bounded state is only worth trusting if a step can state its problem honestly inside the size limits."
-
-[[step]]
-id = "explore-general-review-surface"
-status = "active"
-blocked_by = ["support-safe-work-paragraphs"]
-user_problem = "The scaffold supports delivery review, but not a standalone review of a current tree or a diff between two states."
-change = "Compare a compact prompt, a dedicated CLI command and no product surface, then recommend one."
-acceptance = [
-  "Representative current-tree and two-ref review tasks drive the comparison.",
-  "Every option is judged against the same tasks.",
-  "The result is a capped scratch decision brief.",
-  "No product code, pack asset or shipped documentation changes.",
-]
-why_next = "Deciding the surface first avoids shipping a command the workflow turns out not to need."
-
-[[step]]
-id = "investigate-workflow-failure-causes"
-status = "pending"
-blocked_by = ["explore-general-review-surface"]
-user_problem = "The August audit dated the workflow failure and proved immediate mechanisms, but did not identify what caused them to start or worsen."
-change = "Trace initiating causes and test delivery-value signals across code, agent-facing text and generated output."
-acceptance = [
-  "Hypotheses and evidence grades are fixed before measurement.",
-  "The dated change points are traced through human messages, prompts and Git history.",
-  "Matched work before and after the transition tests each candidate cause.",
-  "Results separate demonstrated causes, supported causes and unknowns.",
-  "Each supported cause maps to a bounded preventive control.",
-  "Self-certified process metrics are excluded.",
-  "The result is a scratch decision brief of at most 20000 bytes.",
-]
-why_next = "Causal evidence can prevent another failure without turning activity counts into another target."
+why_next = """
+The history is clean today only because a human rewrote it. A mechanical gate keeps it clean without asking every later author to remember the rule, and it is cheap to add while the evidence of what went wrong is fresh."""

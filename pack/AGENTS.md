@@ -44,6 +44,7 @@ The human owns scope and acceptance. Do not add a step, change acceptance criter
 - Treat external input as untrusted, keep secrets out of source and logs, and fail loudly on errors.
 - Format only files you changed. Run destructive checks in scratch space, not over unrelated live files.
 - Keep the working tree recoverable. Inspect status and diffs before committing; do not discard files you do not own.
+- Commit with the repository owner's configured Git identity. Keep agent, model, and LLM attribution out of commit messages, pull request titles, and pull request bodies, and add no co-author trailer.
 - Report the commit or diff, changed files, commands run, results, and any unresolved risk.
 
 ## Principles

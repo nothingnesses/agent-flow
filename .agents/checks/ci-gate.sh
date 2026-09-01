@@ -70,6 +70,14 @@ if unpinned=$(grep -rEn '^[[:space:]]*-?[[:space:]]*uses:' .github/workflows |
 	exit 1
 fi
 
+step 'attribution tests'
+# The proof runs before the live history, so a check that had stopped rejecting a
+# foreign author or a co-author trailer fails here rather than passing silently.
+bash .agents/checks/attribution-test.sh
+
+step 'attribution'
+bash .agents/checks/attribution.sh
+
 step 'tracked tree'
 tracked_after=$(git status --porcelain --untracked-files=no)
 if [[ ${tracked_after} != "${tracked_before}" ]]; then
