@@ -1,24 +1,26 @@
 version = 1
 
 [[step]]
-id = "ship-standalone-review-prompt"
+id = "enforce-attribution-messages"
 status = "complete"
 blocked_by = []
 user_problem = """
-A human who wants a review of a whole tree or of one diff has to improvise the request. A whole-tree review can silently collapse into an empty diff review.
+The complete-history gate rejects foreign authors and Co-Authored-By lines, but other generated attribution footers can pass. Pull-request titles and bodies rely only on guidance.
 """
 change = """
-Ship one compact standalone review prompt as a built-in pack reference asset, with the discoverability and tests it needs.
+Use one structural attribution policy for commit messages and pull-request metadata. Reject attribution trailers and known generated footer forms without banning ordinary discussion of agent tools.
 """
 acceptance = [
-  "A fresh default scaffold writes `.agents/user-prompts/review.md` and no other new asset.",
-  "The prompt makes the current-tree and diff targets exclusive and unambiguous.",
-  "It requires criteria, resolved refs, a clean-or-dirty status statement, read-only work and a direct response.",
-  "It requires severity and reproducible evidence and allows a concise clean result.",
-  "It forbids edits and every persisted review-state family the reset removed.",
-  "Shipped guidance says when to use the kickoff prompt and when to use this one.",
-  "Tests pin the asset, its limits and that contract.",
+  "The exact raw author allowlist, complete-history scan, shallow-history refusal and every Co-Authored-By rejection remain unchanged.",
+  "One deterministic classifier rejects structural attribution trailers and known generated footer forms for Claude, GPT or Codex, Gemini and Copilot.",
+  "The same classifier checks reachable commit messages and pull-request titles and bodies.",
+  "Pull-request metadata is parsed from the GitHub event file without shell evaluation, and a missing or malformed event fails when the check expects a pull request.",
+  "A pull-request title or body edit triggers the required quality workflow again.",
+  "Normal technical discussion of model names and attribution detection remains valid when it is not itself an attribution line.",
+  "Failures name the commit or pull-request field and the broken rule without echoing untrusted message content.",
+  "Scratch cases prove Claude, GPT or Codex, Gemini and Copilot forms, safe mentions, event parsing, push behaviour and the existing history rules.",
+  "The shared just ci gate, protected quality job, existing reset checks and complete-history attribution check pass.",
 ]
 why_next = """
-The comparison already chose this surface. Shipping it closes the gap without a command, provider or new state.
+The repository history is correct, but deterministic prevention must cover the message surfaces that current guidance alone cannot enforce.
 """

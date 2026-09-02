@@ -71,12 +71,19 @@ if unpinned=$(grep -rEn '^[[:space:]]*-?[[:space:]]*uses:' .github/workflows |
 fi
 
 step 'attribution tests'
-# The proof runs before the live history, so a check that had stopped rejecting a
-# foreign author or a co-author trailer fails here rather than passing silently.
+# The proof runs before the live history and the live event, so a check that had
+# stopped rejecting a foreign author, a co-author trailer, or a generated footer fails
+# here rather than passing silently.
 bash .agents/checks/attribution-test.sh
 
 step 'attribution'
 bash .agents/checks/attribution.sh
+
+step 'attribution metadata'
+# The pull request's own title and body, which no commit carries. A local run and a
+# push have no pull request to read, and the check reports that rather than inventing
+# a pass.
+bash .agents/checks/attribution-metadata.sh
 
 step 'tracked tree'
 tracked_after=$(git status --porcelain --untracked-files=no)

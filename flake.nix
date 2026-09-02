@@ -94,6 +94,9 @@
 
               # CI gate (`.agents/checks/ci-gate.sh`)
               pkgs.actionlint
+              # `.agents/checks/attribution-metadata.sh` parses the GitHub event JSON
+              # with it, rather than letting the shell near a stranger's text.
+              pkgs.jq
             ];
 
             env = {
