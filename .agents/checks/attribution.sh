@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # The attribution gate. It reads every commit reachable from its target and holds
 # two rules the human selected: each commit carries the repository owner's raw
-# author identity, and no commit message carries a co-author trailer.
+# author identity, and no commit message carries an attribution line.
+#
+# The second rule lives in `.agents/checks/attribution-lines.sh`, which
+# `.agents/checks/attribution-metadata.sh` holds over a pull request's title and
+# body, so a line a commit message may not carry is a line the pull request may not
+# carry either.
 #
 # `.agents/checks/ci-gate.sh` runs `.agents/checks/attribution-test.sh` first, so
 # scratch repositories prove both rules before this file reads the live history.
@@ -26,8 +31,11 @@ readonly owner_email='18732253+nothingnesses@users.noreply.github.com'
 repository=${1:-.}
 target=${ATTRIBUTION_TARGET:-HEAD}
 
-# ASCII case folding and ASCII character classes, whatever locale the host sets.
+# ASCII case folding and ASCII character classes, whatever locale the host sets. The
+# classifier is sourced after it, because it reads that setting rather than its own.
 export LC_ALL=C
+
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/attribution-lines.sh"
 
 # A target the repository does not hold, such as a head SHA a partial fetch left
 # out, would otherwise stop the walk before it read anything.
@@ -45,7 +53,7 @@ if [[ $(git -C "${repository}" rev-parse --is-shallow-repository) == true ]]; th
 fi
 
 scan() {
-	local failures=0 record commit name email line folded
+	local failures=0 record commit name email line
 	local -a lines
 	while IFS= read -r -d '' record; do
 		# git separates entries with a newline, so every record after the first
@@ -60,13 +68,13 @@ scan() {
 				"${commit}" "${name}" "${email}" "${owner_name}" "${owner_email}" >&2
 			failures=$((failures + 1))
 		fi
-		# The report names the rule and the commit, never the trailer line: the line
-		# holds a person's name and email, and the hash already locates it.
+		# The report names the rule and the commit, never the offending line: the line
+		# is untrusted text that may hold a person's name and email, or anything else
+		# an author typed, and the hash already locates it.
 		for line in "${lines[@]:3}"; do
-			folded=${line,,}
-			if [[ ${folded} =~ ^[[:blank:]]*co-authored-by[[:blank:]]*: ]]; then
-				printf 'error: %s: the commit message has a Co-Authored-By trailer\n' \
-					"${commit}" >&2
+			if attribution_classify "${line}"; then
+				printf 'error: %s: the commit message has %s\n' \
+					"${commit}" "${attribution_rule}" >&2
 				failures=$((failures + 1))
 				break
 			fi
@@ -90,5 +98,5 @@ if ! git -C "${repository}" log --format='%H%n%an%n%ae%n%B%x00' "${target}" | sc
 	exit 1
 fi
 
-printf 'attribution: %s commits reachable from %s carry the owner identity and no co-author trailer\n' \
+printf 'attribution: %s commits reachable from %s carry the owner identity and no attribution line\n' \
 	"$(git -C "${repository}" rev-list --count "${target}")" "${target}"

@@ -2,6 +2,11 @@ name: ci
 
 on:
   pull_request:
+    # The first three are the default set, which naming any type replaces. `edited`
+    # is the addition: it fires on a title or body change, and those are what
+    # `.agents/checks/attribution-metadata.sh` reads, so an edit is checked again
+    # rather than riding on the run that the opening commit passed.
+    types: [opened, synchronize, reopened, edited]
   push:
     branches: [main]
 
@@ -43,4 +48,10 @@ jobs:
           # push. The merge commit has that head as a parent, so the fetched
           # history already contains it.
           ATTRIBUTION_TARGET: ${{ github.event.pull_request.head.sha || github.sha }}
+          # The metadata check reads the pull request's title and body out of the
+          # event file itself. Only the event's name and location are passed in, both
+          # of them GitHub's own values; interpolating the title or the body here
+          # would run a stranger's text as part of this script.
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
         run: nix develop --command just ci
