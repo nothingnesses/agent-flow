@@ -1,14 +1,10 @@
 # agent-flow
 
-[![crates.io](https://img.shields.io/crates/v/agent-flow.svg)](https://crates.io/crates/agent-flow) [![GitHub License](https://img.shields.io/github/license/nothingnesses/agent-scaffold?color=blue)](https://github.com/nothingnesses/agent-scaffold/blob/main/LICENSE)
+[![crates.io](https://img.shields.io/crates/v/agent-flow.svg)](https://crates.io/crates/agent-flow) [![GitHub License](https://img.shields.io/github/license/nothingnesses/agent-flow?color=blue)](https://github.com/nothingnesses/agent-flow/blob/main/LICENSE)
 
 A small command-line tool that scaffolds a bounded agent delivery workflow into a project. The built-in pack creates one compact work file, one implementation-branch workflow, and role prompts for implementation, independent product review, conditional triage, one scoped fix, and one focused verification.
 
-## The `agent-flow` rename
-
-This project was published as `agent-scaffold` up to 0.0.2. From 0.0.3 it is published as `agent-flow` at <https://crates.io/crates/agent-flow>, and that is the crate to install. The binary is called `agent-flow` too, so every command below that once read `agent-scaffold <verb>` now reads `agent-flow <verb>`; the subcommands and their flags are unchanged. `agent-scaffold` stops at 0.0.2, and every published `agent-scaffold` version stays installable and un-yanked, so anything already depending on it keeps working.
-
-The `agent-scaffold` name is free for whoever wants to reclaim it. To ask for it, open an issue on <https://github.com/nothingnesses/agent-scaffold>, this project's repository.
+Those files are a written contract and the state that goes with it. The tool writes them and projects what they say. It starts no agent and runs no delivery pass for you. See [Roles are contracts, not isolation](#roles-are-contracts-not-isolation) for where execution, and the isolation around it, come from.
 
 ## Motivations
 
@@ -65,6 +61,16 @@ flowchart LR
 
 There is no plan review or convergence loop. Review findings cannot broaden the selected action's acceptance criteria. A missing independent reviewer, an out-of-scope finding, an unsafe fix, or a failed focused verification stops the workflow and returns the decision to the human.
 
+### Roles are contracts, not isolation
+
+The five passes above are logical roles: prose contracts in `.agents/prompts/`, read against the state in `.agents/work.toml`. agent-flow scaffolds those contracts and that state, and its read-only commands project them. It does that and nothing more.
+
+It does not launch an agent, spawn a process, or create a git worktree to run a role in, and it enforces no separation of processes, filesystems, networks, credentials, or tool access between roles. Two roles the diagram draws apart may well execute in one process, over one working tree, with one set of credentials. Nothing in the tool prevents that, and nothing in the tool detects it.
+
+The agent harness or external runner you drive the roles with is what supplies that isolation, and it is also what makes an independent product review independent: the tool cannot tell an independent reviewer from the implementer wearing a second hat. Choose a harness whose separation you trust, and treat the role prompts as the contract it executes against.
+
+One command does use a worktree, and it is unrelated to roles: `agent-flow checks` runs the configured lint and format commands inside a throwaway git worktree, so an in-place formatter cannot mutate the live tree.
+
 ## Installation
 
 agent-flow is a standalone Rust binary that runs without Nix. Install the latest release from crates.io:
@@ -73,11 +79,13 @@ agent-flow is a standalone Rust binary that runs without Nix. Install the latest
 cargo install agent-flow
 ```
 
+Up to 0.0.2 the crate and the binary were called `agent-scaffold`. The 0.0.3 entry in [CHANGELOG.md](CHANGELOG.md) is the durable record of that rename, including what to run to upgrade from 0.0.2. Every published `agent-scaffold` version stays installable and un-yanked, and the `agent-scaffold` crate name is free for whoever wants to reclaim it. To ask for it, open an issue at <https://github.com/nothingnesses/agent-flow/issues>, this project's issue tracker.
+
 Or build from source with a recent Rust toolchain (Rust 1.88 or newer):
 
 ```sh
-git clone https://github.com/nothingnesses/agent-scaffold
-cd agent-scaffold
+git clone https://github.com/nothingnesses/agent-flow
+cd agent-flow
 
 # Install the `agent-flow` binary into ~/.cargo/bin:
 cargo install --path .
