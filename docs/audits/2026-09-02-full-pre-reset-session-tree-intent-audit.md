@@ -8,7 +8,7 @@ This audit covers every session record before the human selected the minimal res
 
 The reset boundary is message `095858ed` at JSONL line 62,326 on 2026-08-30T13:34:15.841Z.
 
-The external source was a local Pi session JSONL, 136,637,987 bytes, SHA-256 `99dd7feb80bca0b92c767cf49faac1a989cbc9da9502f6c048d1a3035d11d2a1`.
+The audit covers records before that decision, but the source prefix must include the boundary record: JSONL lines 1 through 62,326 inclusive, ending at decision record `095858ed`, are 127,492,692 bytes and have SHA-256 `b1c42b8542eef31e091388bf6854f2cb1ef9174361f3b4fc79ce6897f93c4f50`.
 
 ## Method
 
