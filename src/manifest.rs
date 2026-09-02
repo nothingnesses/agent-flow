@@ -863,6 +863,7 @@ mod tests {
 				".agents/prompts/verifier.md",
 				".agents/principles.toml",
 				".agents/user-prompts/kickoff.md",
+				".agents/user-prompts/review.md",
 			]
 		);
 	}

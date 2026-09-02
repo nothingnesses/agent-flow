@@ -20,6 +20,31 @@ const MAX_GUIDANCE_BYTES: usize = 65_536;
 const MAX_PROMPT_BYTES: usize = 4_096;
 const MAX_WORK_BYTES: usize = 4_096;
 
+/// The standalone review prompt is pasted by hand into whatever harness the human uses,
+/// so it competes for the same context window as the code under review. The accepted
+/// limit is strictly below 2,000 bytes, far under the general prompt ceiling: the surface
+/// was chosen over a command because it is compact, and a prompt that grows into a
+/// document stops being that. This constant is the only place that limit is enforced.
+const MAX_REVIEW_PROMPT_BYTES: usize = 2_000;
+
+/// The four severity values the reviewer role prompt already uses. The standalone prompt
+/// keeps the same scale so a finding reads the same whichever surface produced it.
+const SEVERITIES: [&str; 4] = ["`low`", "`medium`", "`high`", "`critical`"];
+
+/// Every persisted review-state family the reset deleted. Shipping a review surface is
+/// exactly the change that could bring one back, so the prompt must name each as
+/// forbidden: a reader told only "read-only" can still believe that writing up findings
+/// into a file is part of reviewing rather than a violation of it.
+const FORBIDDEN_REVIEW_STATE: [&str; 7] = [
+	"findings file",
+	"report",
+	"ledger",
+	"round log",
+	"review directory",
+	"plan tree",
+	"task state",
+];
+
 fn scratch(name: &str) -> PathBuf {
 	let dir = std::env::temp_dir()
 		.join(format!("agent-flow-minimal-scaffold-{}-{name}", std::process::id()));
@@ -122,6 +147,7 @@ fn default_scaffold_is_bounded_parseable_and_byte_idempotent() {
 		".agents/prompts/triager.md",
 		".agents/prompts/verifier.md",
 		".agents/user-prompts/kickoff.md",
+		".agents/user-prompts/review.md",
 		".agents/work.toml",
 		"AGENTS.md",
 	];
@@ -246,6 +272,159 @@ fn the_no_review_directory_criterion_fails_for_an_empty_review_directory() {
 	assert!(
 		!dirs.iter().all(|path| !path.contains("reviews")),
 		"the criterion as asserted above must fail for an empty review directory"
+	);
+
+	fs::remove_dir_all(root).unwrap();
+}
+
+/// The one line of `prompt` that starts with `marker`, panicking if it is missing or
+/// repeated. Anchoring each clause to its own line is what makes the assertions below a
+/// contract rather than a bag of substrings: a required phrase that drifted into some
+/// other sentence no longer satisfies the clause it was meant to pin, and a duplicated
+/// clause (two target-mode lines saying different things) fails instead of half-passing.
+fn clause<'a>(
+	prompt: &'a str,
+	marker: &str,
+) -> &'a str {
+	let mut matched = prompt.lines().filter(|line| line.starts_with(marker));
+	let line = matched
+		.next()
+		.unwrap_or_else(|| panic!("the review prompt has no line starting with {marker:?}"));
+	assert!(
+		matched.next().is_none(),
+		"the review prompt has more than one line starting with {marker:?}, so pinning that clause would check only the first"
+	);
+	line
+}
+
+/// Assert that the `name` clause states every phrase in `required`.
+fn assert_states(
+	name: &str,
+	line: &str,
+	required: &[&str],
+) {
+	for phrase in required {
+		assert!(
+			line.contains(phrase),
+			"the {name} clause of the review prompt must state {phrase:?}, but it reads {line:?}"
+		);
+	}
+}
+
+/// Pin the standalone review prompt's contract as the scaffold ships it.
+///
+/// This asset is a human-invoked reference prompt: it is copied out of the scaffold and
+/// pasted into an arbitrary harness, so no code downstream re-derives or enforces what it
+/// means. Its bytes ARE the contract, which is why the meaning is asserted here and not
+/// just its presence in the asset list. Each group below pins one clause the decision to
+/// ship a prompt rather than a `review` command rests on.
+#[test]
+fn the_scaffolded_review_prompt_pins_its_standalone_contract() {
+	let root = scratch("review-prompt");
+	let output = scaffold(&root);
+	assert!(
+		output.status.success(),
+		"scaffold failed:\nstdout:\n{}\nstderr:\n{}",
+		String::from_utf8_lossy(&output.stdout),
+		String::from_utf8_lossy(&output.stderr)
+	);
+
+	let prompt = fs::read_to_string(root.join(".agents/user-prompts/review.md")).unwrap();
+	assert!(
+		prompt.len() < MAX_REVIEW_PROMPT_BYTES,
+		"the review prompt is {} bytes; the compact limit is under {MAX_REVIEW_PROMPT_BYTES}",
+		prompt.len()
+	);
+	assert!(
+		prompt.is_ascii(),
+		"the review prompt is pasted into unknown harnesses and terminals, so it stays ASCII-only"
+	);
+
+	// Both target modes, and the exclusivity between them. The failure this guards is
+	// concrete and silent: asking for a whole-tree review as if it were a diff resolves to
+	// an empty range, which reviews nothing and reports nothing wrong.
+	assert_states(
+		"target-mode",
+		clause(&prompt, "Give me a standalone"),
+		&["read-only", "exactly one target mode"],
+	);
+	assert_states(
+		"CURRENT TREE",
+		clause(&prompt, "- CURRENT TREE at"),
+		&["complete tree", "no baseline", "never a diff review", "never an empty one"],
+	);
+	assert_states(
+		"DIFF",
+		clause(&prompt, "- DIFF from"),
+		&[
+			"`<base>..<tip>`",
+			"only the surrounding code needed to judge them",
+			"Do not widen this into a whole-tree review",
+		],
+	);
+
+	// Criteria and a stated starting point. Refs resolved in full and a clean-or-dirty
+	// statement are what make the review reproducible by someone who was not there.
+	assert!(
+		prompt.lines().any(|line| line.starts_with("Criteria:")),
+		"the review prompt must carry a criteria slot for the human to fill"
+	);
+	assert_states(
+		"setup",
+		clause(&prompt, "Before reviewing,"),
+		&["full commit ID", "clean or dirty", "stop and ask"],
+	);
+
+	// Read-only work, a direct response, and no persisted review state of any family.
+	// The non-mutation ban is scoped to the reviewed repository and bounded at both ends
+	// by a `git status --porcelain` comparison: unscoped, it also forbids the isolated
+	// reproduction the evidence clause below requires, and without the closing comparison
+	// the permitted scratch has nothing proving it stayed outside the reviewed tree.
+	let read_only = clause(&prompt, "Work read-only.");
+	assert_states(
+		"read-only",
+		read_only,
+		&[
+			"Do not edit",
+			"format",
+			"stage, commit or delete any file in the reviewed repository",
+			"index, refs or configuration",
+			"human-authorised scratch directory outside that repository",
+			"Record `git status --porcelain` before and after",
+			"report any difference",
+			"Return the review directly in this response.",
+		],
+	);
+	for family in FORBIDDEN_REVIEW_STATE {
+		assert!(
+			read_only.contains(family),
+			"the read-only clause must forbid writing a {family}, the review-state family the reset removed; it reads {read_only:?}"
+		);
+	}
+
+	// Severity and reproducible evidence, so a finding can be checked rather than believed.
+	// A textual citation carries the revision it was read at, which is what makes it
+	// resolve for the reader in either target mode: a bare `file:line` names different
+	// content at each end of a diff, and names nothing at all for a deleted line.
+	let evidence = clause(&prompt, "Give each finding a severity");
+	assert_states(
+		"evidence",
+		evidence,
+		&["exact command", "`<full-commit-id>:<file>:<line>`", "out of scope, not a finding"],
+	);
+	for severity in SEVERITIES {
+		assert!(
+			evidence.contains(severity),
+			"the evidence clause must offer the {severity} severity; it reads {evidence:?}"
+		);
+	}
+
+	// A clean review must have a short, unambiguous way to say so. Without it, an agent
+	// with nothing to report is pushed toward padding the response with non-findings.
+	assert_states(
+		"clean-result",
+		clause(&prompt, "If nothing violates the criteria,"),
+		&["`No findings.`", "the checks you ran"],
 	);
 
 	fs::remove_dir_all(root).unwrap();

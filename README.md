@@ -35,7 +35,10 @@ AGENTS.md                          compact canonical guidance (working file)
     verifier.md                   verify that fix once
   user-prompts/
     kickoff.md                    start the selected action
+    review.md                     ask for one standalone read-only review
 ```
+
+The two user prompts answer different questions. Copy `kickoff.md` to start the selected action and run the bounded delivery around it. Copy `review.md` when you only want code that already exists reviewed: a whole tree at one ref, or one diff between two refs, judged against criteria you supply. It is a human-invoked reference asset, not workflow state, so it starts no delivery, changes no file in the reviewed repository and persists no review state anywhere, confines any reproduction to a scratch directory you authorise outside that repository, and returns its review as the agent's direct response.
 
 The default creates no ledger, JSON Lines round log, `docs/plans/` process tree, review directory, plan-review loop, or convergence-round state. `.agents/work.toml` contains at most five ordered delivery steps. While work remains, `selected_action` names one active step and several steps may be active at once; after every step is complete, the field is omitted. `agent-flow validate`, `status`, and `next` use that state by default.
 
