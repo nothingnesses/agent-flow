@@ -1,24 +1,23 @@
 version = 1
+selected_action = "preserve-full-tree-audit"
 
 [[step]]
-id = "refresh-readme-metadata"
-status = "complete"
+id = "preserve-full-tree-audit"
+status = "active"
 blocked_by = []
 user_problem = """
-The README, Cargo package metadata, and GitHub description still name the former repository or describe the removed plan-heavy default. Readers cannot tell which workflow agent-flow now scaffolds or where execution isolation comes from.
+The completed pre-reset session-tree audit exists only under ignored `target/`. Cleanup can delete its final conclusions, while its raw session extracts and analyst maps are unsuitable for repository history.
 """
 change = """
-Make the README and package metadata describe the current repository and bounded default workflow. State that role separation is a workflow rule and that the external harness supplies process and filesystem isolation. Prepare one concise GitHub description that matches the reviewed documentation.
+Commit a dated, sanitised, self-contained final report under `docs/audits/`. Keep the raw session source, extracts, intent index, maps, and temporary analyses under ignored `target/`.
 """
 acceptance = [
-  "The README uses the current repository URL, clone directory, badge links, and issue route.",
-  "The README removes the temporary rename section and points durable rename history to the changelog.",
-  "The README describes the bounded default workflow and separates logical roles from harness-supplied execution isolation.",
-  "The Cargo package repository and description match the current product and repository.",
-  "The changelog does not depend on a removed README section for current rename information.",
-  "The GitHub repository description matches the reviewed product description.",
-  "The required repository checks pass without unrelated documentation changes.",
+  "A dated final report under `docs/audits/` states the audit boundary, method, material findings, limits, and current dispositions.",
+  "The report identifies the external session source by size and SHA-256 digest without committing session content or sensitive raw extracts.",
+  "The report does not depend on an ignored `target/` path for its conclusions.",
+  "No raw session record, intent index, analyst map, transcript, or temporary analysis enters version control.",
+  "The required repository checks pass with no unrelated product change.",
 ]
 why_next = """
-The repository rename is complete, but the primary documentation and metadata still send readers to the former name and describe removed defaults. Correct them before the historical intent audit uses current documentation as product evidence.
+The human selected a split lifecycle for audit output. Preserve the small final synthesis before scratch cleanup, while keeping bulky and potentially sensitive evidence ephemeral.
 """
