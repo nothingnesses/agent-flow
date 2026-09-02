@@ -8,7 +8,7 @@ The human keeps delivery state in `.agents/work.toml`. It contains at most five 
 
 The four prose fields (`user_problem`, `change`, each `acceptance` item, and `why_next`) may hold paragraphs, so write them with a TOML multi-line string (`"""`) when one line will not state the problem honestly. The structural values stay on one line each: `selected_action`, every step `id`, every `blocked_by` id, and every status. Tabs, carriage returns, other control characters, and Unicode line or paragraph separators are rejected everywhere, in prose as well; only the line-feed paragraph break is prose-only. The `next` brief indents every continuation line, so prose cannot forge a heading of its own.
 
-To start the selected action, copy `.agents/user-prompts/kickoff.md`, fill in its optional context, and paste it to the agent.
+To start the selected action, copy `.agents/user-prompts/kickoff.md`, fill in its optional context, and paste it to the agent. To ask instead for a standalone read-only review of a whole tree at one ref, or of one diff between two refs, copy `.agents/user-prompts/review.md`. That prompt is a reference asset a human invokes by hand; it neither starts nor advances the selected action, and its review is the agent's direct response, not a file.
 
 `.agents/work.toml` is the only workflow task-state file. Do not create a plan tree, ledger, round log, findings directory, or review record. Product-development checks under `.agents/checks.toml`, `.agents/checks/`, and `.agents/hooks/` are optional tooling, not task state or proof of review.
 

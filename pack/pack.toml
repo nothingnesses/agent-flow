@@ -58,6 +58,11 @@ source = "user-prompts/kickoff.md"
 dest = ".agents/user-prompts/kickoff.md"
 ownership = "reference"
 
+[[asset]]
+source = "user-prompts/review.md"
+dest = ".agents/user-prompts/review.md"
+ownership = "reference"
+
 # Optional product-development checks. No asset in this module is task state.
 [[asset]]
 source = "checks.toml"

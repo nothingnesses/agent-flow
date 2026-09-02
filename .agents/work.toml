@@ -1,25 +1,24 @@
 version = 1
 
 [[step]]
-id = "prevent-false-attribution"
+id = "ship-standalone-review-prompt"
 status = "complete"
 blocked_by = []
 user_problem = """
-Commits can name an agent or an LLM as the author or as a co-author, which credits work to someone who did not do it and adds a false contributor to the repository.
-
-A rewrite of the history fixed the record already. All 1512 commits reachable from the current main now carry the raw author nothingnesses <18732253+nothingnesses@users.noreply.github.com>, seven Co-Authored-By trailers are gone, and the repository-local Test <test@example.com> identity override is gone. Nothing stops the next commit from undoing that work."""
+A human who wants a review of a whole tree or of one diff has to improvise the request. A whole-tree review can silently collapse into an empty diff review.
+"""
 change = """
-Add a read-only attribution check over every commit reachable from HEAD, prove it with scratch repositories, run both from the shared just ci gate, fetch the complete history in GitHub CI, and state the rule in the shipped guidance."""
+Ship one compact standalone review prompt as a built-in pack reference asset, with the discoverability and tests it needs.
+"""
 acceptance = [
-  "just ci checks the complete reachable history, locally and in GitHub CI.",
-  "The gate accepts only the raw author identity nothingnesses <18732253+nothingnesses@users.noreply.github.com>.",
-  "Any Co-Authored-By trailer fails, whatever its case and whatever horizontal whitespace surrounds the key and the colon.",
-  "A report names the offending commit and the rule it broke, and prints no other commit body content.",
-  "Scratch repositories outside the tracked tree prove the passing case, a foreign author, a placeholder author, and a co-author trailer, under temporary Git configuration.",
-  "The GitHub checkout fetches the complete history, so the remote run cannot inspect only the tip, and it keeps the default merge-result ref, so a pull request still builds and tests the merge rather than the branch tip alone.",
-  "On a pull request the remote run scans the commits of the branch rather than the synthetic author of GitHub's merge commit.",
-  "The shipped guidance requires the owner identity and forbids agent and LLM attribution in commits and pull requests.",
-  "The gate stays read-only over the tracked tree, and the existing formatting, Clippy, test, reset tripwire, action pin, and clean-tree checks still pass.",
+  "A fresh default scaffold writes `.agents/user-prompts/review.md` and no other new asset.",
+  "The prompt makes the current-tree and diff targets exclusive and unambiguous.",
+  "It requires criteria, resolved refs, a clean-or-dirty status statement, read-only work and a direct response.",
+  "It requires severity and reproducible evidence and allows a concise clean result.",
+  "It forbids edits and every persisted review-state family the reset removed.",
+  "Shipped guidance says when to use the kickoff prompt and when to use this one.",
+  "Tests pin the asset, its limits and that contract.",
 ]
 why_next = """
-The history is clean today only because a human rewrote it. A mechanical gate keeps it clean without asking every later author to remember the rule, and it is cheap to add while the evidence of what went wrong is fresh."""
+The comparison already chose this surface. Shipping it closes the gap without a command, provider or new state.
+"""
