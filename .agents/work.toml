@@ -1,26 +1,25 @@
 version = 1
+selected_action = "refresh-readme-metadata"
 
 [[step]]
-id = "enforce-attribution-messages"
-status = "complete"
+id = "refresh-readme-metadata"
+status = "active"
 blocked_by = []
 user_problem = """
-The complete-history gate rejects foreign authors and Co-Authored-By lines, but other generated attribution footers can pass. Pull-request titles and bodies rely only on guidance.
+The README, Cargo package metadata, and GitHub description still name the former repository or describe the removed plan-heavy default. Readers cannot tell which workflow agent-flow now scaffolds or where execution isolation comes from.
 """
 change = """
-Use one structural attribution policy for commit messages and pull-request metadata. Reject attribution trailers and known generated footer forms without banning ordinary discussion of agent tools.
+Make the README and package metadata describe the current repository and bounded default workflow. State that role separation is a workflow rule and that the external harness supplies process and filesystem isolation. Prepare one concise GitHub description that matches the reviewed documentation.
 """
 acceptance = [
-  "The exact raw author allowlist, complete-history scan, shallow-history refusal and every Co-Authored-By rejection remain unchanged.",
-  "One deterministic classifier rejects structural attribution trailers and known generated footer forms for Claude, GPT or Codex, Gemini and Copilot.",
-  "The same classifier checks reachable commit messages and pull-request titles and bodies.",
-  "Pull-request metadata is parsed from the GitHub event file without shell evaluation, and a missing or malformed event fails when the check expects a pull request.",
-  "A pull-request title or body edit triggers the required quality workflow again.",
-  "Normal technical discussion of model names and attribution detection remains valid when it is not itself an attribution line.",
-  "Failures name the commit or pull-request field and the broken rule without echoing untrusted message content.",
-  "Scratch cases prove Claude, GPT or Codex, Gemini and Copilot forms, safe mentions, event parsing, push behaviour and the existing history rules.",
-  "The shared just ci gate, protected quality job, existing reset checks and complete-history attribution check pass.",
+  "The README uses the current repository URL, clone directory, badge links, and issue route.",
+  "The README removes the temporary rename section and points durable rename history to the changelog.",
+  "The README describes the bounded default workflow and separates logical roles from harness-supplied execution isolation.",
+  "The Cargo package repository and description match the current product and repository.",
+  "The changelog does not depend on a removed README section for current rename information.",
+  "The GitHub repository description matches the reviewed product description.",
+  "The required repository checks pass without unrelated documentation changes.",
 ]
 why_next = """
-The repository history is correct, but deterministic prevention must cover the message surfaces that current guidance alone cannot enforce.
+The repository rename is complete, but the primary documentation and metadata still send readers to the former name and describe removed defaults. Correct them before the historical intent audit uses current documentation as product evidence.
 """
