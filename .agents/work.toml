@@ -1,9 +1,9 @@
 version = 1
-selected_action = "preserve-full-tree-audit"
+selected_action = "revalidate-historical-decisions"
 
 [[step]]
 id = "preserve-full-tree-audit"
-status = "active"
+status = "complete"
 blocked_by = []
 user_problem = """
 The completed pre-reset session-tree audit exists only under ignored `target/`. Cleanup can delete its final conclusions, while its raw session extracts and analyst maps are unsuitable for repository history.
@@ -24,7 +24,7 @@ The human selected a split lifecycle for audit output. Preserve the small final 
 
 [[step]]
 id = "revalidate-historical-decisions"
-status = "pending"
+status = "active"
 blocked_by = ["preserve-full-tree-audit"]
 user_problem = """
 The reset and audit compressed prior human decisions into broad archived dispositions. The human wants every material decision presented again before it is retained, revised, deferred, or rejected.
