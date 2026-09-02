@@ -1,9 +1,8 @@
 version = 1
-selected_action = "refresh-readme-metadata"
 
 [[step]]
 id = "refresh-readme-metadata"
-status = "active"
+status = "complete"
 blocked_by = []
 user_problem = """
 The README, Cargo package metadata, and GitHub description still name the former repository or describe the removed plan-heavy default. Readers cannot tell which workflow agent-flow now scaffolds or where execution isolation comes from.
