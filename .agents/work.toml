@@ -21,3 +21,24 @@ acceptance = [
 why_next = """
 The human selected a split lifecycle for audit output. Preserve the small final synthesis before scratch cleanup, while keeping bulky and potentially sensitive evidence ephemeral.
 """
+
+[[step]]
+id = "revalidate-historical-decisions"
+status = "pending"
+blocked_by = ["preserve-full-tree-audit"]
+user_problem = """
+The reset and audit compressed prior human decisions into broad archived dispositions. The human wants every material decision presented again before it is retained, revised, deferred, or rejected.
+"""
+change = """
+Build a bounded decision inventory from the complete intent index and preserved Git evidence. Present each decision cluster again with current options, trade-offs, evidence, and a recommendation.
+"""
+acceptance = [
+  "Every materially distinct prior human decision has an evidence id or Git path, its original choice, and its current product status.",
+  "The human assigns every cluster to already satisfied, keep now, keep later, revise, or reject.",
+  "One versioned report records the fresh dispositions without restoring the old plan, ledger, or round log.",
+  "Only selected current work enters `.agents/work.toml`, within its five-step limit.",
+  "Each item selected for later becomes a GitHub issue only after the human approves its title and scope.",
+]
+why_next = """
+No prior decision can be treated as dropped merely because the reset removed its old planning record.
+"""
