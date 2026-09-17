@@ -6,6 +6,11 @@ A small command-line tool that scaffolds a bounded agent delivery workflow into 
 
 Those files are a written contract and the state that goes with it. The tool writes them and projects what they say. It starts no agent and runs no delivery pass for you. See [Roles are contracts, not isolation](#roles-are-contracts-not-isolation) for where execution, and the isolation around it, come from.
 
+## Decision and research context
+
+- [Historical decision revalidation](docs/audits/2026-09-09-historical-decision-revalidation.md) preserves the retained direction without approving implementation.
+- [Tooling research and Rust library trial](docs/audits/2026-09-16-tooling-research-and-trial.md) records later evidence and its limits.
+
 ## Motivations
 
 - Starting a task should require one bounded source of state, not a generated process tree.

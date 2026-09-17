@@ -1,44 +1,26 @@
 version = 1
-selected_action = "revalidate-historical-decisions"
+selected_action = "preserve-post-reset-context"
 
 [[step]]
-id = "preserve-full-tree-audit"
-status = "complete"
+id = "preserve-post-reset-context"
+status = "active"
 blocked_by = []
 user_problem = """
-The completed pre-reset session-tree audit exists only under ignored `target/`. Cleanup can delete its final conclusions, while its raw session extracts and analyst maps are unsuitable for repository history.
+The reviewed 114-decision report did not reach main. Later research and library-trial conclusions remain outside normal repository discovery. A new session can miss retained decisions or mistake proposals for approved work.
 """
 change = """
-Commit a dated, sanitised, self-contained final report under `docs/audits/`. Keep the raw session source, extracts, intent index, maps, and temporary analyses under ignored `target/`.
+Preserve the exact reviewed revalidation report and add one concise, sanitised report about the alternatives research and library trial. Include a separately dated OpenShell assessment and the related VeriGuard paper. Record formal methods for deterministic checks as a retained preference, without a dependency or implementation choice. Add README links to the reports.
 """
 acceptance = [
-  "A dated final report under `docs/audits/` states the audit boundary, method, material findings, limits, and current dispositions.",
-  "The report identifies the external session source by size and SHA-256 digest without committing session content or sensitive raw extracts.",
-  "The report does not depend on an ignored `target/` path for its conclusions.",
-  "No raw session record, intent index, analyst map, transcript, or temporary analysis enters version control.",
-  "The required repository checks pass with no unrelated product change.",
+  "The revalidation report is byte-identical to a64d6c27a2171b5fe311f7ab05f1d8cbe8aeff2d:docs/audits/2026-09-09-historical-decision-revalidation.md.",
+  "The new report preserves the twelve-source study boundary, checker qualifications, library outcomes, failed verdicts and complete worker accounting.",
+  "The OpenShell assessment distinguishes current permission-risk checks from the containment spike, and states empirical and model limits.",
+  "The VeriGuard reference distinguishes verified policy code from generated specifications, runtime argument extraction and actual enforcement.",
+  "Retained directions, unresolved proposals and evidence remain distinct. No adoption, implemented guarantee or new execution authority is inferred.",
+  "The report uses source references and states its conclusions without dependence on ignored scratch. No raw sessions or private execution evidence enter Git.",
+  "Changes remain limited to the work brief, README links and the two reports. Existing report bytes and all product code remain unchanged.",
+  "The host just ci checks pass, and an independent reviewer examines the complete documentation diff against these criteria.",
 ]
 why_next = """
-The human selected a split lifecycle for audit output. Preserve the small final synthesis before scratch cleanup, while keeping bulky and potentially sensitive evidence ephemeral.
-"""
-
-[[step]]
-id = "revalidate-historical-decisions"
-status = "active"
-blocked_by = ["preserve-full-tree-audit"]
-user_problem = """
-The reset and audit compressed prior human decisions into broad archived dispositions. The human wants every material decision presented again before it is retained, revised, deferred, or rejected.
-"""
-change = """
-Build a bounded decision inventory from the complete intent index and preserved Git evidence. Present each decision cluster again with current options, trade-offs, evidence, and a recommendation.
-"""
-acceptance = [
-  "Every materially distinct prior human decision has an evidence id or Git path, its original choice, and its current product status.",
-  "The human assigns every cluster to already satisfied, keep now, keep later, revise, or reject.",
-  "One versioned report records the fresh dispositions without restoring the old plan, ledger, or round log.",
-  "Only selected current work enters `.agents/work.toml`, within its five-step limit.",
-  "Each item selected for later becomes a GitHub issue only after the human approves its title and scope.",
-]
-why_next = """
-No prior decision can be treated as dropped merely because the reset removed its old planning record.
+The human approved local preservation before further design work, with at most five worker dispatches. The sequence permits an author, independent review and conditional triage, one scoped fix and focused verification. Failed launches count. Publication, merge, task completion and private backup require separate direction.
 """
