@@ -1,26 +1,46 @@
 version = 1
-selected_action = "preserve-post-reset-context"
+selected_action = "accept-github-owner-name"
 
 [[step]]
 id = "preserve-post-reset-context"
-status = "active"
+status = "complete"
 blocked_by = []
-user_problem = """
-The reviewed 114-decision report did not reach main. Later research and library-trial conclusions remain outside normal repository discovery. A new session can miss retained decisions or mistake proposals for approved work.
-"""
-change = """
-Preserve the exact reviewed revalidation report and add one concise, sanitised report about the alternatives research and library trial. Include a separately dated OpenShell assessment and the related VeriGuard paper. Record formal methods for deterministic checks as a retained preference, without a dependency or implementation choice. Add README links to the reports.
-"""
+user_problem = "The reviewed decisions and later research lacked reliable repository discovery."
+change = "Preserved the decision report and a sanitised research report through PR #9, with README links."
 acceptance = [
-  "The revalidation report is byte-identical to a64d6c27a2171b5fe311f7ab05f1d8cbe8aeff2d:docs/audits/2026-09-09-historical-decision-revalidation.md.",
-  "The new report preserves the twelve-source study boundary, checker qualifications, library outcomes, failed verdicts and complete worker accounting.",
-  "The OpenShell assessment distinguishes current permission-risk checks from the containment spike, and states empirical and model limits.",
-  "The VeriGuard reference distinguishes verified policy code from generated specifications, runtime argument extraction and actual enforcement.",
-  "Retained directions, unresolved proposals and evidence remain distinct. No adoption, implemented guarantee or new execution authority is inferred.",
-  "The report uses source references and states its conclusions without dependence on ignored scratch. No raw sessions or private execution evidence enter Git.",
-  "Changes remain limited to the work brief, README links and the two reports. Existing report bytes and all product code remain unchanged.",
-  "The host just ci checks pass, and an independent reviewer examines the complete documentation diff against these criteria.",
+  "The original approved criteria remain at 1ab27cf53fe8c8421362b04ae7b5af263978974c:.agents/work.toml.",
 ]
-why_next = """
-The human approved local preservation before further design work, with at most five worker dispatches. The sequence permits an author, independent review and conditional triage, one scoped fix and focused verification. Failed launches count. Publication, merge, task completion and private backup require separate direction.
-"""
+why_next = "The human marked this delivery complete after the merge. This compact entry retains that outcome."
+
+[[step]]
+id = "accept-github-owner-name"
+status = "active"
+blocked_by = ["preserve-post-reset-context"]
+user_problem = "GitHub used the owner's public display name for a squash commit. The exact-name check rejects that identity and blocks main CI."
+change = "Accept the two approved owner names with the existing exact email. Add regression tests without other attribution policy changes."
+acceptance = [
+  "Exactly nothingnesses or Jesse Abadilla passes with 18732253+nothingnesses@users.noreply.github.com. Other name and email combinations fail.",
+  "Regression tests exercise both allowed identities and incorrect combinations.",
+  "Complete-history checks and the shallow-history and raw-identity safeguards remain intact.",
+  "Commit-message and pull-request attribution prohibitions remain unchanged.",
+  "Existing commits and remote settings remain unchanged. Local commits retain the configured nothingnesses identity.",
+  "Focused tests and host just ci pass. An independent reviewer examines the complete diff against these criteria.",
+]
+why_next = "The human selected this CI repair before adoption and approved at most five worker dispatches, including failures. Publication and completion require separate direction."
+
+[[step]]
+id = "document-existing-project-adoption"
+status = "pending"
+blocked_by = ["accept-github-owner-name"]
+user_problem = "Existing projects lack a tested adoption walkthrough. The README mixes onboarding with lengthy reference material. Agents lack a bounded adoption prompt."
+change = "Add an adoption guide and shipped user prompt. Shorten the README and relocate useful reference material. Keep runtime behaviour unchanged."
+acceptance = [
+  "The README provides a concise introduction, accurate installation guidance and links to adoption and reference pages.",
+  "The guide identifies its tested version and preserves existing project guidance, plans and checks.",
+  "The prompt asks about unresolved authority and conflicts before edits, imports only agreed current work, validates the result and requests human review.",
+  "Adoption creates no automatic implementation, commit, publication, hook installation or legacy plan conversion.",
+  "The prompt is discoverable before adoption, ships through the default pack and satisfies scaffold limits and repeat-run tests.",
+  "Focused tests and a disposable-repository rehearsal exercise adoption commands and preservation of existing project files.",
+  "Runtime commands, existing delivery-role contracts, audit reports and released history remain unchanged. Host just ci and independent review cover the candidate.",
+]
+why_next = "The human approved this onboarding change with at most five worker dispatches, including failures. Use one author, independent review and conditional triage, one fix and focused verification. Stop before publication or completion."
