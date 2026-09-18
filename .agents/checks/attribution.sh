@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# The attribution gate. It reads every commit reachable from its target and holds
-# two rules the human selected: each commit carries the repository owner's raw
-# author identity, and no commit message carries an attribution line.
+# This check reads every commit reachable from its target.
+# Each commit must carry an approved raw owner identity and no attribution line.
 #
 # The second rule lives in `.agents/checks/attribution-lines.sh`, which
 # `.agents/checks/attribution-metadata.sh` holds over a pull request's title and
@@ -23,9 +22,9 @@
 # the branch commits are what the rules are about.
 set -euo pipefail
 
-# The allowlist, as one exact name and one exact email. It takes no environment
-# override, so nothing that runs the gate can widen it.
+# The human approved both names with the same exact email. No environment override can widen this list.
 readonly owner_name='nothingnesses'
+readonly owner_display_name='Jesse Abadilla'
 readonly owner_email='18732253+nothingnesses@users.noreply.github.com'
 
 repository=${1:-.}
@@ -63,9 +62,9 @@ scan() {
 		commit=${lines[0]}
 		name=${lines[1]}
 		email=${lines[2]}
-		if [[ ${name} != "${owner_name}" || ${email} != "${owner_email}" ]]; then
-			printf 'error: %s: author "%s <%s>" is not the repository owner "%s <%s>"\n' \
-				"${commit}" "${name}" "${email}" "${owner_name}" "${owner_email}" >&2
+		if [[ (${name} != "${owner_name}" && ${name} != "${owner_display_name}") || ${email} != "${owner_email}" ]]; then
+			printf 'error: %s: author "%s <%s>" is not the repository owner (expected "%s" or "%s" with email "%s")\n' \
+				"${commit}" "${name}" "${email}" "${owner_name}" "${owner_display_name}" "${owner_email}" >&2
 			failures=$((failures + 1))
 		fi
 		# The report names the rule and the commit, never the offending line: the line

@@ -17,6 +17,7 @@ set -euo pipefail
 check=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/attribution.sh
 
 readonly owner_name='nothingnesses'
+readonly owner_display_name='Jesse Abadilla'
 readonly owner_email='18732253+nothingnesses@users.noreply.github.com'
 
 export GIT_CONFIG_GLOBAL=/dev/null
@@ -117,6 +118,16 @@ add_commit "${repository}" "${owner_name}" "${owner_email}" \
 add_commit "${repository}" "${owner_name}" "${owner_email}" 'docs: describe the second change'
 expect_pass 'a valid history passes' "${repository}"
 
+repository=$(new_repository display-name-history)
+add_commit "${repository}" "${owner_display_name}" "${owner_email}" 'feat: add the first change'
+expect_pass 'the owner display name passes' "${repository}"
+
+repository=$(new_repository mixed-owner-history)
+add_commit "${repository}" "${owner_name}" "${owner_email}" 'feat: add the first change'
+add_commit "${repository}" "${owner_display_name}" "${owner_email}" 'feat: add the second change'
+add_commit "${repository}" "${owner_name}" "${owner_email}" 'docs: describe both changes'
+expect_pass 'both owner identities pass in one history' "${repository}"
+
 repository=$(new_repository foreign-author)
 add_commit "${repository}" "${owner_name}" "${owner_email}" 'feat: add the first change'
 add_commit "${repository}" 'Some Agent' 'agent@example.invalid' 'feat: add a foreign change'
@@ -138,6 +149,27 @@ add_commit "${repository}" "${owner_name}" 'nothingnesses@example.invalid' \
 	'feat: add a rerouted change'
 expect_failure 'the owner name under another email fails' "${repository}" \
 	"$(git -C "${repository}" rev-parse HEAD)" "${foreign_author}"
+
+repository=$(new_repository display-name-another-email)
+add_commit "${repository}" "${owner_display_name}" 'nothingnesses@example.invalid' \
+	'feat: add a rerouted change'
+expect_failure 'the owner display name under another email fails' "${repository}" \
+	"$(git -C "${repository}" rev-parse HEAD)" "${foreign_author}"
+
+for name in 'Nothingnesses' 'jesse abadilla'; do
+	repository=$(new_repository "case-sensitive-name-${name}")
+	add_commit "${repository}" "${name}" "${owner_email}" 'feat: add a renamed change'
+	expect_failure "the name ${name} with different case fails" "${repository}" \
+		"$(git -C "${repository}" rev-parse HEAD)" "${foreign_author}"
+done
+
+for name in "${owner_name}" "${owner_display_name}"; do
+	repository=$(new_repository "case-sensitive-email-${name}")
+	add_commit "${repository}" "${name}" '18732253+Nothingnesses@users.noreply.github.com' \
+		'feat: add a rerouted change'
+	expect_failure "the name ${name} with a different email case fails" "${repository}" \
+		"$(git -C "${repository}" rev-parse HEAD)" "${foreign_author}"
+done
 
 repository=$(new_repository co-author-trailer)
 add_commit "${repository}" "${owner_name}" "${owner_email}" \
