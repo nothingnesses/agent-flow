@@ -63,6 +63,11 @@ source = "user-prompts/review.md"
 dest = ".agents/user-prompts/review.md"
 ownership = "reference"
 
+[[asset]]
+source = "user-prompts/adopt.md"
+dest = ".agents/user-prompts/adopt.md"
+ownership = "reference"
+
 # Optional product-development checks. No asset in this module is task state.
 [[asset]]
 source = "checks.toml"
