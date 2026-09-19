@@ -2,386 +2,60 @@
 
 [![crates.io](https://img.shields.io/crates/v/agent-flow.svg)](https://crates.io/crates/agent-flow) [![GitHub License](https://img.shields.io/github/license/nothingnesses/agent-flow?color=blue)](https://github.com/nothingnesses/agent-flow/blob/main/LICENSE)
 
-A small command-line tool that scaffolds a bounded agent delivery workflow into a project. The built-in pack creates one compact work file, one implementation-branch workflow, and role prompts for implementation, independent product review, conditional triage, one scoped fix, and one focused verification.
+agent-flow scaffolds a bounded agent delivery workflow into a project. It provides one compact work file and role prompts for a single implementation branch.
 
-Those files are a written contract and the state that goes with it. The tool writes them and projects what they say. It starts no agent and runs no delivery pass for you. See [Roles are contracts, not isolation](#roles-are-contracts-not-isolation) for where execution, and the isolation around it, come from.
+The delivery sequence contains at most five passes:
 
-## Decision and research context
+1. Implementation.
+2. Independent product review.
+3. Separate triage, only for review findings.
+4. One scoped fix, only for valid findings within scope.
+5. Focused verification, only after a fix.
 
-- [Historical decision revalidation](docs/audits/2026-09-09-historical-decision-revalidation.md) preserves the retained direction without approving implementation.
-- [Tooling research and Rust library trial](docs/audits/2026-09-16-tooling-research-and-trial.md) records later evidence and its limits.
+The prompts are contracts, not agent launchers. agent-flow does not enforce role isolation or independent review. The harness or external runner supplies those properties.
 
-## Motivations
+The default creates no process plan tree or review records. Checks and hooks stay opt-in.
 
-- Starting a task should require one bounded source of state, not a generated process tree.
-- Scaffolding into an existing project is safe: tool-owned references refresh, while working files are create-if-absent unless `--force` is passed.
-- The default is minimal. Product-development checks and hooks are opt-in.
-- Guidance is harness-agnostic. `AGENTS.md` is canonical; harness-specific files should point to it rather than duplicate it.
+## Install the current workflow
 
-## What it scaffolds
+The minimal workflow is **unreleased**. The published `agent-flow` 0.0.4 crate predates it, although current source still reports version 0.0.4. Version output alone cannot identify this workflow.
 
-The built-in pack writes this default layout:
-
-```
-AGENTS.md                          compact canonical guidance (working file)
-.agents/
-  work.toml                       bounded delivery state (working file)
-  AGENTS.reference.md             pristine guidance copy
-  principles.toml                 compact selectable principles
-  prompts/
-    implementer.md                make the bounded product change
-    reviewer.md                   independently review the product diff
-    triager.md                    adjudicate findings when any exist
-    fixer.md                      make the one allowed scoped fix
-    verifier.md                   verify that fix once
-  user-prompts/
-    kickoff.md                    start the selected action
-    review.md                     ask for one standalone read-only review
-```
-
-The two user prompts answer different questions. Copy `kickoff.md` to start the selected action and run the bounded delivery around it. Copy `review.md` when you only want code that already exists reviewed: a whole tree at one ref, or one diff between two refs, judged against criteria you supply. It is a human-invoked reference asset, not workflow state, so it starts no delivery, changes no file in the reviewed repository and persists no review state anywhere, confines any reproduction to a scratch directory you authorise outside that repository, and returns its review as the agent's direct response.
-
-The default creates no ledger, JSON Lines round log, `docs/plans/` process tree, review directory, plan-review loop, or convergence-round state. `.agents/work.toml` contains at most five ordered delivery steps. While work remains, `selected_action` names one active step and several steps may be active at once; after every step is complete, the field is omitted. `agent-flow validate`, `status`, and `next` use that state by default.
-
-`AGENTS.md` is rendered from the selected principles. The root guidance and `.agents/work.toml` are working files, created only when absent unless `--force` is used. Tool-owned references under `.agents/` refresh on each run.
-
-Select `--module checks` to add `.agents/checks.toml`, seeded ast-grep assets, a checks-reviewer prompt, and an inert pre-commit hook. These are optional product-development tools, not task state. Pair it with `--with-precommit-hook` to install a create-if-absent delegate without overwriting an existing hook.
-
-## Bounded workflow
-
-The human selects one action in `.agents/work.toml` and starts it with `.agents/user-prompts/kickoff.md`. Delivery stays on one `impl/<selected-action>` branch and uses no parallel implementation worktrees.
-
-```mermaid
-flowchart LR
-    start["Selected action"] --> implement["Implementation pass"]
-    implement --> review["Independent product review"]
-    review -->|clean| human["Return result to human"]
-    review -->|findings| triage["Separate triage"]
-    triage -->|none valid| human
-    triage -->|valid, in scope| fix["One scoped fix"]
-    fix --> verify["One focused verification"]
-    verify -->|pass| human
-    verify -->|fail| unresolved["Return unresolved work to human"]
-```
-
-There is no plan review or convergence loop. Review findings cannot broaden the selected action's acceptance criteria. A missing independent reviewer, an out-of-scope finding, an unsafe fix, or a failed focused verification stops the workflow and returns the decision to the human.
-
-### Roles are contracts, not isolation
-
-The five passes above are logical roles: prose contracts in `.agents/prompts/`, read against the state in `.agents/work.toml`. agent-flow scaffolds those contracts and that state, and its read-only commands project them. It does that and nothing more.
-
-It does not launch an agent, spawn a process, or create a git worktree to run a role in, and it enforces no separation of processes, filesystems, networks, credentials, or tool access between roles. Two roles the diagram draws apart may well execute in one process, over one working tree, with one set of credentials. Nothing in the tool prevents that, and nothing in the tool detects it.
-
-The agent harness or external runner you drive the roles with is what supplies that isolation, and it is also what makes an independent product review independent: the tool cannot tell an independent reviewer from the implementer wearing a second hat. Choose a harness whose separation you trust, and treat the role prompts as the contract it executes against.
-
-One command does use a worktree, and it is unrelated to roles: `agent-flow checks` runs the configured lint and format commands inside a throwaway git worktree, so an in-place formatter cannot mutate the live tree.
-
-## Installation
-
-agent-flow is a standalone Rust binary that runs without Nix. Install the latest release from crates.io:
-
-```sh
-cargo install agent-flow
-```
-
-Up to 0.0.2 the crate and the binary were called `agent-scaffold`. The 0.0.3 entry in [CHANGELOG.md](CHANGELOG.md) is the durable record of that rename, including what to run to upgrade from 0.0.2. Every published `agent-scaffold` version stays installable and un-yanked, and the `agent-scaffold` crate name is free for whoever wants to reclaim it. To ask for it, open an issue at <https://github.com/nothingnesses/agent-flow/issues>, this project's issue tracker.
-
-Or build from source with a recent Rust toolchain (Rust 1.88 or newer):
+Use Rust 1.88 or newer to install from source:
 
 ```sh
 git clone https://github.com/nothingnesses/agent-flow
 cd agent-flow
-
-# Install the `agent-flow` binary into ~/.cargo/bin:
-cargo install --path .
-
-# ...or just build it and use the produced binary:
-cargo build --release
-# ./target/release/agent-flow
+git rev-parse HEAD
+cargo install --locked --path . --root "$HOME/.local/agent-flow-source"
+export PATH="$HOME/.local/agent-flow-source/bin:$PATH"
 ```
 
-If you use Nix, a development shell with the pinned toolchain and helpers is provided by the flake:
+Record the source commit from `git rev-parse HEAD`. Check that the checkout contains [`pack/user-prompts/adopt.md`](pack/user-prompts/adopt.md) before adoption.
 
-```sh
-nix develop        # or: direnv allow, if you use direnv
-```
+The separate installation root leaves other installed binaries unchanged. The binary runs without Nix.
 
-## Usage
+For published versions and the former `agent-scaffold` name, see [release history](docs/reference.md#releases-and-the-rename).
 
-Every action is a subcommand. Bare `agent-flow` (with no subcommand) prints the list of subcommands and exits; scaffolding runs under the `scaffold` verb.
+## Adopt into an existing project
 
-Writes are off unless confirmed, and a scaffold run always prints a plan of what it would do (one line per asset: `create`, `refresh`, `skip (exists)`, or `overwrite`).
+Follow the [adoption guide](docs/adoption.md) before any scaffold write. It covers project authority and preservation of existing material.
 
-On an interactive terminal, running `agent-flow scaffold` with no flags opens the two-pane selector; choosing Save in its confirmation modal writes the scaffold (Cancel or quit writes nothing). For non-interactive use:
+For agent-assisted adoption, copy the [canonical adoption prompt](pack/user-prompts/adopt.md) into your harness. The default pack installs the same prompt at `.agents/user-prompts/adopt.md`.
 
-- `--write` applies the changes directly (using `--principles`), skipping the selector. Off a terminal, this is the only way writes happen.
-- `--dry-run` prints the plan and exits without writing and without opening the selector.
-- With no flag and no terminal (a pipe or CI), it prints the plan and writes nothing.
+Scaffold preserves existing working files unless forced, but always refreshes reference assets. A preserved `AGENTS.md` does not automatically include the new workflow instructions.
 
-Open the selector for the current directory:
+## Reference
 
-```sh
-agent-flow scaffold
-```
+- [Workflow and command reference](docs/reference.md).
+- [Custom packs and optional modules](docs/packs.md).
+- [Legacy compatibility and code-value audit](docs/legacy.md).
+- [Changelog](CHANGELOG.md).
 
-Apply directly, without the selector (into a specific directory):
+## Decision and research context
 
-```sh
-agent-flow scaffold --output-dir path/to/project --write
-```
+- [Historical decision revalidation](docs/audits/2026-09-09-historical-decision-revalidation.md) preserves the retained direction without implementation authority.
+- [Tooling research and Rust library trial](docs/audits/2026-09-16-tooling-research-and-trial.md) records later evidence and its limits.
 
-Re-running is safe and idempotent: reference assets are refreshed and existing working files are left untouched. Pass `--force` to overwrite working files too (`--force` decides overwrite-versus-skip; `--write` decides whether to write at all, so the two combine).
+## Licence
 
-By default it also initialises an empty git repository in the output directory (like `cargo new`); pass `--vcs none` to skip that. It shows up in the plan and runs only on write; if the directory is already inside a git repository it is skipped (so scaffolding into a subdirectory of an existing repo does not nest a new one), and the repository is left empty (committing the scaffolded files is up to you).
-
-### Choosing principles
-
-`--principles` takes a comma-separated list of tokens:
-
-- `default`: the sensible default subset.
-- `all`: every principle in the pack.
-- `none`: no principles.
-- `tag:<name>`: every principle carrying that tag (for example `tag:fp`).
-- a bare id: that one principle.
-
-Tokens combine and are de-duplicated by first occurrence, so a bare id list keeps its order.
-
-```sh
-# List the default principles and exit, without scaffolding:
-agent-flow scaffold --list-principles
-
-# List every principle:
-agent-flow scaffold --principles all --list-principles
-
-# Scaffold a specific, ordered selection:
-agent-flow scaffold --principles kiss,verify-dont-trust,tag:fp
-```
-
-`--principle-detail` controls how much of each principle is rendered: `name`, `summary` (the default), or `full` (name, rationale, and references).
-
-### Interactive selection
-
-On a terminal, `agent-flow scaffold` opens the two-pane selector by default (seeded from `--principles`); pass `--write` or `--dry-run` to skip it:
-
-- Left pane lists available principles; right pane lists the included ones in order.
-- `i` / `a` move the highlighted principle to the other pane, inserting it before (`i`) or after (`a`) the cursor.
-- `Tab` / `h` / `l` / arrow keys switch focus; `j` / `k` or the arrows move the cursor; `K` / `J` reorder within the included pane.
-- `u` / `U` undo and redo; `/` filters the available pane by name, id, or tag.
-- `Enter` opens a save-confirmation modal (defaulting to Cancel so nothing is written by accident); `q` aborts.
-
-On save it prints a ready-to-paste `--principles <ids>` line so the exact selection and order can be replayed non-interactively.
-
-### Legacy plan rendering
-
-For an existing project that uses the legacy plan flow, a plan is a structured `<task>.plan.toml` skeleton (its Roadmap `[[step]]` entries, `[[question]]` queue, and `[[principle]]` list) plus opaque Markdown prose sidecars (the step and question bodies and the front/tail matter). `render` generates the committed `<task>.md` view from them, splicing each sidecar verbatim: the TOML and the sidecars are the source, and the generated `<task>.md` is a projection that is never hand-edited.
-
-```sh
-# Generate <task>.md from the skeleton and its sidecars:
-agent-flow render docs/plans/my-task.plan.toml
-
-# Re-render in memory and compare against the committed <task>.md (warn on drift):
-agent-flow render --check docs/plans/my-task.plan.toml
-
-# Fail (exit non-zero) on drift, for CI or a pre-commit hook:
-agent-flow render --check --strict docs/plans/my-task.plan.toml
-```
-
-`render` is strict: a schema violation, an unresolved cross-reference, or a missing sidecar exits non-zero and writes nothing, so a broken source never yields a partial plan. `render --check` catches both a hand-edit of the generated file and a stale render after a source edit; it warns locally (so a forgotten re-render never blocks an in-flight step) and, with `--strict`, fails hard. The built-in minimal pack does not emit a plan template; this command remains for existing projects and custom packs.
-
-### Validating and projecting workflow state
-
-`validate`, `status`, and `next` are read-only: they inspect workflow state and never write anything. A fourth command, `audit` (below), is advisory and read-mostly: it writes only its own report.
-
-When `.agents/work.toml` exists, bounded work mode is the default. The same source can be selected explicitly with `--source .agents/work.toml`. The version-1 file is at most 4,096 bytes, contains at most five total ordered `[[step]]` entries, and uses only `active`, `pending`, and `complete`. While any step remains active or pending, `selected_action` is required and names an active step; it may be absent only when every step is complete. Several steps may be active, but every blocker id must exist and an active step's blockers must already be complete; pending steps may depend on active or pending predecessors.
-
-Fields split into prose and structure, and only prose may span lines. The four prose fields (`user_problem`, `change`, each `acceptance` item, and `why_next`) accept TOML multi-line strings, so a step can state its problem in paragraphs instead of cramming it onto one line. The structural values stay one line each: `selected_action`, every step `id`, every `blocked_by` id, and every status. Everything else stays unsafe in both kinds of field, prose included: tabs, carriage returns, any other control character, and the Unicode line (U+2028) and paragraph (U+2029) separators are rejected with the offending field named. Only the line-feed paragraph break is prose-only.
-
-`validate` checks those invariants and exits nonzero with source-prefixed diagnostics on a violation. For an all-complete file it reports valid completion. It does not read plans, ledgers, workflow specs, review directories, or metrics logs in work mode, so a self-authored review record cannot change the result.
-
-`status` projects every ordered step, its status, and dependency ids with their current statuses, plus the selected action or no action after completion. Human and `--json` forms are deterministic and fail rather than truncate above 16,384 bytes. `next` lists every active unit in file order and one selected action with its user problem, change, acceptance criteria, and why-next rationale; after completion it lists no active units, no selected action, and an explicit completed result (`selected_action` is `null` in JSON). Pending-step prose and all legacy process files are not read by this path. Both `next` formats retain their 8,192-byte fail-rather-than-truncate limit.
-
-Multiline prose keeps its paragraphs in both formats. The human brief prints the first line beside its label and indents every continuation line behind a `  |` gutter, blank paragraph lines included; since no top-level line of that output begins with a space, prose reading `SELECTED ACTION`, `acceptance:`, `- forged` or `why next:` arrives as the indented continuation it is and cannot forge a heading, an active-unit row, or an acceptance item. `--json` needs no gutter and preserves each accepted string exactly, line feeds and blank lines included.
-
-```sh
-# Bounded human brief from .agents/work.toml:
-agent-flow next
-
-# The same projection as deterministic JSON:
-agent-flow next --source .agents/work.toml --json
-
-# Validate and project the bounded work state:
-agent-flow validate
-agent-flow status
-agent-flow status --json
-```
-
-For `validate` and `status`, explicitly naming a legacy plan, metrics log, workflow check, or resume input selects compatibility mode. All three commands also keep their legacy fallback when no `.agents/work.toml` exists; `next` selects it when an old plan is named explicitly. Legacy mode retains the plan and metrics projections, but `next` no longer emits free-form ledger or resume text.
-
-The default scaffold does not create or require a metrics log. For existing instrumented or legacy-plan projects, an explicit legacy invocation of `validate` checks the workflow's metrics log against its record schema. With `--plan` it also checks a Markdown plan's structured regions (the Roadmap table and the Open Questions queue) against the plan schema, and with `--source` it checks a `<task>.plan.toml` structured source (its schema and internal cross-references). With `--workflow` it cross-references the plan status against the round log: every Roadmap step marked `complete` must have converging round records in the log (or a recorded waiver), so a step marked done without its review loop (or that never reached the clean-round streak its risk class requires) is caught. The workflow check reads the plan from a TOML `--source` when that source declares `[meta].primary = "toml"` (a TOML-only project needs no `--plan`), else from the Markdown `--plan`. It reports every malformed record, region, or cross-reference and every workflow disagreement, and exits non-zero if any exist, so it can gate a commit or run in CI. A `--workflow` run that cannot see a round log is itself one of those failures rather than a skip: with no log at the resolved path the check cannot run, so it reports that and exits non-zero instead of reporting success for a project it never checked. That is the boundary between the two legacy enforcement tiers, and `--workflow` fails on a project with no round log; plain legacy validation without `--workflow` still notes an absent log on stderr at exit 0. It also REFUSES a pairing it cannot vouch for: when the round log it is about to read does not live under the project root of the plan it is about to check, `--workflow` reports that and exits non-zero rather than joining the two, since a green over one project's plan and another project's evidence is worse than no answer at all:
-
-```sh
-# Explicitly validate the legacy default metrics path (docs/metrics/workflow.jsonl):
-agent-flow validate --metrics docs/metrics/workflow.jsonl
-
-# Validate a TOML plan skeleton (its schema and internal cross-references):
-agent-flow validate --source docs/plans/my-task.plan.toml
-
-# Cross-reference a TOML-primary plan's status against the round log (no --plan needed):
-agent-flow validate --source docs/plans/my-task.plan.toml --workflow
-
-# The Markdown path still works when a project keeps a Markdown plan:
-agent-flow validate --plan docs/plans/my-task.md --workflow
-
-# Pointing --workflow at a log outside the plan's own project is refused (exit 1):
-agent-flow validate --source /elsewhere/docs/plans/their-task.plan.toml \
-  --metrics docs/metrics/workflow.jsonl --workflow
-# --workflow would join /elsewhere/docs/plans/their-task.plan.toml against
-# docs/metrics/workflow.jsonl, which is not under the plan's project root /elsewhere;
-# pass a `--metrics` under that root, run against the plan's own log, or correct the
-# `--source` and `--plan` pair
-```
-
-The round log is resolved FROM THE PLAN, not from the directory you happen to be standing in. With no `--metrics`, the log is `docs/metrics/workflow.jsonl` under the project root derived from the plan source: the nearest `<root>/docs/plans/` ancestor of `--source` (else of `--plan`), or the source's own directory when it has no such ancestor, so a plan at a project root with no `docs/plans` still reads that root's log. So `agent-flow validate --source /elsewhere/docs/plans/their-task.plan.toml --workflow` checks THEIR plan against THEIR log, rather than joining their plan to yours. `status`, `status --resume`, and legacy plan-mode `next` resolve the same way, and the ledger those legacy readers use is `<task>.ledger.md` beside the plan source. An explicit `--metrics` (or `--ledger-fragment`) is used verbatim, and a run with neither `--source` nor `--plan` has nothing to anchor to, so it keeps the current-directory-relative `docs/metrics/workflow.jsonl`. The rule is textual: it never consults `.git`, so it works the same in a nested repository, outside a repository, and in an unpacked tarball. One consequence to know about: a bare filename run from inside `docs/plans` (`cd docs/plans && agent-flow validate --source my-task.plan.toml --workflow`) has no parent directories to derive a root from, so it looks for `docs/metrics/workflow.jsonl` beneath `docs/plans` and fails, naming the log it looked for; run it from the project root instead.
-
-Anchoring changes where the DEFAULT log resolves; it does nothing about a log you name explicitly, so a second rule sits on top of it. Every one of these commands that reads a legacy plan checks that the log (and, for the ledger readers, the ledger) it is about to read lives under the project root of THAT plan, resolving both through their real on-disk locations so a symlink cannot disguise one as the other. Where no plan is read, which is always so for `status --resume` and is so for `status` and `next` whenever neither a TOML-primary `--source` nor a readable `--plan` resolves, those three take their roots from the anchors instead: every `--source` or `--plan` you gave THAT IS ON DISK yields one and the artifact must be under all of them, so a `--source` and a `--plan` naming two different projects reject each other's artifacts. An anchor that is not on disk yields a root only when NO anchor you gave is on disk, derived from the path itself resolved as far as the filesystem allows, and a `note:` on stderr tells you the anchor is not there; what the anchor's own directory owns is still read, so a plan file you have not written yet still reads its own project's log. Beside an anchor that IS on disk it yields nothing and the one on disk decides, so naming a plan file you have not written does not withhold the other anchor's own log and ledger. ON DISK means the existence check answered yes: an anchor the check cannot answer for at all (a directory above it this process cannot traverse, a symlink loop, a name the kernel rejects) is grouped with the anchors that are not on disk rather than with the ones that are, so a path the tool could not check never becomes the one that decides, and its `note:` says the check failed rather than that the path is missing. With NEITHER anchor there is nothing to pair against, so no root is derived, no containment check fires, and the current-directory-relative defaults described above stand. `validate --workflow` has no such fallback and needs none: with no plan resolved there is nothing for it to check, so it refuses on that ground (`--workflow requested but no plan source resolved`) without ever reaching containment. Where a checked artifact IS outside the root, `validate --workflow` refuses as above, while `status` and `next` LEAVE THAT PART OUT with a reason in its place and still exit 0 (see the `status` paragraph below). Two consequences are worth knowing. A layout where `docs/plans` or `docs/metrics` is a symlink pointing somewhere the other one is not under will now be refused by `validate --workflow` and left out by the projections, even though it worked before; the trade taken is that a loud refusal beats silently reading the wrong file. And a setup that deliberately points one project's `--metrics` at a log outside its own root now exits non-zero under `--workflow`. The rule is CONTAINMENT, not identity: it can tell that a log outside the plan's tree is not the plan's, but a foreign log copied INSIDE that tree still looks like the plan's own, because the round records carry no project of their own to check.
-
-In explicit legacy mode, `status` prints a best-effort projection of the plan's Roadmap steps grouped by status and its Open Questions count, plus a metrics-record count. It reads the plan from a `<task>.plan.toml` `--source` when that source is TOML-primary, else from the Markdown `--plan`. Unlike work mode, this compatibility projection does not fail on a missing or malformed file (a missing part is simply left out), and `--json` emits the projection as JSON for another tool to consume. A round log that cannot be paired with the plan is one of the parts that gets left out: `status` prints `metrics: unavailable, <why>` in place of the record count, legacy plan-mode `next` leaves out the count AND the whole `ACTIVE LOOP` block (an instruction derived from evidence the tool cannot vouch for is exactly what must not be emitted), and `status --resume` prints a note naming the rejected ledger instead of the `## RESUME STATE` block. All three still EXIT 0. The same release adds a refusal to `validate --workflow` for the same condition; the projections deliberately do not refuse, because leaving out what they do not have is their documented contract.
-
-In legacy plan mode, `--json` says which part is missing and why, so a machine consumer can tell the causes apart rather than reading one bare `null` for all of them. `status`'s projection carries `metrics_absent_reason` (`log-absent`, or `log-not-this-project`) beside `metrics`, and legacy `next` carries the same field plus `resume_state_absent_reason` (`ledger-absent`, `no-resume-section`, or `ledger-not-this-project`) and `no_active_loop_reason` (`no-plan-steps`, `all-steps-terminal`, or `metrics-not-this-project`) beside `active_loop`. It has no free-form `resume_state` field. Each is `null` when its part is present, and the shared `not-this-project` spelling is deliberate: an unpairable log reports `log-not-this-project` and `metrics-not-this-project` together, so the two can be joined without a lookup table:
-
-```sh
-# Human-readable summary (from a TOML-primary plan skeleton):
-agent-flow status --source docs/plans/my-task.plan.toml
-
-# Or from a Markdown plan:
-agent-flow status --plan docs/plans/my-task.md
-
-# Machine-readable projection:
-agent-flow status --source docs/plans/my-task.plan.toml --json
-
-# A log that cannot be paired with the plan is left out, with a reason, at exit 0:
-agent-flow status --source /elsewhere/docs/plans/their-task.plan.toml \
-  --metrics docs/metrics/workflow.jsonl --json
-# {
-#   "plan": { ... },
-#   "metrics": null,
-#   "metrics_absent_reason": "log-not-this-project"
-# }
-```
-
-### Auditing code value
-
-`audit` builds an advisory, static report of code that may not be earning its keep: author-declared suppression reasons (an `#[allow(dead_code)]` with its stated rationale) that are shown as fences rather than proposed for removal. It is read-mostly: it writes only its own report, `docs/plans/<task>.code-value-report.md` (or `--out`), and never edits `src/`, `Cargo.toml`, the plan, or the metrics log, and never deletes anything. A human reads the report and decides each candidate; nothing is removed automatically.
-
-Every report leads with a mandatory caveat: a passing audit is necessary but not sufficient and is only relative to the named signal set, so "nothing flagged" is never proof the codebase has no dead code. The report is projected from a typed intermediate, which `--json` prints to stdout (writing no file) for another tool to consume:
-
-```sh
-# Write the Markdown report to docs/plans/my-task.code-value-report.md:
-agent-flow audit --source docs/plans/my-task.plan.toml
-
-# Print the machine intermediate instead of writing a file:
-agent-flow audit --source docs/plans/my-task.plan.toml --json
-
-# Audit a crate elsewhere and write the report to a chosen path:
-agent-flow audit --dir path/to/crate --out reports/code-value.md
-```
-
-## Bring your own pack
-
-By default the tool uses its built-in pack. Point `--template` at a directory to scaffold from your own pack instead:
-
-```sh
-agent-flow scaffold --template path/to/my-pack --var project=my-service
-```
-
-A pack is a directory with a `pack.toml` manifest that declares its assets and any variables:
-
-```toml
-# Each asset: where its source file lands, whether it is a tool-owned reference
-# asset or a user working file, and whether it is rendered or copied verbatim.
-# One source may map to several assets.
-[[asset]]
-source = "AGENTS.md"
-dest = "AGENTS.md"
-ownership = "working"    # "working" (create-if-absent) or "reference" (refreshed)
-render = true            # substitute {{variables}}; omit or false to copy verbatim
-
-[[asset]]
-source = "principles.toml"
-dest = ".agents/principles.toml"
-ownership = "reference"
-
-[[asset]]
-source = "hooks/pre-commit"
-dest = ".agents/hooks/pre-commit"
-ownership = "reference"
-executable = true        # drop with the executable bit set (e.g. a hook script); omit or false otherwise
-
-# Variables the pack's rendered assets can reference as {{name}}.
-[[var]]
-name = "project"
-default = "my-project"   # optional; omit `default` to make the variable required
-
-[[var]]
-name = "author"          # required: must be supplied with --var author=...
-```
-
-Every file a pack reads must live inside the pack directory, and that is enforced rather than assumed: an `[[asset]]`'s `source`, a `[[module]]`'s `guidance`, and the `pack.toml`, `principles.toml` and `instrument.md` the tool reads by name are each refused if the path is absolute, carries a `..` component, or lands outside the pack once symbolic links are followed. The refusal is loud, names the file, and writes nothing. This is the same trade the metrics and ledger boundary above takes: a loud refusal beats silently reading a file the pack did not ship. A link INSIDE the pack is fine, and so is pointing `--template` at a link to the pack directory itself; what is refused is a link whose target is outside. If your pack is assembled by a tool that links each file to somewhere else, such as GNU stow, home-manager or a nix profile, point `--template` at the real directory when the files all resolve into one, and otherwise materialise the pack into real files (`cp -rL`, or a clone rather than a link).
-
-Rendering does minimal `{{name}}` substitution (there is no template engine). `{{principles}}`, `{{instrument}}`, and `{{modules}}` are built-in variables the tool computes itself; all three are reserved, so a pack may neither declare them nor set them with `--var`. `{{principles}}` is computed from the selection. `{{instrument}}` is filled from the pack's optional `instrument.md` render fragment when `--instrument` is set (empty otherwise); like `principles.toml`, that fragment is read directly and inlined, not dropped as its own asset. `{{modules}}` is the concatenated guidance of the enabled modules (see Optional modules below), empty when none is enabled. Setting a variable the pack does not declare, or leaving a required variable unset, is an error and nothing is written.
-
-### Optional modules
-
-A pack can group opt-in extras into named modules. Declare each module in a `[[module]]` section, then tag the `[[asset]]` and `[[var]]` entries that belong to it with `module = "<name>"`:
-
-```toml
-# Each module names itself and describes what it adds. This section is the
-# authoritative list of known module names.
-[[module]]
-name = "diagrams"
-description = "Adds a diagram template and the variable it renders."
-guidance = "diagrams-guidance.md"  # optional: a pack fragment concatenated into {{modules}} when this module is enabled
-requires = ["checks"]              # optional: modules this one auto-enables (transitively) when selected
-
-# An asset tagged with a module is dropped only when that module is selected.
-[[asset]]
-source = "diagram.md"
-dest = "docs/diagram.md"
-ownership = "working"
-render = true
-module = "diagrams"
-
-# A variable tagged with a module is only in play when that module is selected.
-[[var]]
-name = "diagram_title"
-module = "diagrams"      # required here, but only demanded when `diagrams` is selected
-```
-
-An entry with no `module` tag is core: it is always applied. A tagged entry is applied only when you select its module with the repeatable `--module <name>` flag (`agent-flow scaffold --module diagrams`). With no module selected, every tagged asset is dropped and every tagged variable is skipped entirely: its default does not apply, it is not required, and a `--var` naming it is rejected as undeclared, exactly as if the pack never declared it. A selected module's variables behave like core ones (a default applies, or the variable is required if it has none). Because core output does not depend on any module, scaffolding with no `--module` is byte-identical to a pack that declares no modules at all.
-
-A module may declare an optional `guidance` fragment: when the module is enabled, that fragment (read from the pack like `instrument.md`, not dropped as its own asset) is concatenated, in `[[module]]` declaration order, into the reserved `{{modules}}` render slot. A module may also declare `requires`, the modules it auto-enables when selected: selecting a module enables everything it requires, transitively, so a module can depend on another without you naming both. A `requires` cycle is tolerated (the expansion is a fixed point), so it neither loops nor errors.
-
-Every module a tag or a `requires` references, and every `--module` you pass, must be declared in a `[[module]]` section, and each module name must be declared only once. An unknown `--module`, a tag naming a module no `[[module]]` declares, a `requires` naming a module no `[[module]]` declares, or a duplicated `[[module]]` name is an error, and nothing is written.
-
-Principles are a property of the pack: if your pack ships its own `principles.toml`, `--template` selects and renders from that set rather than the built-in one. A pack that ships no `principles.toml` simply has no principles to select.
-
-## Development
-
-The repository uses Nix, direnv, and just. Common tasks:
-
-```sh
-just build     # cargo build
-just test      # cargo test
-just clippy    # cargo clippy --all-targets
-just fmt       # format all files through the Nix formatter
-just ci        # the full quality gate, exactly what GitHub CI runs
-just run -- --help
-```
-
-Run `just ci` before each commit, and keep all text ASCII-clean. It runs `.agents/checks/ci-gate.sh`, the one gate the `quality` job in `.github/workflows/ci.yml` also runs through the locked flake: `cargo fmt --all -- --check`, Clippy with warnings denied, the locked tests, `agent-flow checks`, `agent-flow validate`, `actionlint`, tripwires for the process artefacts `RESET.md` deleted, the scratch-repository tests for the attribution check, the attribution check itself over every commit reachable from `HEAD`, or from the branch commit named by `ATTRIBUTION_TARGET` when GitHub CI checks out a pull request's merge result, and a check that the run left the tracked tree unchanged.
-
-The gate deliberately does not run `nix fmt`. That formatter applies Rust 2024 formatting to this Rust 2021 crate and reflows the retained `docs/audits/` records, so `cargo fmt` is the accepted formatting check.
-
-## License
-
-This project is licensed under the [Blue Oak Model License 1.0.0](LICENSE).
+This project uses the [Blue Oak Model License 1.0.0](LICENSE).
