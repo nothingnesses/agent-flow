@@ -146,6 +146,7 @@ fn default_scaffold_is_bounded_parseable_and_byte_idempotent() {
 		".agents/prompts/reviewer.md",
 		".agents/prompts/triager.md",
 		".agents/prompts/verifier.md",
+		".agents/user-prompts/adopt.md",
 		".agents/user-prompts/kickoff.md",
 		".agents/user-prompts/review.md",
 		".agents/work.toml",
@@ -156,6 +157,7 @@ fn default_scaffold_is_bounded_parseable_and_byte_idempotent() {
 		expected,
 		"the module-free scaffold should create only the minimal core assets"
 	);
+	assert!(!root.join(".git/hooks/pre-commit").exists());
 	assert!(!root.join(".agents/LEDGER.template.md").exists());
 	assert!(!root.join(".agents/workflow.toml").exists());
 	assert!(!root.join("docs/plans").exists());

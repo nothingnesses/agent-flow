@@ -864,6 +864,7 @@ mod tests {
 				".agents/principles.toml",
 				".agents/user-prompts/kickoff.md",
 				".agents/user-prompts/review.md",
+				".agents/user-prompts/adopt.md",
 			]
 		);
 	}

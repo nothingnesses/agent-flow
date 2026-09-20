@@ -1,5 +1,5 @@
 version = 1
-selected_action = "accept-github-owner-name"
+selected_action = "document-existing-project-adoption"
 
 [[step]]
 id = "preserve-post-reset-context"
@@ -14,7 +14,7 @@ why_next = "The human marked this delivery complete after the merge. This compac
 
 [[step]]
 id = "accept-github-owner-name"
-status = "active"
+status = "complete"
 blocked_by = ["preserve-post-reset-context"]
 user_problem = "GitHub used the owner's public display name for a squash commit. The exact-name check rejects that identity and blocks main CI."
 change = "Accept the two approved owner names with the existing exact email. Add regression tests without other attribution policy changes."
@@ -30,7 +30,7 @@ why_next = "The human selected this CI repair before adoption and approved at mo
 
 [[step]]
 id = "document-existing-project-adoption"
-status = "pending"
+status = "active"
 blocked_by = ["accept-github-owner-name"]
 user_problem = "Existing projects lack a tested adoption walkthrough. The README mixes onboarding with lengthy reference material. Agents lack a bounded adoption prompt."
 change = "Add an adoption guide and shipped user prompt. Shorten the README and relocate useful reference material. Keep runtime behaviour unchanged."
@@ -43,4 +43,4 @@ acceptance = [
   "Focused tests and a disposable-repository rehearsal exercise adoption commands and preservation of existing project files.",
   "Runtime commands, existing delivery-role contracts, audit reports and released history remain unchanged. Host just ci and independent review cover the candidate.",
 ]
-why_next = "The human approved this onboarding change with at most five worker dispatches, including failures. Use one author, independent review and conditional triage, one fix and focused verification. Stop before publication or completion."
+why_next = "The human approved this onboarding change with at most six worker dispatches, including failures. Use one author, independent review and conditional triage, one fix and focused verification. Stop before publication or completion."
